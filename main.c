@@ -299,7 +299,7 @@ static void system_setup(void) {
 
 }
 
-int main(void) {
+int zzzmain(void) {
   system_setup();
   debug("os_init"); ////
   os_init();
