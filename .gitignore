@@ -4,3 +4,5 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 lib/cocoOS_5.0.1
+.vscode/last.sql
+.vscode/temp.sql
