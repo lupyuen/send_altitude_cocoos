@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include "cocoos.h"
 
+#ifdef __cplusplus ////
+extern "C" {
+#endif ////
+
 #define ESC 27
 #define CR  0xd
 #define CLEAR_LINE "[2K"
@@ -34,4 +38,9 @@ Display_t *display_get(void);
 void display_init(void);
 
 extern DisplayMsg_t displayMessages[10];
+
+#ifdef __cplusplus ////
+}
+#endif ////
+
 #endif /* DISPLAY_H_ */

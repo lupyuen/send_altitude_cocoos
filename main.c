@@ -36,11 +36,16 @@
  *  and an array holding sensor data.
  *
  */
+#include <Arduino.h> ////
+#include <Time.h> ////
+#include <TimeLib.h> ////
+typedef unsigned long time_t; ////  TODO: Fix the declaration
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <unistd.h>
+//// #include <pthread.h>
+//// #include <sys/types.h>
+//// #include <unistd.h>
 #include <time.h>
 #include <string.h>
 #include <cocoos.h>
@@ -68,15 +73,55 @@ static TaskData_t gyroTaskData;
 /*            System threads                */
 /********************************************/
 
+static void arduino_start_timer(void) { ////
+  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform
+  //  background processing.  AVR Timer 0 is reserved for Arduino timekeeping.
+  
+  // Set PORTB pins as output, but off
+	DDRB = 0xFF;
+	PORTB = 0x00;
+
+	// Turn on timer 
+	// TCCR1B |= _BV(CS10);  // no prescaler
+	TCCR1B = (1<<CS10) | (1<<CS12); //set the prescaler as 1024
+	TIMSK1 |= _BV(TOIE1);
+
+	// Turn interrupts on.
+	sei();
+	
+} ////
+
+ISR(TIMER1_OVF_vect) { ////
+  //  Handle the AVR Timer 1 interrupt ticks for cocoOS to perform
+  //  background processing.  Copied from ticker().
+  static int ticks = 0;
+
+  // debug("os_tick"); ////
+  os_tick();
+  
+  if (++ticks == 100) {
+      // service the sensor drivers each 100 ms
+      // This is not a polling of the sensors, it is just simulating
+      // something is stimulating the sensor.
+      tempSensor_service();
+      gyroSensor_service();
+      ticks = 0;
+  }
+} ////
+
+/* //// Arduino: Moved to timer handler above. We use a real timer tick instead of simulation.
 // simulation of a timer tick
 static void *ticker(void* arg) {
   // setup a 1 ms tick
-  struct timespec req = {.tv_sec = 0,.tv_nsec = 1000000};
+  //// struct timespec req = {.tv_sec = 0,.tv_nsec = 1000000};
 
   static int cnt = 0;
 
   while(1) {
-    nanosleep(&req, NULL);
+    debug("ticker"); ////
+
+    delay(1); ////
+    //// nanosleep(&req, NULL);
 
     os_tick();
 
@@ -91,6 +136,7 @@ static void *ticker(void* arg) {
   }
   return (void*)0;
 }
+*/ ////
 
 // thread reading stdin and reacting on arrow up/down
 static void *input(void* arg) {
@@ -121,14 +167,15 @@ static void *input(void* arg) {
 /*            Application tasks             */
 /********************************************/
 
-
 static void sensorTask() {
+  TaskData_t *taskData = NULL; ////
   task_open();
 
   for (;;) {
      // We should not make this static, because it should be
      // unique for each task.
-     TaskData_t *taskData = (TaskData_t*)task_get_data();
+     //// TaskData_t *taskData = (TaskData_t*)task_get_data();
+     taskData = (TaskData_t*)task_get_data(); ////
 
     // The task either waits for the event to be signaled
     // or a poll timeout.
@@ -157,6 +204,9 @@ static void sensorTask() {
       DisplayMsg_t msg;
       msg.super.signal = taskData->sensor->info.id;
       msg.data = (const char*)taskData->data;
+      
+      ////  Note for Arduino: msg_post() must be called in a C source file, not C++.
+      ////  The macro expansion fails in C++ with a cross-initialisation error.
       msg_post(displayTaskId, msg);
     }
   }
@@ -166,11 +216,13 @@ static void sensorTask() {
 
 // Task that changes channel on its associated sensor
 static void controlTask() {
+  Evt_t event; ////
   task_open();
 
   for (;;) {
     event_wait_multiple(0, prevChEvt, nextChEvt);
-    Evt_t event = event_last_signaled_get();
+    //// Evt_t event = event_last_signaled_get();
+    event = event_last_signaled_get(); ////
 
     Sensor_t *sensor = ((TaskData_t*)task_get_data())->sensor;
 
@@ -213,9 +265,18 @@ static void displayTask() {
 /*            Setup and main                */
 /********************************************/
 
+static void arduino_setup(void) { ////
+  //  Run initialisation for Arduino, since we are using main() instead of setup()+loop().
+  init();  // initialize Arduino timers  
+  debug("------------------arduino_setup");
+} ////
+
 static void system_setup(void) {
+  arduino_setup(); ////
+  debug("display_init"); ////
   display_init();
 
+  /* ////  Threads not applicable for Arduino.
   pthread_t tid;
 
   // create a time tick thread which drives cocoOS by calling the os_tick() method.
@@ -234,28 +295,34 @@ static void system_setup(void) {
     printf("\ncan't create thread :[%s]", strerror(err));
     abort();
   }
+  */ ////
 
 }
 
 int main(void) {
-
   system_setup();
-
+  debug("os_init"); ////
   os_init();
 
   // create events
+  debug("event_create"); ////
   tempEvt   = event_create();
   prevChEvt = event_create();
   nextChEvt = event_create();
 
   // Initialize the sensors
+  debug("tempSensor_get"); ////
   tempTaskData.sensor = tempSensor_get();
+  debug("tempSensor.init"); ////
   tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, 0);
 
+  debug("gyroSensor_get"); ////
   gyroTaskData.sensor = gyroSensor_get();
+  debug("gyroSensor.init"); ////
   gyroTaskData.sensor->control.init(GYRO_DATA, 0, 500);
 
   // Two sensor tasks using same task procedure, but having unique task data.
+  debug("task_create"); ////
   task_create( sensorTask, &tempTaskData, 10, 0, 0, 0 );
   task_create( sensorTask, &gyroTaskData, 20, 0, 0, 0 );
 
@@ -264,9 +331,14 @@ int main(void) {
 
   // display task that displays sensor readings
   displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg_t) );
+  
+  //// Start the AVR timer to generate ticks for background processing.
+  debug("arduino_start_timer"); ////
+  arduino_start_timer(); ////
 
-
-  os_start();
-
+  debug("os_start"); ////
+  os_start();  //  Never returns.
+  
 	return EXIT_SUCCESS;
 }
+
