@@ -7,8 +7,8 @@
 extern "C" {
 #endif ////
 
-Sensor_t *tempSensor_get(void);
-void tempSensor_service(void);
+Sensor_t *get_temp_sensor(void);
+void process_temp_sensor(void);
 
 #ifdef __cplusplus ////
 }

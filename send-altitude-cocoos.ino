@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SPI.h>  //  Needed by BME280 library.
 #include "sensor.h"
 
 void debug(const char *s) {
@@ -10,15 +11,15 @@ void debug(const char *s) {
 }
 
 /*
-BME280I2C Modes.ino
+Environment_Calculations.ino
 
-This code shows how to use predefined recommended settings from Bosch for
-the BME280I2C environmental sensor.
+This code shows how to record data from the BME280 environmental sensor
+and perform various calculations.
 
 GNU General Public License
 
 Written: Dec 30 2015.
-Last Updated: Sep 23 2017.
+Last Updated: Oct 07 2017.
 
 Connecting the BME280 Sensor:
 Sensor              ->  Board
@@ -30,62 +31,14 @@ SCK (Serial Clock)  ->  A5 on Uno/Pro-Mini, 21 on Mega2560/Due, 3 Leonardo/Pro-M
 
  */
 
-#include <SPI.h>
+#include <EnvironmentCalculations.h>
 #include <BME280I2C.h>
-#include <Wire.h>             // Needed for legacy versions of Arduino.
+#include <Wire.h>
 
 #define SERIAL_BAUD 9600
 
-/* Recommended Modes -
-   Based on Bosch BME280I2C environmental sensor data sheet.
-
-Weather Monitoring :
-   forced mode, 1 sample/minute
-   pressure ×1, temperature ×1, humidity ×1, filter off
-   Current Consumption =  0.16 μA
-   RMS Noise = 3.3 Pa/30 cm, 0.07 %RH
-   Data Output Rate 1/60 Hz
-
-Humidity Sensing :
-   forced mode, 1 sample/second
-   pressure ×0, temperature ×1, humidity ×1, filter off
-   Current Consumption = 2.9 μA
-   RMS Noise = 0.07 %RH
-   Data Output Rate =  1 Hz
-
-Indoor Navigation :
-   normal mode, standby time = 0.5ms
-   pressure ×16, temperature ×2, humidity ×1, filter = x16
-   Current Consumption = 633 μA
-   RMS Noise = 0.2 Pa/1.7 cm
-   Data Output Rate = 25Hz
-   Filter Bandwidth = 0.53 Hz
-   Response Time (75%) = 0.9 s
-
-
-Gaming :
-   normal mode, standby time = 0.5ms
-   pressure ×4, temperature ×1, humidity ×0, filter = x16
-   Current Consumption = 581 μA
-   RMS Noise = 0.3 Pa/2.5 cm
-   Data Output Rate = 83 Hz
-   Filter Bandwidth = 1.75 Hz
-   Response Time (75%) = 0.3 s
-
-*/
-
-BME280I2C::Settings settings(
-   BME280::OSR_X1,
-   BME280::OSR_X1,
-   BME280::OSR_X1,
-   BME280::Mode_Forced,
-   BME280::StandbyTime_1000ms,
-   BME280::Filter_Off,
-   BME280::SpiEnable_False,
-   0x76 // I2C address. I2C specific.
-);
-
-BME280I2C bme(settings);
+BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
+                  // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
 //////////////////////////////////////////////////////////////////
 void setup()
@@ -95,9 +48,10 @@ void setup()
   while(!Serial) {} // Wait
 
   Wire.begin();
+
   while(!bme.begin())
   {
-    Serial.println("Could not find BME280I2C sensor!");
+    Serial.println("Could not find BME280 sensor!");
     delay(1000);
   }
 
@@ -112,11 +66,6 @@ void setup()
      default:
        Serial.println("Found UNKNOWN sensor! Error!");
   }
-
-   // Change some settings before using.
-   settings.tempOSR = BME280::OSR_X4;
-
-   bme.setSettings(settings);
 }
 
 //////////////////////////////////////////////////////////////////
@@ -141,13 +90,31 @@ void printBME280Data
 
    client->print("Temp: ");
    client->print(temp);
-   client->print("°"+ String(tempUnit == BME280::TempUnit_Celsius ? 'C' :'F'));
+   client->print("°"+ String(tempUnit == BME280::TempUnit_Celsius ? "C" :"F"));
    client->print("\t\tHumidity: ");
    client->print(hum);
    client->print("% RH");
    client->print("\t\tPressure: ");
    client->print(pres);
+   client->print(" Pa");
+
+   EnvironmentCalculations::AltitudeUnit envAltUnit  =  EnvironmentCalculations::AltitudeUnit_Meters;
+   EnvironmentCalculations::TempUnit     envTempUnit =  EnvironmentCalculations::TempUnit_Celsius;
+
+   float altitude = EnvironmentCalculations::Altitude(pres, envAltUnit);
+   float dewPoint = EnvironmentCalculations::DewPoint(temp, hum, envTempUnit);
+   float seaLevel = EnvironmentCalculations::EquivalentSeaLevelPressure(altitude, temp, pres);
+
+   client->print("\t\tAltitude: ");
+   client->print(altitude);
+   client->print((envAltUnit == EnvironmentCalculations::AltitudeUnit_Meters ? "m" : "ft"));
+   client->print("\t\tDew point: ");
+   client->print(dewPoint);
+   client->print("°"+ String(envTempUnit == EnvironmentCalculations::TempUnit_Celsius ? "C" :"F"));
+   client->print("\t\tEquivalent Sea Level Pressure: ");
+   client->print(seaLevel);
    client->println(" Pa");
 
    delay(1000);
 }
+

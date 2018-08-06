@@ -103,65 +103,11 @@ ISR(TIMER1_OVF_vect) { ////
       // service the sensor drivers each 100 ms
       // This is not a polling of the sensors, it is just simulating
       // something is stimulating the sensor.
-      tempSensor_service();
+      process_temp_sensor();
       gyroSensor_service();
       ticks = 0;
   }
 } ////
-
-/* //// Arduino: Moved to timer handler above. We use a real timer tick instead of simulation.
-// simulation of a timer tick
-static void *ticker(void* arg) {
-  // setup a 1 ms tick
-  //// struct timespec req = {.tv_sec = 0,.tv_nsec = 1000000};
-
-  static int cnt = 0;
-
-  while(1) {
-    debug("ticker"); ////
-
-    delay(1); ////
-    //// nanosleep(&req, NULL);
-
-    os_tick();
-
-    if (++cnt == 100) {
-      // service the sensor drivers each 100 ms
-      // This is not a polling of the sensors, it is just simulating
-      // something is stimulating the sensor.
-      tempSensor_service();
-      gyroSensor_service();
-      cnt = 0;
-    }
-  }
-  return (void*)0;
-}
-*/ ////
-
-// thread reading stdin and reacting on arrow up/down
-static void *input(void* arg) {
-
-  while (1) {
-    char c1;
-    while ( (c1 = getchar()) != ESC);
-
-    char c2 = getchar();
-    if ( c2 == '[') {
-      char c3 = getchar();
-      if (c3 == 'A') {
-        // arrow up pressed
-        event_ISR_signal(prevChEvt);
-      }
-      else if (c3 == 'B') {
-        // arrow down pressed
-        event_ISR_signal(nextChEvt);
-      }
-    }
-  }
-  return (void*)0;
-}
-
-
 
 /********************************************/
 /*            Application tasks             */
@@ -299,7 +245,7 @@ static void system_setup(void) {
 
 }
 
-int zzzmain(void) {
+int main(void) {
   system_setup();
   debug("os_init"); ////
   os_init();
@@ -311,8 +257,8 @@ int zzzmain(void) {
   nextChEvt = event_create();
 
   // Initialize the sensors
-  debug("tempSensor_get"); ////
-  tempTaskData.sensor = tempSensor_get();
+  debug("get_temp_sensor"); ////
+  tempTaskData.sensor = get_temp_sensor();
   debug("tempSensor.init"); ////
   tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, 0);
 

@@ -17,7 +17,7 @@ Tested with Arduino Uno.
 display_init
 os_init
 event_create
-tempSensor_get
+get_temp_sensor
 tempSensor.init
 gyroSensor_get
 gyroSensor.init
@@ -32,7 +32,7 @@ Gyro:		x:1	y:2	z:3
 Gyro:		x:1	y:2	z:3
 
 Gyro:		x:1	y:2	z:3
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 
 Gyro:		x:1	y:2	z:3
@@ -44,7 +44,7 @@ Gyro:		x:1	y:2	z:3
 Gyro:		x:1	y:2	z:3
 
 Gyro:		x:1	y:2	z:3
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 
 Gyro:		x:1	y:2	z:3
@@ -56,7 +56,7 @@ Gyro:		x:1	y:2	z:3
 Gyro:		x:1	y:2	z:3
 
 Gyro:		x:1	y:2	z:3
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 
 Gyro:		x:1	y:2	z:3
@@ -68,7 +68,7 @@ Gyro:		x:1	y:2	z:3
 Gyro:		x:1	y:2	z:3
 
 Gyro:		x:1	y:2	z:3
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 
 Gyro:		x:1	y:2	z:3
@@ -80,7 +80,7 @@ Gyro:		x:1	y:2	z:3
 Gyro:		x:1	y:2	z:3
 
 Gyro:		x:1	y:2	z:3
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:1	y:2	z:3
@@ -92,7 +92,7 @@ New York	25 degC
 Gyro:		x:7	y:39	z:31
 New York	25 degC
 Gyro:		x:7	y:39	z:31
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:7	y:39	z:31
@@ -104,7 +104,7 @@ New York	25 degC
 Gyro:		x:7	y:39	z:31
 New York	25 degC
 Gyro:		x:7	y:39	z:31
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:7	y:39	z:31
@@ -116,7 +116,7 @@ New York	25 degC
 Gyro:		x:7	y:39	z:31
 New York	25 degC
 Gyro:		x:7	y:39	z:31
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:7	y:39	z:31
@@ -128,7 +128,7 @@ New York	25 degC
 Gyro:		x:7	y:39	z:31
 New York	25 degC
 Gyro:		x:7	y:39	z:31
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:7	y:39	z:31
@@ -140,7 +140,7 @@ New York	25 degC
 Gyro:		x:7	y:39	z:31
 New York	25 degC
 Gyro:		x:7	y:39	z:31
-tempSensor_service
+process_temp_sensor
 gyroSensor_service
 New York	25 degC
 Gyro:		x:7	y:39	z:31

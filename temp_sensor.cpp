@@ -3,51 +3,34 @@
 #include <string.h>
 #include <cocoos.h>
 
-static uint8_t poll(void);
-static uint8_t data(uint8_t *buf, uint8_t size);
+static uint8_t poll_sensor(void);
+static uint8_t receive_sensor_data(uint8_t *buf, uint8_t size);
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 static void prev_channel(void);
 
-////
-static Sensor_Info_t temp_sensor_info = {
-  "World Temperature Sensor",
+static Sensor_Info_t sensor_info = {
+  "BME280 Temperature Sensor",
   0,
   0,
   0,
-  &poll,
-  &data
+  &poll_sensor,
+  &receive_sensor_data
 };
 
-static Sensor_Control_t temp_sensor_control = {
+static Sensor_Control_t sensor_control = {
   &init_sensor,
   &next_channel,
   &prev_channel
 };
 
-static Sensor_t temp_sensor = {
-  temp_sensor_info,
-  temp_sensor_control
+static Sensor_t sensor = {
+  sensor_info,
+  sensor_control
 };
-////
-
-////static Sensor_t temp_sensor;
-  /* ////
-= {
-    .info.name = "World Temperature Sensor",
-    .info.event = 0,
-    .info.id = 0,
-    .info.period_ms = 0,
-    .info.poll = &poll,
-    .info.data = &data,
-    .control.init = &init_sensor,
-    .control.next_channel = &next_channel,
-    .control.prev_channel = &prev_channel
-};
-    */ ////
 
 static uint8_t channel = 0;
-static uint8_t newData = 0;
+static uint8_t newdata = 0;
 
 const char *channels[] = {
                           "New York\t25 degC",
@@ -59,11 +42,11 @@ const char *channels[] = {
                           "Sydney\t\t42 degC"
                         };
 
-static uint8_t poll(void) {
+static uint8_t poll_sensor(void) {
   return 1;
 }
 
-static uint8_t data(uint8_t *buf, uint8_t size) {
+static uint8_t receive_sensor_data(uint8_t *buf, uint8_t size) {
 
   //// strcpy(buf, channels[channel]);
   strcpy((char *) buf, channels[channel]); ////
@@ -72,9 +55,9 @@ static uint8_t data(uint8_t *buf, uint8_t size) {
 }
 
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms) {
-  temp_sensor.info.id = id;
-  temp_sensor.info.event = event;
-  temp_sensor.info.period_ms = period_ms;
+  sensor.info.id = id;
+  sensor.info.event = event;
+  sensor.info.period_ms = period_ms;
 }
 
 static void next_channel(void) {
@@ -85,7 +68,7 @@ static void next_channel(void) {
     channel = 0;
   }
 
-  event_ISR_signal(*temp_sensor.info.event);
+  event_ISR_signal(*sensor.info.event);
 }
 
 static void prev_channel(void) {
@@ -95,20 +78,19 @@ static void prev_channel(void) {
   else {
     channel--;
   }
-  event_ISR_signal(*temp_sensor.info.event);
+  event_ISR_signal(*sensor.info.event);
 }
 
-Sensor_t *tempSensor_get(void) {
-  return &temp_sensor;
+Sensor_t *get_temp_sensor(void) {
+  return &sensor;
 }
 
-void tempSensor_service(void) {
-  debug("tempSensor_service"); ////
+void process_temp_sensor(void) {
+  debug("process_temp_sensor"); ////
   static uint8_t cnt = 0;
   if (++cnt == 5) {
-    newData = 1;
-    event_ISR_signal(*temp_sensor.info.event);
+    newdata = 1;
+    event_ISR_signal(*sensor.info.event);
     cnt = 0;
   }
-
 }
