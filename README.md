@@ -16,5 +16,64 @@ Tested with Arduino Uno.
 ## Sample Log
 
 ```
-TODO
+------------------arduino_setup
+display_init
+sem_counting_create
+event_create
+BME280 Temperature Sensor
+>> Waiting semaphore
+BME280 Temperature Sensor
+>> Got semaphore
+BME280 Temperature Sensor
+>> Release semaphore
+task_wait
+Gyro Sensor
+>> Waiting semaphore
+Gyro Sensor
+>> Got semaphore
+Gyro Sensor
+>> Release semaphore
+task_wait
+BME280 Temperature Sensor
+>> Waiting semaphore
+BME280 Temperature Sensor
+>> Got semaphore
+BME280 Temperature Sensor
+>> Release semaphore
+task_wait
+Gyro Sensor
+>> Waiting semaphore
+Gyro Sensor
+>> Got semaphore
+Gyro Sensor
+>> Release semaphore
+task_wait
+BME280 Temperature Sensor
+>> Waiting semaphore
+BME280 Temperature Sensor
+>> Got semaphore
+BME280 Temperature Sensor
+>> Release semaphore
+task_wait
+Gyro Sensor
+>> Waiting semaphore
+Gyro Sensor
+>> Got semaphore
+Gyro Sensor
+>> Release semaphore
+task_wait
+BME280 Temperature Sensor
+>> Waiting semaphore
+BME280 Temperature Sensor
+>> Got semaphore
+BME280 Temperature Sensor
+>> Release semaphore
+task_wait
+Gyro Sensor
+>> Waiting semaphore
+Gyro Sensor
+>> Got semaphore
+Gyro Sensor
+>> Release semaphore
+task_wait
 ```
