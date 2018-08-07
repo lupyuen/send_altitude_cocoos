@@ -61,13 +61,16 @@ static Evt_t nextChEvt;
 
 static uint8_t displayTaskId;
 
+#define sensorDataSize 3  //  Max number of floats to be returned as sensor data.
+
 typedef struct {
   Sensor *sensor;
-  uint8_t data[64];
-} TaskData_t;
+  float data[sensorDataSize];
+  uint8_t count;
+} TaskData;
 
-static TaskData_t tempTaskData;
-static TaskData_t gyroTaskData;
+static TaskData tempTaskData;
+static TaskData gyroTaskData;
 
 /********************************************/
 /*            System threads                */
@@ -105,11 +108,11 @@ static void sensorTask() {
   //  This task will be reused by all sensors: temperature, humidity, altitude.
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
-  TaskData_t *taskData = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
+  TaskData *taskData = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.
     //  We should not make this variable static, because the task data should be unique for each task.
-    taskData = (TaskData_t *) task_get_data();
+    taskData = (TaskData *) task_get_data();
 
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -118,26 +121,26 @@ static void sensorTask() {
     debug(taskData->sensor->info.name); debug(">> Got semaphore"); ////
 
     //  We have to fetch the data pointer again after the wait.
-    taskData = (TaskData_t *) task_get_data();
+    taskData = (TaskData *) task_get_data();
 
     //  Do we have new data?
     if (taskData->sensor->info.poll_sensor_func()) {
       //  If we have new data, copy sensor data to task data.
-      uint8_t nread = taskData->sensor->info.receive_sensor_data_func(taskData->data, 64);
-      taskData->data[nread] = '\0';
+      //  uint8_t sensorDataCount = 
+      taskData->sensor->info.receive_sensor_data_func(taskData->data, sensorDataSize);
 
       // And put it into a display message. Use the sensor id as message signal.
       // Note: When posting a message, its contents is copied into the message queue,
       // so it is safe to use a non-static message variable created on the stack here.
       // The display message does not contain the data buffer, only a pointer to it.
       // This is also ok, as it points to a static data buffer in the task data structure.
-      DisplayMsg_t msg;
+      DisplayMsg msg;
       msg.super.signal = taskData->sensor->info.id;
-      msg.data = (const char*)taskData->data;
+      msg.data = taskData->data;
+      msg.count = taskData->count;
       
       //  Note for Arduino: msg_post() must be called in a C source file, not C++.
       //  The macro expansion fails in C++ with a cross-initialisation error.
-      //// msg_post(displayTaskId, msg);
       msg_post(taskData->sensor->info.id, msg);  //  id is either TEMP_DATA or GYRO_DATA.
     }
 
@@ -154,18 +157,18 @@ static void sensorTask() {
 }
 
 static void displayTask() {
-  static DisplayMsg_t msg;
+  static DisplayMsg msg;
   task_open();
   msg.super.signal = DISPLAY_MSG;
   //// msg_post_every(displayTaskId, msg, 20);
 
   for (;;) {
     msg_receive(os_get_running_tid(), &msg);
-    Display_t *display = (Display_t*)task_get_data();
+    Display *display = (Display*) task_get_data();
     if (msg.super.signal == DISPLAY_MSG) {
-      display->update();
+      display->refresh_func();
     } else {
-      display->updateData(msg.super.signal, msg.data);
+      display->update_data_func(msg.super.signal, msg.data, msg.count);
     }
   }
   task_close();
@@ -230,7 +233,7 @@ int main(void) {
   sensor_setup();
 
   //  Start the display task that displays sensor readings
-  displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg_t) );
+  displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg) );
   
   //  Start the AVR timer to generate ticks for background processing.
   //// debug("arduino_start_timer"); ////

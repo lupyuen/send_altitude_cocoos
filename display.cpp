@@ -6,9 +6,10 @@
 #include <stdio.h>
 
 // Message buffer for display task
-DisplayMsg_t displayMessages[10];
+DisplayMsg displayMessages[10];
 
 static const char *tempdata;
+static float _temp = 0;
 static uint8_t _x = 0;
 static uint8_t _y = 0;
 static uint8_t _z = 0;
@@ -23,7 +24,7 @@ static void serial_printf(const char fmt[], long a1 = 0, long a2 = 0, long a3 = 
 #define printf serial_printf
 ////
 
-static void update() {
+static void refresh() {
   if (tempdata != NULL) {
     debug(tempdata); ////
     tempdata = NULL;
@@ -35,22 +36,24 @@ static void update() {
   }
 }
 
-static void updateData(uint8_t id, const char *data) {
+static void updateData(uint8_t id, const float *data, uint8_t count) {
   if (id == TEMP_DATA) {
-    tempdata = data;
+    if (count >= 1) _temp = data[0];
   } else if (id == GYRO_DATA) {
-    _x = data[0];
-    _y = data[1];
-    _z = data[2];
+    if (count >= 3) {
+      _x = data[0];
+      _y = data[1];
+      _z = data[2];
+    }
   }
 }
 
-static Display_t display = {
-  .update = &update,
-  .updateData = &updateData
+static Display display = {
+  .refresh_func = &refresh,
+  .update_data_func = &updateData
 };
 
-Display_t *display_get(void) {
+Display *display_get(void) {
   return &display;
 }
 

@@ -26,18 +26,19 @@ extern "C" {
  */
 typedef struct {
   Msg_t super;
-  const char *data;
-} DisplayMsg_t;
+  const float *data;
+  uint8_t count;
+} DisplayMsg;
 
 typedef struct {
-  void (*update)(void);
-  void (*updateData)(uint8_t id, const char *data);
-} Display_t;
+  void (*refresh_func)(void);
+  void (*update_data_func)(uint8_t id, const float *data, uint8_t count);
+} Display;
 
-Display_t *display_get(void);
+Display *display_get(void);
 void display_init(void);
 
-extern DisplayMsg_t displayMessages[10];
+extern DisplayMsg displayMessages[10];
 
 #ifdef __cplusplus ////
 }

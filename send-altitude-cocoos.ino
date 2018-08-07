@@ -43,6 +43,7 @@ BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
                   // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
 //////////////////////////////////////////////////////////////////
+/*
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
@@ -69,13 +70,16 @@ void setup()
        Serial.println("Found UNKNOWN sensor! Error!");
   }
 }
+*/
 
 //////////////////////////////////////////////////////////////////
+/*
 void loop()
 {
    printBME280Data(&Serial);
    delay(500);
 }
+*/
 
 //////////////////////////////////////////////////////////////////
 void printBME280Data

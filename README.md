@@ -24,7 +24,7 @@ For Windows: Open a Command Prompt with Admin permissions. Run the following:
 cd send-altitude-cocoos
 mkdir src
 cd src
-FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
+FOR %f IN (..\*.ino ..\*.cpp ..\*.c ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 ```
 
 For MacOS and Linux: Open a Command Prompt. Run the following:
@@ -35,6 +35,7 @@ mkdir src
 cd src
 ln -s ..\*.ino .
 ln -s ..\*.cpp .
+ln -s ..\*.c .
 ln -s ..\*.h .
 ```
 
