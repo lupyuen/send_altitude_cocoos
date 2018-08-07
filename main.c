@@ -92,19 +92,8 @@ static void arduino_start_timer(void) { ////
 
 ISR(TIMER1_OVF_vect) { ////
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform background processing.
-  //  static int ticks = 0;
   // debug("os_tick"); ////
   os_tick();  
-  /*
-  if (++ticks == 100) {
-      // service the sensor drivers each 100 ms
-      // This is not a polling of the sensors, it is just simulating
-      // something is stimulating the sensor.
-      process_temp_sensor();
-      gyroSensor_service();
-      ticks = 0;
-  }
-  */
 } ////
 
 /********************************************/
@@ -122,14 +111,14 @@ static void sensorTask() {
     //  We should not make this variable static, because the task data should be unique for each task.
     taskData = (TaskData_t *) task_get_data();
 
-    //  TODO: This code is executed by multiple sensors. We use a global semaphore to prevent 
+    //  This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
     debug(taskData->sensor->info.name); debug(">> Waiting semaphore"); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
     debug(taskData->sensor->info.name); debug(">> Got semaphore"); ////
 
     //  We have to fetch the data pointer again after the wait.
-    taskData = (TaskData_t*)task_get_data();
+    taskData = (TaskData_t *) task_get_data();
 
     //  Do we have new data?
     if (taskData->sensor->info.poll()) {
@@ -167,7 +156,7 @@ static void displayTask() {
   static DisplayMsg_t msg;
   task_open();
   msg.super.signal = DISPLAY_MSG;
-  msg_post_every(displayTaskId, msg, 20);
+  //// msg_post_every(displayTaskId, msg, 20);
 
   for (;;) {
     msg_receive( os_get_running_tid(), &msg );

@@ -80,13 +80,3 @@ static void prev_channel(void) {
 Sensor *get_temp_sensor(void) {
   return &sensor;
 }
-
-void process_temp_sensor(void) {
-  debug("process_temp_sensor"); ////
-  static uint8_t cnt = 0;
-  if (++cnt == 5) {
-    newdata = 1;
-    event_ISR_signal(*sensor.info.event);
-    cnt = 0;
-  }
-}

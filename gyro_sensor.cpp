@@ -90,13 +90,3 @@ static void next_channel(void) {
 Sensor *gyroSensor_get(void) {
   return &gyro_sensor;
 }
-
-void gyroSensor_service(void) {
-  debug("gyroSensor_service"); ////
-  static uint8_t cnt = 0;
-  if (++cnt == 5) {
-    newData = 1;
-    cnt = 0;
-  }
-
-}
