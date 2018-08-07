@@ -14,9 +14,6 @@ static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
-static uint8_t x = 0;
-static uint8_t y = 0;
-static uint8_t z = 0;
 
 static SensorInfo gyro_sensor_info = {
   "gyr",
@@ -60,8 +57,6 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
 }
 
 static void next_channel(void) {
-  channel = channel == 0 ? 1 : 0;
-  newData = 1;
 }
 
 Sensor *gyroSensor_get(void) {

@@ -161,18 +161,11 @@ static void sensorTask() {
 static void displayTask() {
   static DisplayMsg msg;
   task_open();
-  msg.super.signal = DISPLAY_MSG;
-  //// msg_post_every(displayTaskId, msg, 20);
-
   for (;;) {
     msg_receive(os_get_running_tid(), &msg);
     Display *display = (Display*) task_get_data();
-    if (msg.super.signal == DISPLAY_MSG) {
-      display->refresh_func();
-    } else {
-      display->update_data_func(msg.super.signal, msg.data, msg.count);
-      display->refresh_func();
-    }
+    display->update_data_func(msg.super.signal, msg.name, msg.data, msg.count);
+    display->refresh_func();
   }
   task_close();
 }

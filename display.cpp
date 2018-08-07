@@ -5,55 +5,67 @@
 #include <cocoos.h>
 #include <stdio.h>
 
-//  Message buffer for display task
-DisplayMsg displayMessages[10];
+//  Message buffer to be displayed at next refresh().
+//  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
+DisplayMsg displayMessages[sensorDisplaySize];
 
-//  Store updated sensor data locally before display.
-static float _temp = 0;
-static uint8_t _x = 0;
-static uint8_t _y = 0;
-static uint8_t _z = 0;
-
-static char buf[256]; //  Resulting string limited to 256 chars.
-
-static void serial_printf(const char fmt[], long a1 = 0, long a2 = 0, long a3 = 0, long a4 = 0, long a5 = 0) {
-  sprintf(buf, fmt, a1, a2, a3, a4, a5);
-  debug(buf);
-}
+static char buf[256];  //  Buffer to display 1 msg.
+static char sensorBuf[64];  //  Buffer for sensor data for 1 msg.
 
 static void refresh() {
   //  Refresh the display and show the sensor data.
-  //// debug("refresh"); ////
-  if (_temp != 0) {
-    serial_printf("Temp:\t\t%ld", _temp); ////
-    _temp = 0;
-  }
-  if (_x != 0 || _y != 0 || _z != 0) {
-    serial_printf("Gyro:\t\tx:%ld\t\ty:%ld\t\tz:%ld", _x, _y, _z); ////
-    _x = 0; _y = 0; _z = 0;    
+  debug("refresh"); ////
+  for (int i = 0; i < sensorDisplaySize; i++) {
+    //  Compose each sensor msg and display it.
+    DisplayMsg msg = displayMessages[i];    
+    if (msg.count == 0) { continue; }
+    sensorBuf[0] = 0;  //  Empty the buffer.
+    for (int s = 0; s < msg.count && s < sensorDataSize; s++) {
+      //  Merge the sensor values into a comma-separated string.
+      float d = msg.data[s];  //  Given d = 12.3
+      int16_t d1 = (int16_t) d;  //  Compute d1 = 12, d2 = 3.
+      int16_t d2 = (d - d1) * 10;
+      d2 = d2 % 10;
+      sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
+      if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. tmp: 12.3
+      strcat(sensorBuf, buf);      
+    }
+    sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);
+    displayMessages[i].count = 0;  //  Clear the sensor data.
+    debug(buf);
   }
 }
 
-static void updateData(uint8_t id, const float *data, uint8_t count) {
+static void updateData(uint8_t id, const char *name, const float *data, uint8_t count) {
   //  Save the updated sensor data for display later.
-  //// debug("updateData"); ////
-  switch(id) {
-    case TEMP_DATA:
-      if (count >= 1) {
-        _temp = data[0];
-      }
+  debug(name, " >> updateData"); ////
+  int index = -1;  //  Index to overwrite msg.
+  int firstEmptyIndex = -1;  //  Index of the first empty msg.
+  for (int i = 0; i < sensorDisplaySize; i++) {
+    DisplayMsg msg = displayMessages[i];
+    if (msg.count == 0 && firstEmptyIndex < 0) {
+      firstEmptyIndex = i;
+    } else if (msg.count > 0 && strncmp(name, msg.name, sensorNameSize) == 0) {
+      //  There is an existing msg with the same sensor name. Overwrite it.
+      index = i;
       break;
-
-    case GYRO_DATA:
-      if (count >= 3) {
-        _x = data[0];
-        _y = data[1];
-        _z = data[2];
-      }
-      break;
-
-    default:
-      debug("Bad ID");
+    }
+  }
+  //  Use the index found or the first empty index.
+  if (index < 0) { 
+    index = firstEmptyIndex; 
+    if (index < 0) {
+      debug("Out of rows");  //  Need to increase sensorDisplaySize.
+      return;
+    }
+  }
+  //  Overwrite the index.
+  DisplayMsg msg = displayMessages[index];
+  memset(msg.name, 0, sensorNameSize + 1);  //  Zero the name array.
+  strncpy(msg.name, name, sensorNameSize);  //  Set the sensor name e.g. tmp
+  msg.count = count;  //  Number of floats returned as sensor data.
+  for (int i = 0; i < msg.count && i < sensorDataSize; i++) {
+    msg.data[i] = data[i];
   }
 }
 
@@ -67,4 +79,8 @@ Display *display_get(void) {
 }
 
 void display_init(void) {
+  //  Empty the display by setting the msg.count to 0.
+  for (int i = 0; i < sensorDisplaySize; i++) {
+    displayMessages[i].count = 0;
+  }
 }

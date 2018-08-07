@@ -8,12 +8,6 @@
 extern "C" {
 #endif ////
 
-#define ESC 27
-#define CR  0xd
-#define CLEAR_LINE "[2K"
-#define MOVE_DOWN "[1B"
-#define MOVE_UP(n) "["#n"A"
-
 // Message signals
 #define TEMP_DATA 32
 #define GYRO_DATA 33
@@ -21,6 +15,7 @@ extern "C" {
 
 #define sensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define sensorNameSize 3  //  Max number of letters/digits in sensor name.
+#define sensorDisplaySize 3  //  Max number of sensors that can be displayed during a single refresh.
 
 /**
  * Message type for display task
@@ -36,13 +31,14 @@ typedef struct {
 
 typedef struct {
   void (*refresh_func)(void);
-  void (*update_data_func)(uint8_t id, const float *data, uint8_t count);
+  void (*update_data_func)(uint8_t id, const char *name, const float *data, uint8_t count);
 } Display;
 
 Display *display_get(void);
 void display_init(void);
 
-extern DisplayMsg displayMessages[10];
+//  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
+extern DisplayMsg displayMessages[sensorDisplaySize];
 
 #ifdef __cplusplus ////
 }
