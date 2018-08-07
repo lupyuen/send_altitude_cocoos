@@ -2,12 +2,14 @@
 #include <SPI.h>  //  Needed by BME280 library.
 #include "sensor.h"
 
-void debug(const char *s) {
+void debug(const char *s1, const char *s2 = 0) {
   //  Print a message to the Arduino serial console. This code is located here because 
   //  Serial API may only be used in a C++ module.  Declared in sensor.h
-  Serial.begin (9600);
-  Serial.println (s);
-  Serial.flush (); // let serial printing finish
+  Serial.begin(9600);
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
 }
 
 //  Note: setup() and loop() will not be called if main() is defined (in main.c)

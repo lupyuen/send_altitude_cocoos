@@ -99,7 +99,12 @@ typedef struct {
 extern Sem_t i2cSemaphore;
 
 //  Print a message to the Arduino serial console.
-void debug(const char *s);
+void debug(const char *s1, 
+  const char *s2
+  #ifdef __cplusplus
+    = 0
+  #endif
+  );
 
 #ifdef __cplusplus ////
 }

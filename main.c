@@ -116,9 +116,9 @@ static void sensorTask() {
 
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug(taskData->sensor->info.name); debug(">> Waiting semaphore"); ////
+    debug(taskData->sensor->info.name, " >> Waiting semaphore"); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
-    debug(taskData->sensor->info.name); debug(">> Got semaphore"); ////
+    debug(taskData->sensor->info.name, " >> Got semaphore"); ////
 
     //  We have to fetch the data pointer again after the wait.
     taskData = (TaskData *) task_get_data();
@@ -147,14 +147,14 @@ static void sensorTask() {
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
-    debug(taskData->sensor->info.name); debug(">> Release semaphore"); ////
+    debug(taskData->sensor->info.name, " >> Release semaphore"); ////
     sem_signal(i2cSemaphore);
 
     //  Wait a short while before polling the sensor again.
-    debug("task_wait"); ////
+    debug(taskData->sensor->info.name, " >> Wait poll interval"); ////
     task_wait(taskData->sensor->info.poll_interval);
   }
-  debug("task_close"); ////
+  debug("task_close", 0); ////
   task_close();  //  End of the task. Should never come here.
 }
 
@@ -184,16 +184,16 @@ static void displayTask() {
 static void arduino_setup(void) { ////
   //  Run initialisation for Arduino, since we are using main() instead of setup()+loop().
   init();  // initialize Arduino timers  
-  debug("------------------arduino_setup");
+  debug("------------------arduino_setup", 0);
 } ////
 
 static void system_setup(void) {
   arduino_setup(); ////
-  debug("display_init"); ////
+  debug("display_init", 0); ////
   display_init();
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-  debug("sem_counting_create"); ////
+  debug("Create semaphore", 0); ////
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   i2cSemaphore = sem_counting_create( maxCount, initValue );
@@ -201,7 +201,7 @@ static void system_setup(void) {
 
 static void sensor_setup(void) {
   // create events
-  debug("event_create"); ////
+  debug("event_create", 0); ////
   tempEvt   = event_create();
   prevChEvt = event_create();
   nextChEvt = event_create();
