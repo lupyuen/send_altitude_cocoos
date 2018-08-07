@@ -1,5 +1,6 @@
 #include "sensor.h"
 #include "temp_sensor.h"
+#include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
 
@@ -10,7 +11,7 @@ static void next_channel(void);
 static void prev_channel(void);
 
 static SensorInfo sensor_info = {
-  "BME280 Temperature Sensor",
+  "tmp",
   0,
   0,
   0,
@@ -42,22 +43,24 @@ static const char *channels[] = {
   "Sydney\t\t42 degC"
 };
 
-static uint8_t poll_sensor(void) {
-  //  Poll for new data. Return size of new data if new data available, 0 otherwise.
-  newData = 1;
-  return newData;  //  Data should always be available.
-}
-
-static uint8_t receive_sensor_data(float *data, uint8_t size) {
-  if (size >= 1) data[0] = 12.3;
-  newData = 0;
-  return 1;
-}
-
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   sensor.info.id = id;
   sensor.info.event = event;
   sensor.info.poll_interval = poll_interval;
+}
+
+static uint8_t poll_sensor(void) {
+  //  Poll for new data. Return size of new data if new data available, 0 otherwise.
+  //// debug("temp.poll_sensor"); ////
+  newData = 1;  //  New sensor data now available.
+  return newData;  //  Data should always be available.
+}
+
+static uint8_t receive_sensor_data(float *data, uint8_t size) {
+  //// debug("temp.receive_sensor_data"); ////
+  if (size >= 1) data[0] = 12.3 + rand() % 10;
+  newData = 0;
+  return 1;
 }
 
 static void next_channel(void) {

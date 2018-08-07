@@ -135,13 +135,15 @@ static void sensorTask() {
       // The display message does not contain the data buffer, only a pointer to it.
       // This is also ok, as it points to a static data buffer in the task data structure.
       DisplayMsg msg;
-      msg.super.signal = taskData->sensor->info.id;
-      msg.data = taskData->data;
+      msg.super.signal = taskData->sensor->info.id;  //  id is either TEMP_DATA or GYRO_DATA.
       msg.count = taskData->count;
+      for (int i = 0; i < msg.count; i++) {
+        msg.data[i] = taskData->data[i];
+      }
       
       //  Note for Arduino: msg_post() must be called in a C source file, not C++.
       //  The macro expansion fails in C++ with a cross-initialisation error.
-      msg_post(taskData->sensor->info.id, msg);  //  id is either TEMP_DATA or GYRO_DATA.
+      msg_post(displayTaskId, msg);
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
@@ -234,7 +236,8 @@ int main(void) {
   sensor_setup();
 
   //  Start the display task that displays sensor readings
-  displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg) );
+  displayTaskId = task_create(displayTask, display_get(), 50, 
+    (Msg_t *) displayMessages, 10, sizeof(DisplayMsg));
   
   //  Start the AVR timer to generate ticks for background processing.
   //// debug("arduino_start_timer"); ////
@@ -245,4 +248,3 @@ int main(void) {
   
 	return EXIT_SUCCESS;
 }
-
