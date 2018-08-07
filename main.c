@@ -126,18 +126,9 @@ static void sensorTask() {
 
     //  TODO: This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug("Before sem_wait"); ////
+    debug(taskData->sensor->info.name); debug(">> Waiting semaphore"); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
-    debug("After sem_wait"); ////
-
-    /*
-    //  The task either waits for the event to be signaled or a poll timeout.
-    if (taskData->sensor->info.event == 0) {
-      task_wait(taskData->sensor->info.period_ms);
-    } else {
-      event_wait(*(taskData->sensor->info.event));
-    }
-    */
+    debug(taskData->sensor->info.name); debug(">> Got semaphore"); ////
 
     //  We have to fetch the data pointer again after the wait.
     taskData = (TaskData_t*)task_get_data();
@@ -162,8 +153,8 @@ static void sensorTask() {
       msg_post(displayTaskId, msg);
     }
 
-    //  We are done with the I2C Bus.  Reset the semaphore so that another task can fetch the sensor data.
-    debug("sem_signal"); ////
+    //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
+    debug(taskData->sensor->info.name); debug(">> Release semaphore"); ////
     sem_signal(i2cSemaphore);
 
     //  Wait a short while before polling the sensor again.
@@ -172,28 +163,6 @@ static void sensorTask() {
   }
   debug("task_close"); ////
   task_close();  //  End of the task. Should never come here.
-}
-
-// Task that changes channel on its associated sensor
-static void controlTask() {
-  Evt_t event; ////
-  task_open();
-
-  for (;;) {
-    event_wait_multiple(0, prevChEvt, nextChEvt);
-    //// Evt_t event = event_last_signaled_get();
-    event = event_last_signaled_get(); ////
-
-    Sensor *sensor = ((TaskData_t*)task_get_data())->sensor;
-
-    if(event == nextChEvt) {
-      sensor->control.next_channel();
-    }
-    else if (event == prevChEvt) {
-      sensor->control.prev_channel();
-    }
-  }
-  task_close();
 }
 
 static void displayTask() {
@@ -239,11 +208,7 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-int main(void) {
-  system_setup();
-  //// debug("os_init"); ////
-  os_init();
-
+static void sensor_setup(void) {
   // create events
   debug("event_create"); ////
   tempEvt   = event_create();
@@ -254,13 +219,13 @@ int main(void) {
   //// debug("get_temp_sensor"); ////
   tempTaskData.sensor = get_temp_sensor();
   //// debug("tempSensor.init"); ////
-  const int pollIntervalMS = 500;  //  Poll the sensor every 500 milliseconds.
-  tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, pollIntervalMS);
+  const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
+  tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, pollIntervalMillisec);
 
   //// debug("gyroSensor_get"); ////
   gyroTaskData.sensor = gyroSensor_get();
   //// debug("gyroSensor.init"); ////
-  gyroTaskData.sensor->control.init(GYRO_DATA, 0, pollIntervalMS);
+  gyroTaskData.sensor->control.init(GYRO_DATA, 0, pollIntervalMillisec);
 
   // Two sensor tasks using same task procedure, but having unique task data.
   //// debug("task_create"); ////
@@ -268,12 +233,21 @@ int main(void) {
   task_create( sensorTask, &gyroTaskData, 20, 0, 0, 0 );
 
   // control task that changes temp sensor channel
-  task_create( controlTask, &tempTaskData, 30, 0, 0, 0 );
+  //// task_create( controlTask, &tempTaskData, 30, 0, 0, 0 );
+}
 
-  // display task that displays sensor readings
+int main(void) {
+  system_setup();
+  //// debug("os_init"); ////
+  os_init();
+
+  //  Setup the sensors for reading.
+  sensor_setup();
+
+  //  Start the display task that displays sensor readings
   displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg_t) );
   
-  //// Start the AVR timer to generate ticks for background processing.
+  //  Start the AVR timer to generate ticks for background processing.
   //// debug("arduino_start_timer"); ////
   arduino_start_timer(); ////
 
