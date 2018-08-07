@@ -19,7 +19,7 @@ static uint8_t y = 0;
 static uint8_t z = 0;
 
 ////
-static Sensor_Info_t gyro_sensor_info = {
+static SensorInfo gyro_sensor_info = {
   "Gyro Sensor",
   0,
   0,
@@ -28,19 +28,19 @@ static Sensor_Info_t gyro_sensor_info = {
   &data
 };
 
-static Sensor_Control_t gyro_sensor_control = {
+static SensorControl gyro_sensor_control = {
   &init_sensor,
   &next_channel,
   &next_channel
 };
 
-static Sensor_t gyro_sensor = {
+static Sensor gyro_sensor = {
   gyro_sensor_info,
   gyro_sensor_control
 };
 ////
 
-//// static Sensor_t gyro_sensor;
+//// static Sensor gyro_sensor;
 /* ////
 = {
     .info.name = "Gyro Sensor",
@@ -87,7 +87,7 @@ static void next_channel(void) {
   newData = 1;
 }
 
-Sensor_t *gyroSensor_get(void) {
+Sensor *gyroSensor_get(void) {
   return &gyro_sensor;
 }
 

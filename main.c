@@ -62,7 +62,7 @@ static Evt_t nextChEvt;
 static uint8_t displayTaskId;
 
 typedef struct {
-  Sensor_t *sensor;
+  Sensor *sensor;
   uint8_t data[64];
 } TaskData_t;
 
@@ -170,7 +170,7 @@ static void controlTask() {
     //// Evt_t event = event_last_signaled_get();
     event = event_last_signaled_get(); ////
 
-    Sensor_t *sensor = ((TaskData_t*)task_get_data())->sensor;
+    Sensor *sensor = ((TaskData_t*)task_get_data())->sensor;
 
     if(event == nextChEvt) {
       sensor->control.next_channel();

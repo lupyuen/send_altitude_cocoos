@@ -7,7 +7,7 @@
 extern "C" {
 #endif ////
 
-Sensor_t *gyroSensor_get(void);
+Sensor *gyroSensor_get(void);
 void gyroSensor_service(void);
 
 #ifdef __cplusplus ////

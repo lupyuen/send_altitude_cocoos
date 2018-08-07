@@ -9,7 +9,7 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 static void prev_channel(void);
 
-static Sensor_Info_t sensor_info = {
+static SensorInfo sensor_info = {
   "BME280 Temperature Sensor",
   0,
   0,
@@ -18,13 +18,13 @@ static Sensor_Info_t sensor_info = {
   &receive_sensor_data
 };
 
-static Sensor_Control_t sensor_control = {
+static SensorControl sensor_control = {
   &init_sensor,
   &next_channel,
   &prev_channel
 };
 
-static Sensor_t sensor = {
+static Sensor sensor = {
   sensor_info,
   sensor_control
 };
@@ -81,7 +81,7 @@ static void prev_channel(void) {
   event_ISR_signal(*sensor.info.event);
 }
 
-Sensor_t *get_temp_sensor(void) {
+Sensor *get_temp_sensor(void) {
   return &sensor;
 }
 

@@ -7,7 +7,7 @@
 extern "C" {
 #endif ////
 
-Sensor_t *get_temp_sensor(void);
+Sensor *get_temp_sensor(void);
 void process_temp_sensor(void);
 
 #ifdef __cplusplus ////

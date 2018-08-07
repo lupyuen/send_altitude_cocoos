@@ -15,7 +15,7 @@ extern "C" {
  * or return 1 in the poll() function.
  */
  
-//// For Arduino: Break into Sensor_Info_t, Control_Info_t structs for easier initialisation in C++
+//// For Arduino: Break into SensorInfo, Control_Info_t structs for easier initialisation in C++
 /**
 * Information interface
 */
@@ -59,7 +59,7 @@ typedef struct {
    */
   uint8_t (*data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
 
-} Sensor_Info_t;
+} SensorInfo;
 ////
 
 ////
@@ -86,20 +86,20 @@ typedef struct {
    * Set sensor to measure previous channel
    */
   void (*prev_channel)(void);
-} Sensor_Control_t;
+} SensorControl;
 ////
   
 typedef struct {
   /**
    * Information interface
    */
-  Sensor_Info_t info; ////
+  SensorInfo info; ////
 
   /**
    * Control interface
    */
-  Sensor_Control_t control; ////
-} Sensor_t;
+  SensorControl control; ////
+} Sensor;
 
 void debug(const char *s); ////
 
