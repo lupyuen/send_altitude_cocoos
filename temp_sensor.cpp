@@ -4,7 +4,7 @@
 #include <cocoos.h>
 
 static uint8_t poll_sensor(void);
-static uint8_t receive_sensor_data(uint8_t *buf, uint8_t size);
+static uint8_t receive_sensor_data(float *data, uint8_t size);
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 static void prev_channel(void);

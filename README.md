@@ -13,6 +13,31 @@ Libraries needed to compile with Arduino IDE or Arduino Web Editor:
 
 Tested with Arduino Uno.
 
+## Create Source File Links For PlatformIO
+
+To compile the project under PlatformIO in Visual Studio Code, the source files
+should be symbolically linked into the folder `src`
+
+For Windows: Open a Command Prompt with Admin permissions. Run the following:
+
+```cmd
+cd send-altitude-cocoos
+mkdir src
+cd src
+FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
+```
+
+For MacOS and Linux: Open a Command Prompt. Run the following:
+
+```bash
+cd send-altitude-cocoos
+mkdir src
+cd src
+ln -s ..\*.ino .
+ln -s ..\*.cpp .
+ln -s ..\*.h .
+```
+
 ## Sample Log
 
 ```

@@ -10,15 +10,14 @@ typedef unsigned long time_t; //// TODO: Fix this declaration
 #include <stdio.h>
 #include <stdlib.h>
 
-static uint8_t poll(void);
-static uint8_t data(uint8_t *buf, uint8_t size);
+static uint8_t poll_sensor(void);
+static uint8_t receive_sensor_data(float *data, uint8_t size);
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 static uint8_t x = 0;
 static uint8_t y = 0;
 static uint8_t z = 0;
 
-////
 static SensorInfo gyro_sensor_info = {
   "Gyro Sensor",
   0,
@@ -38,7 +37,6 @@ static Sensor gyro_sensor = {
   gyro_sensor_info,
   gyro_sensor_control
 };
-////
 
 static uint8_t channel = 0;
 static uint8_t newData = 0;
@@ -66,7 +64,6 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
 
 static void next_channel(void) {
   channel = channel == 0 ? 1 : 0;
-
   newData = 1;
 }
 
