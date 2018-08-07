@@ -20,6 +20,7 @@ extern "C" {
 #define DISPLAY_MSG 34
 
 #define sensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define sensorNameSize 3  //  Max number of letters/digits in sensor name.
 
 /**
  * Message type for display task
@@ -28,6 +29,7 @@ extern "C" {
  */
 typedef struct {
   Msg_t super;
+  char name[sensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
   float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
 } DisplayMsg;

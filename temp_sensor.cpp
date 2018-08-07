@@ -11,12 +11,9 @@ static void next_channel(void);
 static void prev_channel(void);
 
 static SensorInfo sensor_info = {
-  "tmp",
-  0,
-  0,
-  0,
-  &poll_sensor,
-  &receive_sensor_data
+  "tmp",  //  Name of sensor.
+  &poll_sensor,  //  Function for polling sensor data.
+  &receive_sensor_data,  //  Function for receiving sensor data.
 };
 
 static SensorControl sensor_control = {
@@ -30,18 +27,7 @@ static Sensor sensor = {
   sensor_control
 };
 
-static uint8_t channel = 0;
-static uint8_t newData = 0;
-
-static const char *channels[] = {
-  "New York\t25 degC",
-  "London\t\t18 degC",
-  "Berlin\t\t20 degC",
-  "Moscow\t\t12 degC",
-  "Beijing\t\t28 degC",
-  "Hong Kong\t34 degC",
-  "Sydney\t\t42 degC"
-};
+static uint8_t newData = 0;  //  Set to non-zero if there is new sensor data to be received.
 
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   sensor.info.id = id;
@@ -64,22 +50,9 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
 }
 
 static void next_channel(void) {
-  channel++;
-  uint8_t nChannels = sizeof(channels)/sizeof(channels[0]);
-  if (channel == nChannels) {
-    channel = 0;
-  }
-  event_ISR_signal(*sensor.info.event);
 }
 
 static void prev_channel(void) {
-  if (channel == 0) {
-    channel = sizeof(channels)/sizeof(channels[0]) -1;
-  }
-  else {
-    channel--;
-  }
-  event_ISR_signal(*sensor.info.event);
 }
 
 Sensor *get_temp_sensor(void) {

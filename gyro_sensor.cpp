@@ -20,9 +20,6 @@ static uint8_t z = 0;
 
 static SensorInfo gyro_sensor_info = {
   "gyr",
-  0,
-  0,
-  0,
   &poll_sensor,
   &receive_sensor_data
 };

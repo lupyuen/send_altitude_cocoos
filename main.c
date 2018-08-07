@@ -116,7 +116,7 @@ static void sensorTask() {
 
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug(taskData->sensor->info.name, " >> Waiting semaphore"); ////
+    debug(taskData->sensor->info.name, " >> Wait for semaphore"); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
     debug(taskData->sensor->info.name, " >> Got semaphore"); ////
 
@@ -126,18 +126,18 @@ static void sensorTask() {
     //  Do we have new data?
     if (taskData->sensor->info.poll_sensor_func() > 0) {
       //  If we have new data, copy sensor data to task data.
-      uint8_t sensorDataCount = taskData->sensor->info.receive_sensor_data_func(taskData->data, sensorDataSize);
+      uint8_t sensorDataCount = taskData->sensor->info.
+        receive_sensor_data_func(taskData->data, sensorDataSize);
       taskData->count = sensorDataCount;  //  Number of float values returned.
 
       // And put it into a display message. Use the sensor id as message signal.
-      // Note: When posting a message, its contents is copied into the message queue,
-      // so it is safe to use a non-static message variable created on the stack here.
-      // The display message does not contain the data buffer, only a pointer to it.
-      // This is also ok, as it points to a static data buffer in the task data structure.
+      // Note: When posting a message, its contents is copied into the message queue.
       DisplayMsg msg;
       msg.super.signal = taskData->sensor->info.id;  //  id is either TEMP_DATA or GYRO_DATA.
-      msg.count = taskData->count;
-      for (int i = 0; i < msg.count; i++) {
+      memset(msg.name, 0, sensorNameSize + 1);  //  Zero the name array.
+      strncpy(msg.name, taskData->sensor->info.name, sensorNameSize);  //  Set the sensor name e.g. tmp
+      msg.count = taskData->count;  //  Number of floats returned as sensor data.
+      for (int i = 0; i < msg.count && i < sensorDataSize; i++) {
         msg.data[i] = taskData->data[i];
       }
       
@@ -151,7 +151,7 @@ static void sensorTask() {
     sem_signal(i2cSemaphore);
 
     //  Wait a short while before polling the sensor again.
-    debug(taskData->sensor->info.name, " >> Wait poll interval"); ////
+    debug(taskData->sensor->info.name, " >> Wait interval"); ////
     task_wait(taskData->sensor->info.poll_interval);
   }
   debug("task_close", 0); ////

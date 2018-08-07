@@ -26,6 +26,21 @@ typedef struct {
   const char* name;
 
   /**
+   *  Poll for new data
+   *  @return 1 if new data available, 0 otherwise
+   */
+  uint8_t (*poll_sensor_func)(void);
+
+  /**
+   * Get sensor data
+   * @param buf, pointer to output buffer
+   * @param size, size of buffer
+   * @return number of bytes copied
+   */
+  // uint8_t (*receive_sensor_data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
+  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
+
+  /**
    *  Event signaled by driver when new data available
    *  Should be set by the application during startup using the init() function
    */
@@ -44,21 +59,6 @@ typedef struct {
    *  a suitable minimum period.
    */
   uint16_t poll_interval;
-
-  /**
-   *  Poll for new data
-   *  @return 1 if new data available, 0 otherwise
-   */
-  uint8_t (*poll_sensor_func)(void);
-
-  /**
-   * Get sensor data
-   * @param buf, pointer to output buffer
-   * @param size, size of buffer
-   * @return number of bytes copied
-   */
-  // uint8_t (*receive_sensor_data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
-  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
 
 } SensorInfo;
 ////
