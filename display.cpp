@@ -24,7 +24,7 @@ static void serial_printf(const char fmt[], long a1 = 0, long a2 = 0, long a3 = 
 ////
 
 static void update() {
-  if (tempdata) {
+  if (tempdata != NULL) {
     debug(tempdata); ////
     tempdata = NULL;
   }

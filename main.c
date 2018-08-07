@@ -137,7 +137,8 @@ static void sensorTask() {
       
       //  Note for Arduino: msg_post() must be called in a C source file, not C++.
       //  The macro expansion fails in C++ with a cross-initialisation error.
-      msg_post(displayTaskId, msg);
+      //// msg_post(displayTaskId, msg);
+      msg_post(taskData->sensor->info.id, msg);  //  id is either TEMP_DATA or GYRO_DATA.
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
@@ -159,16 +160,13 @@ static void displayTask() {
   //// msg_post_every(displayTaskId, msg, 20);
 
   for (;;) {
-    msg_receive( os_get_running_tid(), &msg );
+    msg_receive(os_get_running_tid(), &msg);
     Display_t *display = (Display_t*)task_get_data();
-
     if (msg.super.signal == DISPLAY_MSG) {
       display->update();
-    }
-    else {
+    } else {
       display->updateData(msg.super.signal, msg.data);
     }
-
   }
   task_close();
 }
