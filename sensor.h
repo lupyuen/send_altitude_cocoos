@@ -38,18 +38,18 @@ typedef struct {
   uint8_t id;
 
   /**
-   *  Minimum polling period, set to 0 if polling is not used
+   *  Minimum polling interval, set to 0 if polling is not used
    *  If we know that a sensor is updated every second, it would be
-   *  meaningless to poll it more often. Set the period_ms to indicate
+   *  meaningless to poll it more often. Set the value to indicate
    *  a suitable minimum period.
    */
-  uint16_t period_ms;
+  uint16_t poll_interval;
 
   /**
    *  Poll for new data
    *  @return 1 if new data available, 0 otherwise
    */
-  uint8_t (*poll)(void);
+  uint8_t (*poll_sensor_func)(void);
 
   /**
    * Get sensor data
@@ -57,7 +57,8 @@ typedef struct {
    * @param size, size of buffer
    * @return number of bytes copied
    */
-  uint8_t (*data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
+  // uint8_t (*receive_sensor_data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
+  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
 
 } SensorInfo;
 ////
@@ -73,32 +74,25 @@ typedef struct {
    *
    * @param id, an unique id for the sensor
    * @param event, event that should be signaled. Set to 0 if not used.
-   * @param period_ms, minimum polling time, set to 0 if not used.
+   * @param period_ms, minimum polling interval, set to 0 if not used.
    */
-  void (*init)(uint8_t id, Evt_t *event, uint16_t period_ms);
+  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval);
 
   /**
    * Set sensor to measure next channel
    */
-  void (*next_channel)(void);
+  void (*next_channel_func)(void);
 
   /**
    * Set sensor to measure previous channel
    */
-  void (*prev_channel)(void);
+  void (*prev_channel_func)(void);
 } SensorControl;
 ////
   
-typedef struct {
-  /**
-   * Information interface
-   */
-  SensorInfo info; ////
-
-  /**
-   * Control interface
-   */
-  SensorControl control; ////
+typedef struct {  
+  SensorInfo info; //  Information interface  
+  SensorControl control; //  Control interface
 } Sensor;
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.

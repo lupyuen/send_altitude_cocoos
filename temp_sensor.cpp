@@ -30,7 +30,7 @@ static Sensor sensor = {
 };
 
 static uint8_t channel = 0;
-static uint8_t newdata = 0;
+static uint8_t newData = 0;
 
 static const char *channels[] = {
   "New York\t25 degC",
@@ -43,23 +43,21 @@ static const char *channels[] = {
 };
 
 static uint8_t poll_sensor(void) {
-  //  Poll for new data. Return 1 if new data available, 0 otherwise.
-  return 1;  //  Data should always be available.
+  //  Poll for new data. Return size of new data if new data available, 0 otherwise.
+  newData = 1;
+  return newData;  //  Data should always be available.
 }
 
-static uint8_t receive_sensor_data(uint8_t *buf, uint8_t size) {
-  static const char *data = "123";
-  strcpy((char *) buf, data);
-  return strlen(data);
-
-  // strcpy((char *) buf, channels[channel]);
-  // return strlen(channels[channel]);
+static uint8_t receive_sensor_data(float *data, uint8_t size) {
+  data[0] = 12.3;
+  newData = 0;
+  return 1;
 }
 
-static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms) {
+static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   sensor.info.id = id;
   sensor.info.event = event;
-  sensor.info.period_ms = period_ms;
+  sensor.info.poll_interval = poll_interval;
 }
 
 static void next_channel(void) {

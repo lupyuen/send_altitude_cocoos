@@ -121,9 +121,9 @@ static void sensorTask() {
     taskData = (TaskData_t *) task_get_data();
 
     //  Do we have new data?
-    if (taskData->sensor->info.poll()) {
+    if (taskData->sensor->info.poll_sensor_func()) {
       //  If we have new data, copy sensor data to task data.
-      uint8_t nread = taskData->sensor->info.data(taskData->data, 64);
+      uint8_t nread = taskData->sensor->info.receive_sensor_data_func(taskData->data, 64);
       taskData->data[nread] = '\0';
 
       // And put it into a display message. Use the sensor id as message signal.
@@ -147,7 +147,7 @@ static void sensorTask() {
 
     //  Wait a short while before polling the sensor again.
     debug("task_wait"); ////
-    task_wait(taskData->sensor->info.period_ms);
+    task_wait(taskData->sensor->info.poll_interval);
   }
   debug("task_close"); ////
   task_close();  //  End of the task. Should never come here.
@@ -205,12 +205,12 @@ static void sensor_setup(void) {
   tempTaskData.sensor = get_temp_sensor();
   //// debug("tempSensor.init"); ////
   const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
-  tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, pollIntervalMillisec);
+  tempTaskData.sensor->control.init_sensor_func(TEMP_DATA, &tempEvt, pollIntervalMillisec);
 
   //// debug("gyroSensor_get"); ////
   gyroTaskData.sensor = gyroSensor_get();
   //// debug("gyroSensor.init"); ////
-  gyroTaskData.sensor->control.init(GYRO_DATA, 0, pollIntervalMillisec);
+  gyroTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
 
   // Two sensor tasks using same task procedure, but having unique task data.
   //// debug("task_create"); ////

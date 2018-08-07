@@ -24,8 +24,8 @@ static SensorInfo gyro_sensor_info = {
   0,
   0,
   0,
-  &poll,
-  &data
+  &poll_sensor,
+  &receive_sensor_data
 };
 
 static SensorControl gyro_sensor_control = {
@@ -40,44 +40,27 @@ static Sensor gyro_sensor = {
 };
 ////
 
-//// static Sensor gyro_sensor;
-/* ////
-= {
-    .info.name = "Gyro Sensor",
-    .info.event = 0,
-    .info.id = 0,
-    .info.period_ms = 0,
-    .info.poll = &poll,
-    .info.data = &data,
-    .control.init = &init_sensor,
-    .control.next_channel = &next_channel,
-    .control.prev_channel = &next_channel
-};
-*/ ////
-
 static uint8_t channel = 0;
 static uint8_t newData = 0;
 
-
-static uint8_t poll(void) {
+static uint8_t poll_sensor(void) {
+  newData = 3;
   return newData;
 }
 
-static uint8_t data(uint8_t *buf, uint8_t size) {
-
-  *buf++ = rand() % 50;
-  *buf++ = rand() % 50;
-  *buf++ = rand() % 50;
-
+static uint8_t receive_sensor_data(float *data, uint8_t size) {
+  if (size >= 1) data[0] = rand() % 50;
+  if (size >= 2) data[1] = rand() % 50;
+  if (size >= 3) data[2] = rand() % 50;
   newData = 0;
   return 3;
 }
 
-static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms) {
-  time_t t;
+static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
+  //// time_t t;
   gyro_sensor.info.id = id;
   gyro_sensor.info.event = event;
-  gyro_sensor.info.period_ms = period_ms;
+  gyro_sensor.info.poll_interval = poll_interval;
   //// srand((unsigned) time(&t));
 }
 
