@@ -1,8 +1,11 @@
-Sample multitasking sensor handling program from cocoOS, adapted for Arduino.
+Read BME280 temperature, humidity and altitude sensors.  Multitasking of the sensors
+is handled by cocoOS, the portable scheduling framework.
 
 Libraries needed to compile with Arduino IDE or Arduino Web Editor:
 
-- `Time`: Download from Arduino Library Manager
+- `Time`: Download `Time` from Arduino Library Manager
+
+- `BME280`: Download `BME280` from Arduino Library Manager
 
 - `cocoOS_5.0.1`: Download from http://www.cocoos.net/download.html, 
     unzip and move all files in `inc` and `src` to top level.
@@ -13,137 +16,5 @@ Tested with Arduino Uno.
 ## Sample Log
 
 ```
-------------------arduino_setup
-display_init
-os_init
-event_create
-get_temp_sensor
-tempSensor.init
-gyroSensor_get
-gyroSensor.init
-task_create
-arduino_start_timer
-os_start
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-process_temp_sensor
-gyroSensor_service
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-process_temp_sensor
-gyroSensor_service
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-process_temp_sensor
-gyroSensor_service
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-process_temp_sensor
-gyroSensor_service
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-
-Gyro:		x:1	y:2	z:3
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:1	y:2	z:3
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-process_temp_sensor
-gyroSensor_service
-New York	25 degC
-Gyro:		x:7	y:39	z:31
-New York	25 degC
-Gyro:		x:14	y:10	z:40
+TODO
 ```

@@ -47,10 +47,7 @@ static uint8_t poll_sensor(void) {
 }
 
 static uint8_t receive_sensor_data(uint8_t *buf, uint8_t size) {
-
-  //// strcpy(buf, channels[channel]);
-  strcpy((char *) buf, channels[channel]); ////
-
+  strcpy((char *) buf, channels[channel]);
   return strlen(channels[channel]);
 }
 
