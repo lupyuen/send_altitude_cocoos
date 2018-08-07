@@ -65,8 +65,8 @@ static uint8_t displayTaskId;
 
 typedef struct {
   Sensor *sensor;
-  float data[sensorDataSize];
-  uint8_t count;
+  float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  uint8_t count;  //  Number of float sensor data values returned by the sensor.
 } TaskData;
 
 static TaskData tempTaskData;
@@ -126,8 +126,8 @@ static void sensorTask() {
     //  Do we have new data?
     if (taskData->sensor->info.poll_sensor_func()) {
       //  If we have new data, copy sensor data to task data.
-      //  uint8_t sensorDataCount = 
-      taskData->sensor->info.receive_sensor_data_func(taskData->data, sensorDataSize);
+      uint8_t sensorDataCount = taskData->sensor->info.receive_sensor_data_func(taskData->data, sensorDataSize);
+      taskData->count = sensorDataCount;  //  Number of float values returned.
 
       // And put it into a display message. Use the sensor id as message signal.
       // Note: When posting a message, its contents is copied into the message queue,
@@ -169,6 +169,7 @@ static void displayTask() {
       display->refresh_func();
     } else {
       display->update_data_func(msg.super.signal, msg.data, msg.count);
+      display->refresh_func();
     }
   }
   task_close();

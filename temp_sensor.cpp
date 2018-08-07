@@ -49,7 +49,7 @@ static uint8_t poll_sensor(void) {
 }
 
 static uint8_t receive_sensor_data(float *data, uint8_t size) {
-  data[0] = 12.3;
+  if (size >= 1) data[0] = 12.3;
   newData = 0;
   return 1;
 }
