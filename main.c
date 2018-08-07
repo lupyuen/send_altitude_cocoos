@@ -87,18 +87,15 @@ static void arduino_start_timer(void) { ////
 	TIMSK1 |= _BV(TOIE1);
 
 	// Turn interrupts on.
-	sei();
-	
+	sei();	
 } ////
 
 ISR(TIMER1_OVF_vect) { ////
-  //  Handle the AVR Timer 1 interrupt ticks for cocoOS to perform
-  //  background processing.  Copied from ticker().
-  static int ticks = 0;
-
+  //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform background processing.
+  //  static int ticks = 0;
   // debug("os_tick"); ////
-  os_tick();
-  
+  os_tick();  
+  /*
   if (++ticks == 100) {
       // service the sensor drivers each 100 ms
       // This is not a polling of the sensors, it is just simulating
@@ -107,6 +104,7 @@ ISR(TIMER1_OVF_vect) { ////
       gyroSensor_service();
       ticks = 0;
   }
+  */
 } ////
 
 /********************************************/
