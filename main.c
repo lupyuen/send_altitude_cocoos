@@ -43,9 +43,6 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 
 #include <stdio.h>
 #include <stdlib.h>
-//// #include <pthread.h>
-//// #include <sys/types.h>
-//// #include <unistd.h>
 #include <time.h>
 #include <string.h>
 #include <cocoos.h>
@@ -54,6 +51,9 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 #include "temp_sensor.h"
 #include "gyro_sensor.h"
 #include "display.h"
+
+//  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+Sem_t i2cSemaphore;  //  Declared in sensor.h
 
 static Evt_t tempEvt;
 static Evt_t prevChEvt;
@@ -114,31 +114,37 @@ ISR(TIMER1_OVF_vect) { ////
 /********************************************/
 
 static void sensorTask() {
-  TaskData_t *taskData = NULL; ////
-  task_open();
+  //  Run background tasks to receive and process sensor data.
+  //  This task will be reused by all sensors: temperature, humidity, altitude.
+  //  Don't declare any static variables inside here because they will conflict
+  //  with other sensors.
+  TaskData_t *taskData = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
+  task_open();  //  Start of the task. Must be matched with task_close().
+  for (;;) {  //  Run the sensor processing code forever. So the task never ends.
+    //  We should not make this variable static, because the task data should be unique for each task.
+    taskData = (TaskData_t *) task_get_data();
 
-  for (;;) {
-     // We should not make this static, because it should be
-     // unique for each task.
-     //// TaskData_t *taskData = (TaskData_t*)task_get_data();
-     taskData = (TaskData_t*)task_get_data(); ////
+    //  TODO: This code is executed by multiple sensors. We use a global semaphore to prevent 
+    //  concurrent access to the single shared I2C Bus on Arduino Uno.
+    debug("Before sem_wait"); ////
+    sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
+    debug("After sem_wait"); ////
 
-    // The task either waits for the event to be signaled
-    // or a poll timeout.
+    /*
+    //  The task either waits for the event to be signaled or a poll timeout.
     if (taskData->sensor->info.event == 0) {
       task_wait(taskData->sensor->info.period_ms);
-    }
-    else {
+    } else {
       event_wait(*(taskData->sensor->info.event));
     }
+    */
 
-    // we have to fetch the data pointer again after the wait
+    //  We have to fetch the data pointer again after the wait.
     taskData = (TaskData_t*)task_get_data();
 
-    // Do we have new data?
+    //  Do we have new data?
     if (taskData->sensor->info.poll()) {
-
-      // Copy sensor data to task data
+      //  If we have new data, copy sensor data to task data.
       uint8_t nread = taskData->sensor->info.data(taskData->data, 64);
       taskData->data[nread] = '\0';
 
@@ -151,13 +157,21 @@ static void sensorTask() {
       msg.super.signal = taskData->sensor->info.id;
       msg.data = (const char*)taskData->data;
       
-      ////  Note for Arduino: msg_post() must be called in a C source file, not C++.
-      ////  The macro expansion fails in C++ with a cross-initialisation error.
+      //  Note for Arduino: msg_post() must be called in a C source file, not C++.
+      //  The macro expansion fails in C++ with a cross-initialisation error.
       msg_post(displayTaskId, msg);
     }
-  }
 
-  task_close();
+    //  We are done with the I2C Bus.  Reset the semaphore so that another task can fetch the sensor data.
+    debug("sem_signal"); ////
+    sem_signal(i2cSemaphore);
+
+    //  Wait a short while before polling the sensor again.
+    debug("task_wait"); ////
+    task_wait(taskData->sensor->info.period_ms);
+  }
+  debug("task_close"); ////
+  task_close();  //  End of the task. Should never come here.
 }
 
 // Task that changes channel on its associated sensor
@@ -179,10 +193,8 @@ static void controlTask() {
       sensor->control.prev_channel();
     }
   }
-
   task_close();
 }
-
 
 static void displayTask() {
   static DisplayMsg_t msg;
@@ -205,8 +217,6 @@ static void displayTask() {
   task_close();
 }
 
-
-
 /********************************************/
 /*            Setup and main                */
 /********************************************/
@@ -222,32 +232,16 @@ static void system_setup(void) {
   debug("display_init"); ////
   display_init();
 
-  /* ////  Threads not applicable for Arduino.
-  pthread_t tid;
-
-  // create a time tick thread which drives cocoOS by calling the os_tick() method.
-  int err = pthread_create(&tid, NULL, &ticker, NULL);
-
-  if (err != 0) {
-    printf("\ncan't create thread :[%s]", strerror(err));
-    abort();
-  }
-
-  // create thread that reads stdin and delivers characters as events to
-  // the control task
-  err = pthread_create(&tid, NULL, &input, NULL);
-
-  if (err != 0) {
-    printf("\ncan't create thread :[%s]", strerror(err));
-    abort();
-  }
-  */ ////
-
+  //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+  debug("sem_counting_create"); ////
+  const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
+  const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
+  i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
 int main(void) {
   system_setup();
-  debug("os_init"); ////
+  //// debug("os_init"); ////
   os_init();
 
   // create events
@@ -257,18 +251,19 @@ int main(void) {
   nextChEvt = event_create();
 
   // Initialize the sensors
-  debug("get_temp_sensor"); ////
+  //// debug("get_temp_sensor"); ////
   tempTaskData.sensor = get_temp_sensor();
-  debug("tempSensor.init"); ////
-  tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, 0);
+  //// debug("tempSensor.init"); ////
+  const int pollIntervalMS = 500;  //  Poll the sensor every 500 milliseconds.
+  tempTaskData.sensor->control.init(TEMP_DATA, &tempEvt, pollIntervalMS);
 
-  debug("gyroSensor_get"); ////
+  //// debug("gyroSensor_get"); ////
   gyroTaskData.sensor = gyroSensor_get();
-  debug("gyroSensor.init"); ////
-  gyroTaskData.sensor->control.init(GYRO_DATA, 0, 500);
+  //// debug("gyroSensor.init"); ////
+  gyroTaskData.sensor->control.init(GYRO_DATA, 0, pollIntervalMS);
 
   // Two sensor tasks using same task procedure, but having unique task data.
-  debug("task_create"); ////
+  //// debug("task_create"); ////
   task_create( sensorTask, &tempTaskData, 10, 0, 0, 0 );
   task_create( sensorTask, &gyroTaskData, 20, 0, 0, 0 );
 
@@ -279,10 +274,10 @@ int main(void) {
   displayTaskId = task_create( displayTask, display_get(), 50, (Msg_t*)displayMessages, 10, sizeof(DisplayMsg_t) );
   
   //// Start the AVR timer to generate ticks for background processing.
-  debug("arduino_start_timer"); ////
+  //// debug("arduino_start_timer"); ////
   arduino_start_timer(); ////
 
-  debug("os_start"); ////
+  //// debug("os_start"); ////
   os_start();  //  Never returns.
   
 	return EXIT_SUCCESS;

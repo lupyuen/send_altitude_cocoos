@@ -101,7 +101,11 @@ typedef struct {
   SensorControl control; ////
 } Sensor;
 
-void debug(const char *s); ////
+//  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+extern Sem_t i2cSemaphore;
+
+//  Print a message to the Arduino serial console.
+void debug(const char *s);
 
 #ifdef __cplusplus ////
 }

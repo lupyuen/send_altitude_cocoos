@@ -43,6 +43,7 @@ const char *channels[] = {
                         };
 
 static uint8_t poll_sensor(void) {
+  //  Poll for new data. Return 1 if new data available, 0 otherwise.
   return 1;
 }
 
@@ -60,11 +61,9 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms) {
 static void next_channel(void) {
   channel++;
   uint8_t nChannels = sizeof(channels)/sizeof(channels[0]);
-
   if (channel == nChannels) {
     channel = 0;
   }
-
   event_ISR_signal(*sensor.info.event);
 }
 

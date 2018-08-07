@@ -10,6 +10,8 @@ void debug(const char *s) {
   Serial.flush (); // let serial printing finish
 }
 
+//  Note: setup() and loop() will not be called if main() is defined (in main.c)
+
 /*
 Environment_Calculations.ino
 
