@@ -2,7 +2,7 @@
 #include "temp_sensor.h"
 #include <stdlib.h>
 #include <string.h>
-#include <cocoos.h>
+#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
 
 static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);

@@ -6,7 +6,7 @@ typedef unsigned long time_t; //// TODO: Fix this declaration
 #include "sensor.h"
 #include "gyro_sensor.h"
 #include <string.h>
-#include <cocoos.h>
+#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
 #include <stdio.h>
 #include <stdlib.h>
 

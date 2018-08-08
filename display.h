@@ -2,7 +2,7 @@
 #define DISPLAY_H_
 
 #include <stdint.h>
-#include "cocoos.h"
+#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
 
 #ifdef __cplusplus ////
 extern "C" {
