@@ -12,7 +12,7 @@ extern "C" {
 /**
 * Information interface
 */
-typedef struct {
+struct SensorInfo {
   /**
    *  Name of the sensor
    */
@@ -30,7 +30,6 @@ typedef struct {
    * @param size, size of buffer
    * @return number of bytes copied
    */
-  // uint8_t (*receive_sensor_data)(uint8_t *buf, uint8_t size);  // receive max size bytes into buf
   uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
 
   /**
@@ -53,12 +52,24 @@ typedef struct {
    */
   uint16_t poll_interval;
 
-} SensorInfo;
+  #ifdef __cplusplus
+  //  Constructor for C++
+  SensorInfo(
+    const char name0[],
+    uint8_t (*poll_sensor_func0)(void),
+    uint8_t (*receive_sensor_data_func0)(float *data, uint8_t size)
+  ) {
+    name = name0;
+    poll_sensor_func = poll_sensor_func0;
+    receive_sensor_data_func = receive_sensor_data_func0;
+  }
+  #endif // __cplusplus
+};
 
 /**
  * Control interface
  */
-typedef struct {
+struct SensorControl {
   /**
    * Initialize sensor
    * Should be called during main startup
@@ -78,7 +89,20 @@ typedef struct {
    * Set sensor to measure previous channel
    */
   void (*prev_channel_func)(void);
-} SensorControl;
+
+  #ifdef __cplusplus
+  //  Constructor for C++
+  SensorControl(
+    void (*init_sensor_func0)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+    void (*next_channel_func0)(void),
+    void (*prev_channel_func0)(void)
+  ) {
+    init_sensor_func = init_sensor_func0;
+    next_channel_func = next_channel_func0;
+    prev_channel_func = prev_channel_func0;
+  }
+  #endif // __cplusplus
+};
 
 /*
  * Sensor interface
@@ -87,18 +111,29 @@ typedef struct {
  * could signal the event in the tx interrupt when new data is available,
  * or return 1 in the poll() function.
  */
-typedef struct {  
+struct Sensor {  
   SensorInfo info; //  Information interface  
   SensorControl control; //  Control interface
-} Sensor;
+  #ifdef __cplusplus
+  //  Constructor for C++
+  Sensor(
+    const char name[],
+    void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+    uint8_t (*poll_sensor_func)(void),
+    uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
+    void (*next_channel_func)(void),
+    void (*prev_channel_func)(void)
+  );
+  #endif // __cplusplus
+};
 
 //  Task Data used by sensor tasks to remember the sensor context.
-typedef struct {
+struct SensorTaskData {
   Sensor *sensor;
   float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
   uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
-} SensorTaskData;
+};
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 extern Sem_t i2cSemaphore;

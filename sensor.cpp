@@ -6,6 +6,21 @@
 #include "sensor.h"
 #include "display.h"
 
+#ifdef __cplusplus
+//  Constructor for C++
+Sensor::Sensor(
+  const char name[],
+  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+  uint8_t (*poll_sensor_func)(void),
+  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
+  void (*next_channel_func)(void),
+  void (*prev_channel_func)(void)
+): 
+  info(name, poll_sensor_func, receive_sensor_data_func),
+  control(init_sensor_func, next_channel_func, prev_channel_func) {
+}
+#endif // __cplusplus
+
 void sensor_task(void) {
   //  Background task to receive and process sensor data.
   //  This task will be reused by all sensors: temperature, humidity, altitude.

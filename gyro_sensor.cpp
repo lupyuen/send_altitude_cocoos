@@ -16,22 +16,14 @@ static uint8_t receive_sensor_data(float *data, uint8_t size);
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 
-static SensorInfo gyro_sensor_info = {
-  "gyr",
-  &poll_sensor,
-  &receive_sensor_data
-};
-
-static SensorControl gyro_sensor_control = {
-  &init_sensor,
-  &next_channel,
-  &next_channel
-};
-
-static Sensor gyro_sensor = {
-  gyro_sensor_info,
-  gyro_sensor_control
-};
+static Sensor sensor(
+  "gyr",  //  Name of sensor. The Structured Message field will use this name.
+  &init_sensor,  //  Function for initialising the sensor.
+  &poll_sensor,  //  Function for polling sensor data.
+  &receive_sensor_data,  //  Function for receiving sensor data.
+  &next_channel,  //  Not used.
+  &next_channel  //  Not used.
+);
 
 static uint8_t channel = 0;
 static uint8_t newData = 0;
@@ -51,15 +43,15 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
 
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   //// time_t t;
-  gyro_sensor.info.id = id;
-  gyro_sensor.info.event = event;
-  gyro_sensor.info.poll_interval = poll_interval;
+  sensor.info.id = id;
+  sensor.info.event = event;
+  sensor.info.poll_interval = poll_interval;
   //// srand((unsigned) time(&t));
 }
 
-static void next_channel(void) {
+Sensor *get_gyro_sensor(void) {
+  return &sensor;
 }
 
-Sensor *get_gyro_sensor(void) {
-  return &gyro_sensor;
-}
+//  Not used.
+static void next_channel(void) {}

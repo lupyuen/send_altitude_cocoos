@@ -11,30 +11,27 @@
 #include "temp_sensor.h"
 
 //  These are the sensor functions that we will implement in this file.
+static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);
-static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
 static void next_channel(void);
 static void prev_channel(void);
 
-static SensorInfo sensor_info = {
+//  Construct a sensor object with the sensor functions.
+static Sensor sensor(
   "tmp",  //  Name of sensor. The Structured Message field will use this name.
+  &init_sensor,  //  Function for initialising the sensor.
   &poll_sensor,  //  Function for polling sensor data.
   &receive_sensor_data,  //  Function for receiving sensor data.
-};
-
-static SensorControl sensor_control = {
-  &init_sensor,
-  &next_channel,
-  &prev_channel
-};
-
-static Sensor sensor = { sensor_info, sensor_control };
+  &next_channel,  //  Not used.
+  &prev_channel  //  Not used.
+);
 
 static float sensorData = NAN;  //  Default the sensor data to "Not A Number".
 static uint8_t newData = 0;  //  Set to non-zero if there is new sensor data to be received.
 
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
+  //  Initialise the sensor.
   sensor.info.id = id;
   sensor.info.event = event;
   sensor.info.poll_interval = poll_interval;
@@ -70,11 +67,6 @@ Sensor *get_temp_sensor(void) {
   return &sensor;
 }
 
-static void next_channel(void) {
-  //  Not used.
-}
-
-static void prev_channel(void) {
-  //  Not used.
-}
-
+//  Not used.
+static void next_channel(void) {}
+static void prev_channel(void) {}
