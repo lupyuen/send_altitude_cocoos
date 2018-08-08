@@ -38,21 +38,21 @@ void display_task(void) {
 static void refresh(void) {
   //  Refresh the display and show the sensor data.
   for (int i = 0; i < sensorDisplaySize; i++) {
-    //  Compose each sensor msg and display it.
+    //  Compose each sensor msg and display it e.g. tmp: 12.3, 12.4
     DisplayMsg msg = displayMessages[i];    
     if (msg.count == 0) { continue; }
     sensorBuf[0] = 0;  //  Empty the buffer.
     for (int s = 0; s < msg.count && s < sensorDataSize; s++) {
-      //  Merge the sensor values into a comma-separated string.
+      //  Merge the sensor values into a comma-separated string e.g. 12.3, 12.4
       float d = msg.data[s];  //  Given d = 12.3
       int16_t d1 = (int16_t) d;  //  Compute d1 = 12, d2 = 3.
       int16_t d2 = (d - d1) * 10;
       d2 = d2 % 10;
       sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
-      if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. tmp: 12.3
+      if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. 12.3, 12.4
       strcat(sensorBuf, buf);      
     }
-    sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);
+    sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);  //  e.g. tmp: 12.3, 12.4
     displayMessages[i].count = 0;  //  Clear the sensor data.
     debug(buf);
   }
@@ -92,18 +92,20 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   }
 }
 
+void init_display(void) {
+  //  Empty the display by setting the msg.count to 0.
+  for (int i = 0; i < sensorDisplaySize; i++) {
+    displayMessages[i].count = 0;
+  }
+}
+
+//  Construct the global display object.
 static Display display = {
   .refresh_func = &refresh,
   .update_data_func = &updateData
 };
 
 Display *get_display(void) {
+  //  Return the global instance of the display object.
   return &display;
-}
-
-void init_display(void) {
-  //  Empty the display by setting the msg.count to 0.
-  for (int i = 0; i < sensorDisplaySize; i++) {
-    displayMessages[i].count = 0;
-  }
 }

@@ -56,7 +56,7 @@ static SensorTaskData tempSensorTaskData;
 static SensorTaskData gyroSensorTaskData;
 
 //  Pool of display messages that make up the display message queue.
-#define displayMsgPoolSize 5
+#define displayMsgPoolSize 6  //  Allow only 6 messages, which means fewer than 6 devices.
 static DisplayMsg displayMsgPool[displayMsgPoolSize];
 
 //////////////////////////////////////////////
@@ -72,18 +72,18 @@ void bme280_setup(void) {
   //  Set up the BME280 module for reading.
   Wire.begin();
   while(!bme.begin()) {
-    Serial.println("Could not find BME280 sensor!");
+    Serial.println(F("Could not find BME280 sensor!"));
     delay(1000);
   }
   switch(bme.chipModel()) {
      case BME280::ChipModel_BME280:
-       Serial.println("Found BME280 sensor! Success.");
+       Serial.println(F("Found BME280 sensor! Success."));
        break;
      case BME280::ChipModel_BMP280:
-       Serial.println("Found BMP280 sensor! No Humidity available.");
+       Serial.println(F("Found BMP280 sensor! No Humidity available."));
        break;
      default:
-       Serial.println("Found UNKNOWN sensor! Error!");
+       Serial.println(F("Found UNKNOWN sensor! Error!"));
   }
 }
 
