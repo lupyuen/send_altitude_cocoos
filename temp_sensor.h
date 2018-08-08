@@ -7,7 +7,11 @@
 extern "C" {
 #endif ////
 
-Sensor *get_temp_sensor(void);
+SensorContext *setup_temp_sensor(
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+);
 
 #ifdef __cplusplus ////
 }

@@ -46,15 +46,6 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 Sem_t i2cSemaphore;  //  Declared in sensor.h
 
-//  Events that will be raised by sensors.
-static Evt_t tempEvt;
-static Evt_t prevChEvt;
-static Evt_t nextChEvt;
-
-//  Task Data used by the sensor tasks to remember the sensor context.
-static SensorTaskData tempSensorTaskData;
-static SensorTaskData gyroSensorTaskData;
-
 //  Pool of display messages that make up the display message queue.
 #define displayMsgPoolSize 6  //  Allow only 6 messages, which means fewer than 6 devices.
 static DisplayMsg displayMsgPool[displayMsgPoolSize];
@@ -143,30 +134,17 @@ static void sensor_setup(uint8_t display_task_id) {
   //  Set up the BME280 API.
   bme280_setup();
 
-  //  Create the events that will be raised by the sensors.
-  //// debug("event_create", 0); ////
-  tempEvt   = event_create();
-  prevChEvt = event_create();
-  nextChEvt = event_create();
-
-  //  Initialize the sensor context for each sensor.
-  //// debug("get_temp_sensor"); ////
+  //  Set up the sensors and get the sensor contexts.
   const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
-  tempSensorTaskData.display_task_id = display_task_id;
-  tempSensorTaskData.sensor = get_temp_sensor();
-  tempSensorTaskData.sensor->control.init_sensor_func(TEMP_DATA, &tempEvt, pollIntervalMillisec);
+  SensorContext *tempContext = setup_temp_sensor(TEMP_DATA, pollIntervalMillisec, display_task_id);
+  SensorContext *gyroContext = setup_gyro_sensor(GYRO_DATA, pollIntervalMillisec, display_task_id);
 
-  //// debug("get_gyro_sensor"); ////
-  gyroSensorTaskData.display_task_id = display_task_id;
-  gyroSensorTaskData.sensor = get_gyro_sensor();
-  gyroSensorTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
-
-  //  For each sensor, create sensor tasks using same task function, but with unique task data.
+  //  For each sensor, create sensor tasks using same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
-  task_create(sensor_task, &tempSensorTaskData, 10,  //  Priority 10 = highest priority
+  task_create(sensor_task, tempContext, 10,  //  Priority 10 = highest priority
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, &gyroSensorTaskData, 20,  //  Priority 20
+  task_create(sensor_task, gyroContext, 20,  //  Priority 20
     0, 0, 0);  //  Will not receive message queue data.
 }
 

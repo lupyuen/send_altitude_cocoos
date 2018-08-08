@@ -128,15 +128,25 @@ struct Sensor {
 };
 
 //  Task Data used by sensor tasks to remember the sensor context.
-struct SensorTaskData {
-  Sensor *sensor;
+struct SensorContext {
+  Sensor *sensor;  //  The sensor for the context.
   float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
   uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
+  Evt_t event;  //  TODO: Event that will be triggered when sensor data is available.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 extern Sem_t i2cSemaphore;
+
+//  Setup the sensor context.
+void setup_sensor_context(
+  SensorContext *context,
+  Sensor *sensor,
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+  );
 
 //  Background task to receive and process sensor data.
 void sensor_task(void);
@@ -154,3 +164,4 @@ void debug(const char *s1,
 #endif ////
 
 #endif /* SENSOR_H_ */
+

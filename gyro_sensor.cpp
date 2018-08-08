@@ -25,7 +25,7 @@ static Sensor sensor(
   &next_channel  //  Not used.
 );
 
-static uint8_t channel = 0;
+static SensorContext sensorContext;  //  Remembers the sensor context.
 static uint8_t newData = 0;
 
 static uint8_t poll_sensor(void) {
@@ -49,8 +49,14 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   //// srand((unsigned) time(&t));
 }
 
-Sensor *get_gyro_sensor(void) {
-  return &sensor;
+SensorContext *setup_gyro_sensor(
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+  ) {
+  //  Set up and return the sensor context.
+  setup_sensor_context(&sensorContext, &sensor, id, pollInterval, displayTaskID);
+  return &sensorContext;
 }
 
 //  Not used.

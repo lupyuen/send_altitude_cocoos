@@ -7,7 +7,11 @@
 extern "C" {
 #endif ////
 
-Sensor *get_humid_sensor(void);
+SensorContext *setup_humid_sensor(
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+);
 
 #ifdef __cplusplus ////
 }

@@ -27,6 +27,7 @@ static Sensor sensor(
   &prev_channel  //  Not used.
 );
 
+static SensorContext sensorContext;  //  Remembers the sensor context.
 static float sensorData = NAN;  //  Default the sensor data to "Not A Number".
 static uint8_t newData = 0;  //  Set to non-zero if there is new sensor data to be received.
 
@@ -62,9 +63,14 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
   return 1;  //  Only 1 float returned.
 }
 
-Sensor *get_humid_sensor(void) {
-  //  Return the global instance of the sensor.
-  return &sensor;
+SensorContext *setup_humid_sensor(
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+  ) {
+  //  Set up and return the sensor context.
+  setup_sensor_context(&sensorContext, &sensor, id, pollInterval, displayTaskID);
+  return &sensorContext;
 }
 
 //  Not used.

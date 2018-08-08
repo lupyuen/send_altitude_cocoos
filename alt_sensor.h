@@ -7,7 +7,11 @@
 extern "C" {
 #endif ////
 
-Sensor *get_alt_sensor(void);
+SensorContext *setup_alt_sensor(
+  uint8_t id,
+  uint16_t pollInterval,
+  uint8_t displayTaskID
+);
 
 #ifdef __cplusplus ////
 }
