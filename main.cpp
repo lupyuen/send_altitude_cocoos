@@ -1,8 +1,8 @@
-
 /**
- * Example application demonstrating task procedure sharing, message passing and more.
+ * Example application demonstrating handling of multiple IoT sensors.
+ * Derived from https://github.com/lupyuen/cocoOSExample-arduino
  *
- * The application consists of four tasks:
+ * The application consists of 3 tasks:
  *
  *  - temp sensor task: waits for an event to signaled from the temp sensor driver. New temp
  *    data is fetched from the sensor and sent in a message to the display task.
@@ -10,25 +10,12 @@
  *  - gyro sensor task: waits for a timeout and then polls the sensor for new data. New data is
  *    fetched from the sensor and sent in a message to the display task.
  *
- *  - control task: waits for up/down arrow events to be signaled and then changes channel of
- *    the temp sensor.
- *
  *  - display task: writes sensor values to the terminal
- *
- *  Two linux threads are created at startup:
- *   - One that simulates a timer tick and calls os_tick(). It also periodically services the
- *     sensors. This makes the sensors signal it has new data by signaling an event or setting
- *     a polled flag.
- *
- *   - One thread that reads characters from stdin and signals cocoOS events when up/down arrow are pressed.
  *
  *  Main flow of execution:
  *  When the sensors are serviced they eventually signals new data available by signaling an event (temp
  *  sensor) or sets a polled flag (gyro sensor). The sensor tasks waiting for event/timeout, checks the
  *  sensor for new data and posts a message with the new data to the display task.
- *
- *  Simultaneously, the thread reading characters from stdin, signals events when up/down
- *  arrow keys are pressed on the keyboard. The control task then changes channel on the temp sensor.
  *
  *  Task procedure sharing
  *  The two sensor tasks use the same task procedure. All work and data handling is done through the task
@@ -53,6 +40,9 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 #include "gyro_sensor.h"
 #include "display.h"
 
+//  Serial Monitor will run at this bitrate.
+#define SERIAL_BAUD 9600
+
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 Sem_t i2cSemaphore;  //  Declared in sensor.h
 
@@ -68,6 +58,34 @@ static SensorTaskData gyroSensorTaskData;
 //  Pool of display messages that make up the display message queue.
 #define displayMsgPoolSize 5
 static DisplayMsg displayMsgPool[displayMsgPoolSize];
+
+//////////////////////////////////////////////
+//  TODO: Move to bme280.cpp
+#include <BME280I2C.h>
+#include <Wire.h>
+
+//  The global instance of the BME API: https://github.com/finitespace/BME280
+BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
+                  // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
+
+void bme280_setup(void) {
+  //  Set up the BME280 module for reading.
+  Wire.begin();
+  while(!bme.begin()) {
+    Serial.println("Could not find BME280 sensor!");
+    delay(1000);
+  }
+  switch(bme.chipModel()) {
+     case BME280::ChipModel_BME280:
+       Serial.println("Found BME280 sensor! Success.");
+       break;
+     case BME280::ChipModel_BMP280:
+       Serial.println("Found BMP280 sensor! No Humidity available.");
+       break;
+     default:
+       Serial.println("Found UNKNOWN sensor! Error!");
+  }
+}
 
 /********************************************/
 /*            System threads                */
@@ -122,6 +140,9 @@ static void system_setup(void) {
 static void sensor_setup(uint8_t display_task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
 
+  //  Set up the BME280 API.
+  bme280_setup();
+
   //  Create the events that will be raised by the sensors.
   //// debug("event_create", 0); ////
   tempEvt   = event_create();
@@ -150,6 +171,9 @@ static void sensor_setup(uint8_t display_task_id) {
 }
 
 int main(void) {
+  //  This is the entry point for the application. We create the tasks and start the task scheduler.
+  //  Note: setup() and loop() will not be called since main() is defined.
+
   //  Init the system and OS for cocoOS.
   system_setup();
   os_init();
@@ -163,7 +187,7 @@ int main(void) {
     displayMsgPoolSize,  //  Size of queue pool.
     sizeof(DisplayMsg));  //  Size of queue message.
   
-  //  Setup the sensors for reading.
+  //  Start the sensor tasks for each sensor to read and process sensor data.
   sensor_setup(display_task_id);
 
   //  Start the AVR timer to generate ticks for background processing.
@@ -180,7 +204,9 @@ int main(void) {
 void debug(const char *s1, const char *s2 = 0) {
   //  Print a message to the Arduino serial console. This code is located here because 
   //  Serial API may only be used in a C++ module.  Declared in sensor.h
-  Serial.begin(9600);
+  Serial.begin(SERIAL_BAUD);
+  while(!Serial) {}  //  Wait for Serial to be ready.
+
   Serial.print(s1);
   if (s2) Serial.print(s2);
   Serial.println("");
