@@ -47,62 +47,27 @@ init_display
 Create semaphore
 tmp >> Wait for semaphore
 tmp >> Got semaphore
-tmp >> Send message
+tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
 gyr >> Wait for semaphore
 gyr >> Got semaphore
-gyr >> Send message
+gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
 tmp:            19.2
 gyr:            39.0,           31.0,           14.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
-tmp >> Send message
+tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
 tmp:            12.3
 gyr >> Wait for semaphore
 gyr >> Got semaphore
-gyr >> Send message
+gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
 gyr:            40.0,           0.0,            8.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> Send message
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            21.2
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> Send message
-gyr >> Release semaphore
-gyr >> Wait interval
-gyr:            1.0,            46.0,           45.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> Send message
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            20.2
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> Send message
-gyr >> Release semaphore
-gyr >> Wait interval
-gyr:            22.0,           33.0,           1.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> Send message
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            17.2
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> Send message
-gyr >> Release semaphore
-gyr >> Wait interval
-gyr:            7.0,            4.0,            22.0
+
 ```

@@ -109,7 +109,7 @@ static void arduino_setup(void) { ////
 static void system_setup(void) {
   //  Run system initialisation.
   arduino_setup(); ////
-  debug("init_display", 0); ////
+  //// debug("init_display", 0); ////
   init_display();
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -120,13 +120,15 @@ static void system_setup(void) {
 }
 
 static void sensor_setup(uint8_t display_task_id) {
+  //  Start the sensor tasks for each sensor to read and process sensor data.
+
   //  Create the events that will be raised by the sensors.
   //// debug("event_create", 0); ////
   tempEvt   = event_create();
   prevChEvt = event_create();
   nextChEvt = event_create();
 
-  //  Initialize the sensor context.
+  //  Initialize the sensor context for each sensor.
   //// debug("get_temp_sensor"); ////
   const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
   tempSensorTaskData.display_task_id = display_task_id;
@@ -173,4 +175,14 @@ int main(void) {
   os_start();  //  Never returns.
   
 	return EXIT_SUCCESS;
+}
+
+void debug(const char *s1, const char *s2 = 0) {
+  //  Print a message to the Arduino serial console. This code is located here because 
+  //  Serial API may only be used in a C++ module.  Declared in sensor.h
+  Serial.begin(9600);
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
 }
