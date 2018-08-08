@@ -1,4 +1,4 @@
-//  Implements the temperature sensor for BME280. Caller must use a semaphore to
+//  Implements the altitude sensor for BME280. Caller must use a semaphore to
 //  prevent concurrent access to BME280 module, which runs on a single I2C Bus.
 #include <Arduino.h>
 #include <EnvironmentCalculations.h>
@@ -19,7 +19,7 @@ static void prev_channel(void);
 
 //  Construct a sensor object with the sensor functions.
 static Sensor sensor(
-  "tmp",  //  Name of sensor. The Structured Message field will use this name.
+  "alt",  //  Name of sensor. The Structured Message field will use this name.
   &init_sensor,  //  Function for initialising the sensor.
   &poll_sensor,  //  Function for polling sensor data.
   &receive_sensor_data,  //  Function for receiving sensor data.
@@ -62,7 +62,7 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
   return 1;  //  Only 1 float returned.
 }
 
-Sensor *get_temp_sensor(void) {
+Sensor *get_alt_sensor(void) {
   //  Return the global instance of the sensor.
   return &sensor;
 }

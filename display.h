@@ -15,7 +15,7 @@ extern "C" {
 
 #define sensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define sensorNameSize 3  //  Max number of letters/digits in sensor name.
-#define sensorDisplaySize 3  //  Max number of sensors that can be displayed during a single refresh.
+#define sensorDisplaySize 4  //  Max number of sensors that can be displayed during a single refresh.
 
 /**
  * Message type for display task
