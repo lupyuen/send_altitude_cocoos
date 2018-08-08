@@ -36,11 +36,13 @@
  *  and an array holding sensor data.
  *
  */
+//  Arduino declarations
 #include <Arduino.h> ////
 #include <Time.h> ////
 #include <TimeLib.h> ////
 typedef unsigned long time_t; ////  TODO: Fix the declaration
 
+//  Other declarations
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -62,6 +64,10 @@ static Evt_t nextChEvt;
 //  Task Data used by the sensor tasks to remember the sensor context.
 static SensorTaskData tempSensorTaskData;
 static SensorTaskData gyroSensorTaskData;
+
+//  Pool of display messages that make up the display message queue.
+#define displayMsgPoolSize 5
+static DisplayMsg displayMsgPool[displayMsgPoolSize];
 
 /********************************************/
 /*            System threads                */
@@ -96,11 +102,12 @@ ISR(TIMER1_OVF_vect) { ////
 
 static void arduino_setup(void) { ////
   //  Run initialisation for Arduino, since we are using main() instead of setup()+loop().
-  init();  // initialize Arduino timers  
+  init();  // Initialize Arduino timers,
   debug("----arduino_setup", 0);
 } ////
 
 static void system_setup(void) {
+  //  Run system initialisation.
   arduino_setup(); ////
   debug("init_display", 0); ////
   init_display();
@@ -119,7 +126,7 @@ static void sensor_setup(uint8_t display_task_id) {
   prevChEvt = event_create();
   nextChEvt = event_create();
 
-  //  Initialize the sensors.
+  //  Initialize the sensor context.
   //// debug("get_temp_sensor"); ////
   const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
   tempSensorTaskData.display_task_id = display_task_id;
@@ -131,7 +138,7 @@ static void sensor_setup(uint8_t display_task_id) {
   gyroSensorTaskData.sensor = get_gyro_sensor();
   gyroSensorTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
 
-  //  Create 2 sensor tasks using same task function, but with unique task data.
+  //  For each sensor, create sensor tasks using same task function, but with unique task data.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
   task_create(sensor_task, &tempSensorTaskData, 10,  //  Priority 10 = highest priority
@@ -139,10 +146,6 @@ static void sensor_setup(uint8_t display_task_id) {
   task_create(sensor_task, &gyroSensorTaskData, 20,  //  Priority 20
     0, 0, 0);  //  Will not receive message queue data.
 }
-
-//  Pool of display messages that make up the display message queue.
-#define displayMsgPoolSize 5
-static DisplayMsg displayMsgPool[displayMsgPoolSize];
 
 int main(void) {
   //  Init the system and OS for cocoOS.
