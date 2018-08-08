@@ -1,3 +1,4 @@
+//  Implements a simulated Gyroscope Sensor with 3 sensor values (x, y, z).
 #include <Arduino.h> ////
 #include <Time.h> ////
 #include <TimeLib.h> ////
