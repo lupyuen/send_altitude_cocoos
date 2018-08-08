@@ -3,19 +3,12 @@
 
 #include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
 
+#define sensorDataSize 3  //  Max number of floats that can be returned by a sensor as sensor data.
+
 #ifdef __cplusplus ////
 extern "C" {
 #endif ////
 
-/*
- * Sensor interface
- * Used by tasks to access a sensor
- * An example could be an i2c connected sensor. The sensor driver
- * could signal the event in the tx interrupt when new data is available,
- * or return 1 in the poll() function.
- */
- 
-//// For Arduino: Break into SensorInfo, Control_Info_t structs for easier initialisation in C++
 /**
 * Information interface
 */
@@ -61,9 +54,7 @@ typedef struct {
   uint16_t poll_interval;
 
 } SensorInfo;
-////
 
-////
 /**
  * Control interface
  */
@@ -88,15 +79,32 @@ typedef struct {
    */
   void (*prev_channel_func)(void);
 } SensorControl;
-////
-  
+
+/*
+ * Sensor interface
+ * Used by tasks to access a sensor
+ * An example could be an i2c connected sensor. The sensor driver
+ * could signal the event in the tx interrupt when new data is available,
+ * or return 1 in the poll() function.
+ */
 typedef struct {  
   SensorInfo info; //  Information interface  
   SensorControl control; //  Control interface
 } Sensor;
 
+//  Task Data used by sensor tasks to remember the sensor context.
+typedef struct {
+  Sensor *sensor;
+  float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  uint8_t count;  //  Number of float sensor data values returned by the sensor.
+  uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
+} SensorTaskData;
+
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 extern Sem_t i2cSemaphore;
+
+//  Background task to receive and process sensor data.
+void sensor_task(void);
 
 //  Print a message to the Arduino serial console.
 void debug(const char *s1, 

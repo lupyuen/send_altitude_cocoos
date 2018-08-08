@@ -1,3 +1,4 @@
+//  Implements the Display Task that receives display messages and displays them.
 #include <Arduino.h>
 #include <string.h>
 #include <stdio.h>
@@ -16,13 +17,10 @@ void display_task(void) {
   //  Background task that receives display messages and displays them.
   static DisplayMsg msg;
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
-  task_open();
-  for (;;) {
+  task_open();  //  Start of the task. Must be matched with task_close().
+  for (;;) { //  Run the display processing code forever. So the task never ends.
     //  Wait for an incoming display message containing sensor data.
     //// debug("msg_receive", 0); ////
-
-    //  Note for Arduino: msg_receive() must be called in a C source file, not C++.
-    //  The macro expansion fails in C++ with a cross-initialisation error.
     msg_receive(os_get_running_tid(), &msg);
     Display *display = (Display *) task_get_data();
 
@@ -34,7 +32,7 @@ void display_task(void) {
     //// debug(msg.name, " >> refresh"); ////
     display->refresh_func();
   }
-  task_close();
+  task_close();  //  End of the task. Should never come here.
 }
 
 static void refresh(void) {

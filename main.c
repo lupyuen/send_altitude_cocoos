@@ -46,7 +46,6 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 #include <time.h>
 #include <string.h>
 #include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
-
 #include "sensor.h"
 #include "temp_sensor.h"
 #include "gyro_sensor.h"
@@ -55,22 +54,14 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 Sem_t i2cSemaphore;  //  Declared in sensor.h
 
+//  Events that will be raised by sensors.
 static Evt_t tempEvt;
 static Evt_t prevChEvt;
 static Evt_t nextChEvt;
 
-static uint8_t display_taskId;
-
-#define sensorDataSize 3  //  Max number of floats to be returned as sensor data.
-
-typedef struct {
-  Sensor *sensor;
-  float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
-  uint8_t count;  //  Number of float sensor data values returned by the sensor.
-} TaskData;
-
-static TaskData tempTaskData;
-static TaskData gyroTaskData;
+//  Task Data used by the sensor tasks to remember the sensor context.
+static SensorTaskData tempSensorTaskData;
+static SensorTaskData gyroSensorTaskData;
 
 /********************************************/
 /*            System threads                */
@@ -100,66 +91,6 @@ ISR(TIMER1_OVF_vect) { ////
 } ////
 
 /********************************************/
-/*            Application tasks             */
-/********************************************/
-
-static void sensorTask() {
-  //  Run background tasks to receive and process sensor data.
-  //  This task will be reused by all sensors: temperature, humidity, altitude.
-  //  Don't declare any static variables inside here because they will conflict
-  //  with other sensors.
-  TaskData *taskData = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  task_open();  //  Start of the task. Must be matched with task_close().
-  for (;;) {  //  Run the sensor processing code forever. So the task never ends.
-    //  We should not make this variable static, because the task data should be unique for each task.
-    taskData = (TaskData *) task_get_data();
-
-    //  This code is executed by multiple sensors. We use a global semaphore to prevent 
-    //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug(taskData->sensor->info.name, " >> Wait for semaphore"); ////
-    sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
-    debug(taskData->sensor->info.name, " >> Got semaphore"); ////
-
-    //  We have to fetch the data pointer again after the wait.
-    taskData = (TaskData *) task_get_data();
-
-    //  Do we have new data?
-    if (taskData->sensor->info.poll_sensor_func() > 0) {
-      //  If we have new data, copy sensor data to task data.
-      uint8_t sensorDataCount = taskData->sensor->info.
-        receive_sensor_data_func(taskData->data, sensorDataSize);
-      taskData->count = sensorDataCount;  //  Number of float values returned.
-
-      // And put it into a display message. Use the sensor id as message signal.
-      // Note: When posting a message, its contents is copied into the message queue.
-      DisplayMsg msg;
-      msg.super.signal = taskData->sensor->info.id;  //  id is either TEMP_DATA or GYRO_DATA.
-      memset(msg.name, 0, sensorNameSize + 1);  //  Zero the name array.
-      strncpy(msg.name, taskData->sensor->info.name, sensorNameSize);  //  Set the sensor name e.g. tmp
-      msg.count = taskData->count;  //  Number of floats returned as sensor data.
-      for (int i = 0; i < msg.count && i < sensorDataSize; i++) {
-        msg.data[i] = taskData->data[i];
-      }
-      
-      //  Note for Arduino: msg_post() must be called in a C source file, not C++.
-      //  The macro expansion fails in C++ with a cross-initialisation error.
-      debug(msg.name, " >> Send msg"); ////
-      msg_post(display_taskId, msg);
-    }
-
-    //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
-    debug(taskData->sensor->info.name, " >> Release semaphore"); ////
-    sem_signal(i2cSemaphore);
-
-    //  Wait a short while before polling the sensor again.
-    debug(taskData->sensor->info.name, " >> Wait interval"); ////
-    task_wait(taskData->sensor->info.poll_interval);
-  }
-  debug("task_close", 0); ////
-  task_close();  //  End of the task. Should never come here.
-}
-
-/********************************************/
 /*            Setup and main                */
 /********************************************/
 
@@ -181,8 +112,8 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-static void sensor_setup(void) {
-  // create events
+static void sensor_setup(uint8_t display_task_id) {
+  //  Create the events that will be raised by the sensors.
   //// debug("event_create", 0); ////
   tempEvt   = event_create();
   prevChEvt = event_create();
@@ -190,22 +121,22 @@ static void sensor_setup(void) {
 
   //  Initialize the sensors.
   //// debug("get_temp_sensor"); ////
-  tempTaskData.sensor = get_temp_sensor();
-  //// debug("tempSensor.init"); ////
   const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
-  tempTaskData.sensor->control.init_sensor_func(TEMP_DATA, &tempEvt, pollIntervalMillisec);
+  tempSensorTaskData.display_task_id = display_task_id;
+  tempSensorTaskData.sensor = get_temp_sensor();
+  tempSensorTaskData.sensor->control.init_sensor_func(TEMP_DATA, &tempEvt, pollIntervalMillisec);
 
-  //// debug("gyroSensor_get"); ////
-  gyroTaskData.sensor = gyroSensor_get();
-  //// debug("gyroSensor.init"); ////
-  gyroTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
+  //// debug("get_gyro_sensor"); ////
+  gyroSensorTaskData.display_task_id = display_task_id;
+  gyroSensorTaskData.sensor = get_gyro_sensor();
+  gyroSensorTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
 
   //  Create 2 sensor tasks using same task function, but with unique task data.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
-  task_create(sensorTask, &tempTaskData, 10,  //  Priority 10 = highest priority
+  task_create(sensor_task, &tempSensorTaskData, 10,  //  Priority 10 = highest priority
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensorTask, &gyroTaskData, 20,  //  Priority 20
+  task_create(sensor_task, &gyroSensorTaskData, 20,  //  Priority 20
     0, 0, 0);  //  Will not receive message queue data.
 }
 
@@ -214,15 +145,12 @@ static void sensor_setup(void) {
 static DisplayMsg displayMsgPool[displayMsgPoolSize];
 
 int main(void) {
+  //  Init the system and OS for cocoOS.
   system_setup();
-  //// debug("os_init"); ////
   os_init();
 
-  //  Setup the sensors for reading.
-  sensor_setup();
-
   //  Start the display task that displays sensor readings
-  display_taskId = task_create(
+  uint8_t display_task_id = task_create(
     display_task,  //  Task will run this function.
     get_display(),  //  task_get_data() will be set to the display object.
     100,  //  Priority 100 = lowest priority
@@ -230,10 +158,14 @@ int main(void) {
     displayMsgPoolSize,  //  Size of queue pool.
     sizeof(DisplayMsg));  //  Size of queue message.
   
+  //  Setup the sensors for reading.
+  sensor_setup(display_task_id);
+
   //  Start the AVR timer to generate ticks for background processing.
   //// debug("arduino_start_timer"); ////
   arduino_start_timer(); ////
 
+  //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   //// debug("os_start"); ////
   os_start();  //  Never returns.
   

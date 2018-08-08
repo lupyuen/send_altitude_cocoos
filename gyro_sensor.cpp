@@ -59,6 +59,6 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
 static void next_channel(void) {
 }
 
-Sensor *gyroSensor_get(void) {
+Sensor *get_gyro_sensor(void) {
   return &gyro_sensor;
 }
