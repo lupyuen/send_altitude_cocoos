@@ -59,7 +59,7 @@ static Evt_t tempEvt;
 static Evt_t prevChEvt;
 static Evt_t nextChEvt;
 
-static uint8_t displayTaskId;
+static uint8_t display_taskId;
 
 #define sensorDataSize 3  //  Max number of floats to be returned as sensor data.
 
@@ -143,8 +143,8 @@ static void sensorTask() {
       
       //  Note for Arduino: msg_post() must be called in a C source file, not C++.
       //  The macro expansion fails in C++ with a cross-initialisation error.
-      debug(msg.name, " >> Send message"); ////
-      msg_post(displayTaskId, msg);
+      debug(msg.name, " >> Send msg"); ////
+      msg_post(display_taskId, msg);
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
@@ -159,27 +159,6 @@ static void sensorTask() {
   task_close();  //  End of the task. Should never come here.
 }
 
-static void displayTask() {
-  //  Background task that receives display messages and displays them.
-  static DisplayMsg msg;
-  task_open();
-  for (;;) {
-    //  Wait for an incoming display message containing sensor data.
-    //// debug("msg_receive", 0); ////
-    msg_receive(os_get_running_tid(), &msg);
-    Display *display = (Display *) task_get_data();
-
-    //  Update the sensor data to be displayed.
-    //// debug(msg.name, " >> updateData"); ////
-    display->update_data_func(msg.super.signal, msg.name, msg.data, msg.count);
-
-    //  Display the sensor data.
-    //// debug(msg.name, " >> refresh"); ////
-    display->refresh_func();
-  }
-  task_close();
-}
-
 /********************************************/
 /*            Setup and main                */
 /********************************************/
@@ -192,8 +171,8 @@ static void arduino_setup(void) { ////
 
 static void system_setup(void) {
   arduino_setup(); ////
-  debug("display_init", 0); ////
-  display_init();
+  debug("init_display", 0); ////
+  init_display();
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
   debug("Create semaphore", 0); ////
@@ -243,9 +222,9 @@ int main(void) {
   sensor_setup();
 
   //  Start the display task that displays sensor readings
-  displayTaskId = task_create(
-    displayTask,  //  Task will run this function.
-    display_get(),  //  task_get_data() will be set to the display object.
+  display_taskId = task_create(
+    display_task,  //  Task will run this function.
+    get_display(),  //  task_get_data() will be set to the display object.
     100,  //  Priority 100 = lowest priority
     (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
     displayMsgPoolSize,  //  Size of queue pool.

@@ -34,11 +34,9 @@ typedef struct {
   void (*update_data_func)(uint8_t id, const char *name, const float *data, uint8_t count);
 } Display;
 
-Display *display_get(void);
-void display_init(void);
-
-//  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
-//  extern DisplayMsg displayMessages[sensorDisplaySize];
+Display *get_display(void);
+void init_display(void);
+void display_task(void);
 
 #ifdef __cplusplus ////
 }
