@@ -33,10 +33,10 @@ For MacOS and Linux: Open a Command Prompt. Run the following:
 cd send-altitude-cocoos
 mkdir src
 cd src
-ln -s ..\*.ino .
-ln -s ..\*.cpp .
-ln -s ..\*.c .
-ln -s ..\*.h .
+ln -s ../*.ino .
+ln -s ../*.cpp .
+ln -s ../*.c .
+ln -s ../*.h .
 ```
 
 ## Sample Log

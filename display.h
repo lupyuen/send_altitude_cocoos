@@ -38,7 +38,7 @@ Display *display_get(void);
 void display_init(void);
 
 //  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
-extern DisplayMsg displayMessages[sensorDisplaySize];
+//  extern DisplayMsg displayMessages[sensorDisplaySize];
 
 #ifdef __cplusplus ////
 }

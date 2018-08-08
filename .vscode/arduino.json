@@ -1,4 +1,4 @@
 {
     "board": "arduino:avr:uno",
-    "port": "COM3"
+    "port": "/dev/cu.usbmodem1411"
 }

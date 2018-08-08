@@ -7,14 +7,13 @@
 
 //  Message buffer to be displayed at next refresh().
 //  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
-DisplayMsg displayMessages[sensorDisplaySize];
+static DisplayMsg displayMessages[sensorDisplaySize];
 
-static char buf[256];  //  Buffer to display 1 msg.
-static char sensorBuf[64];  //  Buffer for sensor data for 1 msg.
+static char buf[64];  //  Buffer to display 1 msg.
+static char sensorBuf[32];  //  Buffer for sensor data for 1 msg.
 
 static void refresh() {
   //  Refresh the display and show the sensor data.
-  debug("refresh"); ////
   for (int i = 0; i < sensorDisplaySize; i++) {
     //  Compose each sensor msg and display it.
     DisplayMsg msg = displayMessages[i];    
@@ -38,12 +37,12 @@ static void refresh() {
 
 static void updateData(uint8_t id, const char *name, const float *data, uint8_t count) {
   //  Save the updated sensor data for display later.
-  debug(name, " >> updateData"); ////
   int index = -1;  //  Index to overwrite msg.
   int firstEmptyIndex = -1;  //  Index of the first empty msg.
   for (int i = 0; i < sensorDisplaySize; i++) {
-    DisplayMsg msg = displayMessages[i];
+    DisplayMsg msg = displayMessages[i];  //  Note: This clones the message.
     if (msg.count == 0 && firstEmptyIndex < 0) {
+      //  Look for the first empty message.
       firstEmptyIndex = i;
     } else if (msg.count > 0 && strncmp(name, msg.name, sensorNameSize) == 0) {
       //  There is an existing msg with the same sensor name. Overwrite it.
@@ -59,13 +58,14 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
       return;
     }
   }
-  //  Overwrite the index.
-  DisplayMsg msg = displayMessages[index];
-  memset(msg.name, 0, sensorNameSize + 1);  //  Zero the name array.
-  strncpy(msg.name, name, sensorNameSize);  //  Set the sensor name e.g. tmp
-  msg.count = count;  //  Number of floats returned as sensor data.
-  for (int i = 0; i < msg.count && i < sensorDataSize; i++) {
-    msg.data[i] = data[i];
+  //  Overwrite the message at the index.
+  //  static char buf[128]; sprintf(buf, " %d, %d", index, count); debug("overwrite", buf); ////
+  DisplayMsg *msgPtr = &displayMessages[index];
+  memset(msgPtr->name, 0, sensorNameSize + 1);  //  Zero the name array.
+  strncpy(msgPtr->name, name, sensorNameSize);  //  Set the sensor name e.g. tmp
+  msgPtr->count = count;  //  Number of floats returned as sensor data.
+  for (int i = 0; i < msgPtr->count && i < sensorDataSize; i++) {
+    msgPtr->data[i] = data[i];
   }
 }
 

@@ -143,6 +143,7 @@ static void sensorTask() {
       
       //  Note for Arduino: msg_post() must be called in a C source file, not C++.
       //  The macro expansion fails in C++ with a cross-initialisation error.
+      debug(msg.name, " >> Send message"); ////
       msg_post(displayTaskId, msg);
     }
 
@@ -159,12 +160,21 @@ static void sensorTask() {
 }
 
 static void displayTask() {
+  //  Background task that receives display messages and displays them.
   static DisplayMsg msg;
   task_open();
   for (;;) {
+    //  Wait for an incoming display message containing sensor data.
+    //// debug("msg_receive", 0); ////
     msg_receive(os_get_running_tid(), &msg);
-    Display *display = (Display*) task_get_data();
+    Display *display = (Display *) task_get_data();
+
+    //  Update the sensor data to be displayed.
+    //// debug(msg.name, " >> updateData"); ////
     display->update_data_func(msg.super.signal, msg.name, msg.data, msg.count);
+
+    //  Display the sensor data.
+    //// debug(msg.name, " >> refresh"); ////
     display->refresh_func();
   }
   task_close();
@@ -177,7 +187,7 @@ static void displayTask() {
 static void arduino_setup(void) { ////
   //  Run initialisation for Arduino, since we are using main() instead of setup()+loop().
   init();  // initialize Arduino timers  
-  debug("------------------arduino_setup", 0);
+  debug("----arduino_setup", 0);
 } ////
 
 static void system_setup(void) {
@@ -194,12 +204,12 @@ static void system_setup(void) {
 
 static void sensor_setup(void) {
   // create events
-  debug("event_create", 0); ////
+  //// debug("event_create", 0); ////
   tempEvt   = event_create();
   prevChEvt = event_create();
   nextChEvt = event_create();
 
-  // Initialize the sensors
+  //  Initialize the sensors.
   //// debug("get_temp_sensor"); ////
   tempTaskData.sensor = get_temp_sensor();
   //// debug("tempSensor.init"); ////
@@ -211,14 +221,18 @@ static void sensor_setup(void) {
   //// debug("gyroSensor.init"); ////
   gyroTaskData.sensor->control.init_sensor_func(GYRO_DATA, 0, pollIntervalMillisec);
 
-  // Two sensor tasks using same task procedure, but having unique task data.
+  //  Create 2 sensor tasks using same task function, but with unique task data.
+  //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
-  task_create( sensorTask, &tempTaskData, 10, 0, 0, 0 );
-  task_create( sensorTask, &gyroTaskData, 20, 0, 0, 0 );
-
-  // control task that changes temp sensor channel
-  //// task_create( controlTask, &tempTaskData, 30, 0, 0, 0 );
+  task_create(sensorTask, &tempTaskData, 10,  //  Priority 10 = highest priority
+    0, 0, 0);  //  Will not receive message queue data.
+  task_create(sensorTask, &gyroTaskData, 20,  //  Priority 20
+    0, 0, 0);  //  Will not receive message queue data.
 }
+
+//  Pool of display messages that make up the display message queue.
+#define displayMsgPoolSize 5
+static DisplayMsg displayMsgPool[displayMsgPoolSize];
 
 int main(void) {
   system_setup();
@@ -229,8 +243,13 @@ int main(void) {
   sensor_setup();
 
   //  Start the display task that displays sensor readings
-  displayTaskId = task_create(displayTask, display_get(), 50, 
-    (Msg_t *) displayMessages, 10, sizeof(DisplayMsg));
+  displayTaskId = task_create(
+    displayTask,  //  Task will run this function.
+    display_get(),  //  task_get_data() will be set to the display object.
+    100,  //  Priority 100 = lowest priority
+    (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
+    displayMsgPoolSize,  //  Size of queue pool.
+    sizeof(DisplayMsg));  //  Size of queue message.
   
   //  Start the AVR timer to generate ticks for background processing.
   //// debug("arduino_start_timer"); ////
