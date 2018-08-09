@@ -1,5 +1,5 @@
 //  Workaround for cross initialisation problem when cocoOS is used in C++ source files.
-//  C++ source files should include "cocoos-cpp.h" instead of "cocoos.h".
+//  C++ source files should include "cocoos_cpp.h" instead of "cocoos.h".
 
 #include <cocoos.h>  //  Macros will be redefined below.
 

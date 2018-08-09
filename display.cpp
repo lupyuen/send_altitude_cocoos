@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include <stdio.h>
-#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "display.h"
 

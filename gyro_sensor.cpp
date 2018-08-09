@@ -7,7 +7,7 @@ typedef unsigned long time_t; //// TODO: Fix this declaration
 #include "sensor.h"
 #include "gyro_sensor.h"
 #include <string.h>
-#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -50,12 +50,11 @@ static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
 }
 
 SensorContext *setup_gyro_sensor(
-  uint8_t id,
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {
   //  Set up and return the sensor context.
-  setup_sensor_context(&sensorContext, &sensor, id, pollInterval, displayTaskID);
+  setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
 

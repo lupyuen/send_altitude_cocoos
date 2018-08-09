@@ -2,19 +2,17 @@
 #define TEMP_SENSOR_H_
 
 #include "sensor.h"
-
-#ifdef __cplusplus ////
-extern "C" {
-#endif ////
+#ifdef __cplusplus
+extern "C" {  //  Allows functions below to be called by C and C++ code.
+#endif
 
 SensorContext *setup_temp_sensor(
-  uint8_t id,
-  uint16_t pollInterval,
-  uint8_t displayTaskID
+  uint16_t pollInterval,  //  How often the sensor should be polled, in milliseconds.
+  uint8_t displayTaskID  //  Task ID for the Display Task.  Used for sending display messages.
 );
 
-#ifdef __cplusplus ////
-}
-#endif ////
+#ifdef __cplusplus
+}  //  End of extern C scope.
+#endif
 
-#endif /* TEMP_SENSOR_H_ */
+#endif  //  TEMP_SENSOR_H_

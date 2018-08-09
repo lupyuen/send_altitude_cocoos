@@ -34,7 +34,7 @@ typedef unsigned long time_t; ////  TODO: Fix the declaration
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "temp_sensor.h"
 #include "gyro_sensor.h"
@@ -135,11 +135,11 @@ static void sensor_setup(uint8_t display_task_id) {
   bme280_setup();
 
   //  Set up the sensors and get the sensor contexts.
-  const int pollIntervalMillisec = 500;  //  Poll the sensor every 500 milliseconds.
-  SensorContext *tempContext = setup_temp_sensor(TEMP_DATA, pollIntervalMillisec, display_task_id);
-  SensorContext *gyroContext = setup_gyro_sensor(GYRO_DATA, pollIntervalMillisec, display_task_id);
+  const int pollInterval = 500;  //  Poll the sensor every 500 milliseconds.
+  SensorContext *tempContext = setup_temp_sensor(pollInterval, display_task_id);
+  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, display_task_id);
 
-  //  For each sensor, create sensor tasks using same task function, but with unique sensor context.
+  //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
   task_create(sensor_task, tempContext, 10,  //  Priority 10 = highest priority

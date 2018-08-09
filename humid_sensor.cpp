@@ -6,7 +6,7 @@
 #include <Wire.h>
 #include <stdlib.h>
 #include <string.h>
-#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "temp_sensor.h"
 
@@ -64,12 +64,11 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
 }
 
 SensorContext *setup_humid_sensor(
-  uint8_t id,
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {
   //  Set up and return the sensor context.
-  setup_sensor_context(&sensorContext, &sensor, id, pollInterval, displayTaskID);
+  setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
 

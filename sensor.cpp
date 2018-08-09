@@ -2,38 +2,25 @@
 #include <Arduino.h>
 #include <string.h>
 #include <stdio.h>
-#include <cocoos-cpp.h>  //  TODO: Workaround for cocoOS in C++
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "display.h"
 
-#ifdef __cplusplus
-//  Constructor for C++
-Sensor::Sensor(
-  const char name[],
-  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
-  uint8_t (*poll_sensor_func)(void),
-  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
-  void (*next_channel_func)(void),
-  void (*prev_channel_func)(void)
-): 
-  info(name, poll_sensor_func, receive_sensor_data_func),
-  control(init_sensor_func, next_channel_func, prev_channel_func) {
-}
-#endif // __cplusplus
+uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
 void setup_sensor_context(
   SensorContext *context,
   Sensor *sensor,
-  uint8_t id,
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {
-  //  Set up the sensor context.
+  //  Set up the sensor context. Allocate a unique sensor ID.
+  Evt_t event = event_create();
   context->sensor = sensor;
-  context->event = event_create();
+  context->event = event;
   context->display_task_id = displayTaskID;
-  sensor->control.init_sensor_func(id, 
-    &context->event, pollInterval);
+  sensor->control.init_sensor_func(nextSensorID, &event, pollInterval);
+  nextSensorID++;
 }
 
 void sensor_task(void) {
@@ -90,4 +77,39 @@ void sensor_task(void) {
   }
   debug("task_close", 0); ////
   task_close();  //  End of the task. Should never come here.
+}
+
+//  SensorInfo constructor for C++ only.
+SensorInfo::SensorInfo(
+  const char name0[],
+  uint8_t (*poll_sensor_func0)(void),
+  uint8_t (*receive_sensor_data_func0)(float *data, uint8_t size)
+) {
+  name = name0;
+  poll_sensor_func = poll_sensor_func0;
+  receive_sensor_data_func = receive_sensor_data_func0;
+}
+
+//  SensorInfo constructor for C++ only.
+SensorControl::SensorControl(
+  void (*init_sensor_func0)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+  void (*next_channel_func0)(void),
+  void (*prev_channel_func0)(void)
+) {
+  init_sensor_func = init_sensor_func0;
+  next_channel_func = next_channel_func0;
+  prev_channel_func = prev_channel_func0;
+}
+
+//  Sensor constructor for C++ only
+Sensor::Sensor(
+  const char name[],
+  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+  uint8_t (*poll_sensor_func)(void),
+  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
+  void (*next_channel_func)(void),
+  void (*prev_channel_func)(void)
+): 
+  info(name, poll_sensor_func, receive_sensor_data_func),
+  control(init_sensor_func, next_channel_func, prev_channel_func) {
 }
