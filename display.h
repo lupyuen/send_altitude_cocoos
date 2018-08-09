@@ -15,8 +15,8 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 //  Messages sent to Display Task will be in this format.
 struct DisplayMsg {
   Msg_t super;  //  Required for all cocoOS messages.
-  char name[sensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
-  float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  char name[maxSensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
+  float data[maxSensorDataSize];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
 };
 

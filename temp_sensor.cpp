@@ -1,9 +1,8 @@
 //  Implements the temperature sensor for BME280. Caller must use a semaphore to
 //  prevent concurrent access to BME280 module, which runs on a single I2C Bus.
 #include <Arduino.h>
-#include <EnvironmentCalculations.h>
-#include <BME280I2C.h>
 #include <Wire.h>
+#include <BME280I2C.h>
 #include <stdlib.h>
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
@@ -13,48 +12,40 @@
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
-static uint8_t poll_sensor(void);
-static uint8_t receive_sensor_data(float *data, uint8_t size);
+static uint8_t poll_sensor(float *data, uint8_t size);
+
+//  Number of floats that this sensor returns as sensor data.
+#define sensorDataSize 1
 
 //  Construct a sensor object with the sensor functions.
 static Sensor sensor(
   "tmp",                //  Name of sensor. The Structured Message field will use this name.
   &init_sensor,         //  Function for initialising the sensor.
-  &poll_sensor,         //  Function for polling sensor data.
-  &receive_sensor_data  //  Function for receiving sensor data.
+  &poll_sensor          //  Function for polling sensor data.
 );
 
 static SensorContext sensorContext;  //  Remembers the sensor context.
-static float sensorData = NAN;  //  Default the sensor data to "Not A Number".
-static uint8_t newDataSize = 0;  //  Set to non-zero if there is new sensor data to be received.
+static float sensorData[sensorDataSize];  //  Array of floats for remembering the sensor data.
 
 static void init_sensor(void) {
   //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
   bme280_setup();  //  Set up the BME280 API.
 }
 
-static uint8_t poll_sensor(void) {
-  //  Poll the sensor for new data. Return size of new data if new data available, 0 otherwise.
+static uint8_t poll_sensor(float *data, uint8_t size) {
+  //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
+  //  Return the number of floats copied.  If no data is available, return 0.
   debug(sensor.info.name, " >> poll_sensor"); ////
   
   //  Read sensor data from BME280.
   BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-  sensorData = bme.temp(tempUnit);  //  Get temperature in Celsius.
+  sensorData[0] = bme.temp(tempUnit);  //  Get temperature in Celsius.
 
   //  Simulated sensor.
-  //// sensorData = 12.3 + rand() % 10;
+  //// sensorData[0] = 12.3 + rand() % 10;
 
-  newDataSize = 1;  //  New sensor data now available, size is 1 float.
-  return newDataSize;  //  Data should always be available.
-}
-
-static uint8_t receive_sensor_data(float *data, uint8_t size) {
-  //  Copy the received sensor data into the provided data buffer.
-  //  Return the number of floats copied.
-  //// debug("temp.receive_sensor_data"); ////
-  if (size >= 1) data[0] = sensorData;
-  newDataSize = 0;  //  Indicate that there is no new sensor data.
-  return 1;  //  Only 1 float returned.
+  //  Copy the received sensor data and return the number of floats copied.
+  return receive_sensor_data(sensorData, sensorDataSize, data, size);
 }
 
 SensorContext *setup_temp_sensor(

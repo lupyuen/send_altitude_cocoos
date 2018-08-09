@@ -51,27 +51,21 @@ void sensor_task(void) {
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
     debug(context->sensor->info.name, " >> Got semaphore"); ////
 
-    //  We have to fetch the data pointer again after the wait.
+    //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
 
+    //  Prepare a display message for copying the sensor data.
+    DisplayMsg msg;
+    msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
+    memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
+    strncpy(msg.name, context->sensor->info.name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
+
+    //  Poll for the sensor data and copy into the display message.
+    msg.count = context->sensor->info.poll_sensor_func(msg.data, maxSensorDataSize);
+
     //  Do we have new data?
-    if (context->sensor->info.poll_sensor_func() > 0) {
-      //  If we have new data, copy sensor data to task data.
-      sensorDataCount = context->sensor->info.
-        receive_sensor_data_func(context->data, sensorDataSize);
-      context->count = sensorDataCount;  //  Number of float values returned.
-
-      //  Copy sensor data into a display message.
-      DisplayMsg msg;
-      msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-      memset(msg.name, 0, sensorNameSize + 1);  //  Zero the name array.
-      strncpy(msg.name, context->sensor->info.name, sensorNameSize);  //  Set the sensor name e.g. tmp
-      msg.count = context->count;  //  Number of floats returned as sensor data.
-      for (int i = 0; i < msg.count && i < sensorDataSize; i++) {
-        msg.data[i] = context->data[i];
-      }
-
-      //  Send the message. Note: When posting a message, its contents are cloned into the message queue.
+    if (msg.count > 0) {
+      //  If we have new data, send the message. Note: When posting a message, its contents are cloned into the message queue.
       debug(msg.name, " >> Send msg"); ////
       msg_post(context->display_task_id, msg);
     }
@@ -88,15 +82,26 @@ void sensor_task(void) {
   task_close();  //  End of the task. Should never come here.
 }
 
+uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
+  //  Copy the received sensor data array into the provided data buffer.
+  //  Return the number of floats copied.
+  //// debug("temp.receive_sensor_data"); ////
+  uint8_t i;
+  //  Copy the floats safely: Don't exceed the array size provided by caller.
+  //  Also don't exceed the number of available sensor data items.
+  for (i = 0; i < size && i < sensorDataSize && i < maxSensorDataSize; i++) {
+    data[i] = sensorDataArray[i];
+  }
+  return i;  //  Return the number of floats copied.
+}
+
 //  SensorInfo constructor for C++ only.
 SensorInfo::SensorInfo(
   const char name0[],
-  uint8_t (*poll_sensor_func0)(void),
-  uint8_t (*receive_sensor_data_func0)(float *data, uint8_t size)
+  uint8_t (*poll_sensor_func0)(float *data, uint8_t size)
 ) {
   name = name0;
   poll_sensor_func = poll_sensor_func0;
-  receive_sensor_data_func = receive_sensor_data_func0;
 }
 
 //  SensorInfo constructor for C++ only.
@@ -114,11 +119,10 @@ SensorControl::SensorControl(
 Sensor::Sensor(
   const char name[],
   void (*init_sensor_func)(void),
-  uint8_t (*poll_sensor_func)(void),
-  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
+  uint8_t (*poll_sensor_func)(float *data, uint8_t size),
   void (*next_channel_func)(void),
   void (*prev_channel_func)(void)
 ): 
-  info(name, poll_sensor_func, receive_sensor_data_func),
+  info(name, poll_sensor_func),
   control(init_sensor_func, next_channel_func, prev_channel_func) {
 }

@@ -42,7 +42,7 @@ static void refresh(void) {
     DisplayMsg msg = displayMessages[i];    
     if (msg.count == 0) { continue; }
     sensorBuf[0] = 0;  //  Empty the buffer.
-    for (int s = 0; s < msg.count && s < sensorDataSize; s++) {
+    for (int s = 0; s < msg.count && s < maxSensorDataSize; s++) {
       //  Merge the sensor values into a comma-separated string e.g. 12.3, 12.4
       float d = msg.data[s];  //  Given d = 12.3
       int16_t d1 = (int16_t) d;  //  Compute d1 = 12, d2 = 3.
@@ -67,7 +67,7 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
     if (msg.count == 0 && firstEmptyIndex < 0) {
       //  Look for the first empty message.
       firstEmptyIndex = i;
-    } else if (msg.count > 0 && strncmp(name, msg.name, sensorNameSize) == 0) {
+    } else if (msg.count > 0 && strncmp(name, msg.name, maxSensorNameSize) == 0) {
       //  There is an existing msg with the same sensor name. Overwrite it.
       index = i;
       break;
@@ -84,10 +84,10 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   //  Overwrite the message at the index.
   //  static char buf[128]; sprintf(buf, " %d, %d", index, count); debug("overwrite", buf); ////
   DisplayMsg *msgPtr = &displayMessages[index];
-  memset(msgPtr->name, 0, sensorNameSize + 1);  //  Zero the name array.
-  strncpy(msgPtr->name, name, sensorNameSize);  //  Set the sensor name e.g. tmp
+  memset(msgPtr->name, 0, maxSensorNameSize + 1);  //  Zero the name array.
+  strncpy(msgPtr->name, name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
   msgPtr->count = count;  //  Number of floats returned as sensor data.
-  for (int i = 0; i < msgPtr->count && i < sensorDataSize; i++) {
+  for (int i = 0; i < msgPtr->count && i < maxSensorDataSize; i++) {
     msgPtr->data[i] = data[i];
   }
 }

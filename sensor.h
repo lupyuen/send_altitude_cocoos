@@ -6,20 +6,16 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define sensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
-#define sensorNameSize 3  //  Max number of letters/digits in sensor name.
+#define maxSensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define maxSensorNameSize 3  //  Max number of letters/digits in sensor name.
 
 //  Interface for getting sensor data, by polling and by events.
 struct SensorInfo {
   const char* name;  //  Name of the sensor.
-  //  Poll for new sensor data. If new sensor data is available,
-  //  return the number of float values available.  Else return 0.
-  uint8_t (*poll_sensor_func)(void);
-  //  Fetch the sensor data into the data buffer, which should be
-  //  a pointer to float, or an array of floats.  size is the max
-  //  number of floats that the function can copy into the buffer.
-  //  Returns number of floats copied.
-  uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
+  uint8_t size;      //  How many floats that this sensor will return as sensor data.
+  //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
+  //  Return the number of floats copied.  If no data is available, return 0.
+  uint8_t (*poll_sensor_func)(float *data, uint8_t size);
   Evt_t *event;  //  Event to be signalled when new sensor data is available.
   uint8_t id;  //  Unique sensor ID.
   uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
@@ -27,8 +23,7 @@ struct SensorInfo {
   #ifdef __cplusplus
   SensorInfo( //  Constructor for C++
     const char name0[], 
-    uint8_t (*poll_sensor_func0)(void),
-    uint8_t (*receive_sensor_data_func0)(float *data, uint8_t size));
+    uint8_t (*poll_sensor_func0)(float *data, uint8_t size));
   #endif // __cplusplus
 };
 
@@ -56,25 +51,18 @@ struct Sensor {
     const char name[],  //  Name of sensor.
     //  Function for initialising the sensor.
     void (*init_sensor_func)(void),
-    //  Poll for new sensor data. If new sensor data is available,
-    //  return the number of float values available.  Else return 0.
-    uint8_t (*poll_sensor_func)(void),
-    //  Fetch the sensor data into the data buffer, which should be
-    //  a pointer to float, or an array of floats.  size is the max
-    //  number of floats that the function can copy into the buffer.
-    //  Returns number of floats copied.
-    uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
+    //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
+    //  Return the number of floats copied.  If no data is available, return 0.
+    uint8_t (*poll_sensor_func)(float *data, uint8_t size),
     void (*next_channel_func)(void) = NULL,  //  TODO: Set sensor to measure next channel.
     void (*prev_channel_func)(void) = NULL  //  TODO: Set sensor to measure previous channel.
   );
   #endif // __cplusplus
 };
 
-//  Each sensor task will have a Task Data in this format to remember the sensor context.
+//  Each sensor task will have a Task Data in this format to remember the context of the sensor.
 struct SensorContext {
   Sensor *sensor;  //  The sensor for the context.
-  float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
-  uint8_t count;  //  Number of float sensor data values returned by the sensor.
   uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
 };
 
@@ -87,6 +75,14 @@ void setup_sensor_context(
   Sensor *sensor,  //  Sensor to be set up.
   uint16_t pollInterval,  //  Polling interval in milliseconds.
   uint8_t displayTaskID  //  Task ID for the Display Task.  Used for sending display messages.
+);
+
+//  Copy the received sensor data into the provided data buffer. Return the number of floats copied.
+uint8_t receive_sensor_data(
+  float *sensorData,  //  Array of floats containing the received sensor data.
+  uint8_t sensorDataSize,  //  Number of floats in the received sensor data.
+  float *data,  //  Array of floats that sensor data should be copied to.
+  uint8_t size  //  Number of floats in the array that sensor data should be copied to.
 );
 
 //  Background task to receive and process sensor data.
