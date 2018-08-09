@@ -45,71 +45,91 @@ ln -s ../*.h .
 
 ----arduino_setup
 Create semaphore
-Found BME280 sensor! Success.
+BME280 OK
 tmp >> Wait for semaphore
 tmp >> Got semaphore
-temp.poll_sensor
+tmp >> poll_sensor
 tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
+hmd >> Wait for semaphore
+hmd >> Got semaphore
+hmd >> poll_sensor
+hmd >> Send msg
+hmd >> Release semaphore
+hmd >> Wait interval
+alt >> Wait for semaphore
+alt >> Got semaphore
+alt >> poll_sensor
+alt >> Send msg
+alt >> Release semaphore
+alt >> Wait interval
 gyr >> Wait for semaphore
 gyr >> Got semaphore
+gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-tmp:            32.3
+tmp:            32.6
+hmd:            60.0
+alt:            45.5
 gyr:            7.0,            39.0,           31.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
-temp.poll_sensor
+tmp >> poll_sensor
 tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
+tmp:            32.6
+hmd >> Wait for semaphore
+hmd >> Got semaphore
+hmd >> poll_sensor
+hmd >> Send msg
+hmd >> Release semaphore
+hmd >> Wait interval
+alt >> Wait for semaphore
+alt >> Got semaphore
+alt >> poll_sensor
+alt >> Send msg
+alt >> Release semaphore
+alt >> Wait interval
 gyr >> Wait for semaphore
 gyr >> Got semaphore
+gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-tmp:            32.3
+hmd:            60.0
+alt:            44.5
 gyr:            14.0,           10.0,           40.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
-temp.poll_sensor
+tmp >> poll_sensor
 tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
+tmp:            32.6
+hmd >> Wait for semaphore
+hmd >> Got semaphore
+hmd >> poll_sensor
+hmd >> Send msg
+hmd >> Release semaphore
+hmd >> Wait interval
+alt >> Wait for semaphore
+alt >> Got semaphore
+alt >> poll_sensor
+alt >> Send msg
+alt >> Release semaphore
+alt >> Wait interval
 gyr >> Wait for semaphore
 gyr >> Got semaphore
+gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-tmp:            32.3
+hmd:            60.0
+alt:            44.9
 gyr:            0.0,            8.0,            49.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-temp.poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-tmp:            32.3
-gyr:            1.0,            46.0,           45.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-temp.poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-tmp:            32.3
-gyr:            48.0,           22.0,           33.0
+
 
 ```

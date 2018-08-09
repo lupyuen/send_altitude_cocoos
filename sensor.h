@@ -20,7 +20,7 @@ struct SensorInfo {
   //  number of floats that the function can copy into the buffer.
   //  Returns number of floats copied.
   uint8_t (*receive_sensor_data_func)(float *data, uint8_t size);
-  Evt_t *event;  //  Event signalled when new sensor data is available.
+  Evt_t *event;  //  Event to be signalled when new sensor data is available.
   uint8_t id;  //  Unique sensor ID.
   uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
 
@@ -79,7 +79,6 @@ struct SensorContext {
   float data[sensorDataSize];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
   uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
-  Evt_t event;  //  TODO: Event that will be triggered when sensor data is available.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.

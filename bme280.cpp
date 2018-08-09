@@ -3,8 +3,16 @@
 //  https://github.com/finitespace/BME280
 #include <Arduino.h>
 #include <Wire.h>
-#include <BME280I2C.h>
 #include "bme280.h"
+
+//  TODO: Print a message to the Arduino serial console. Defined in main.cpp.
+extern "C" void debug(
+  const char *s1,  //  Text to be printed.
+  const char *s2  //  Another text to be printed.
+  #ifdef __cplusplus
+    = 0  //  Second parameter may be omitted.
+  #endif
+  );
 
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
@@ -14,17 +22,17 @@ void bme280_setup(void) {
   //  Set up the BME280 module for reading.
   Wire.begin();
   while(!bme.begin()) {
-    Serial.println(F("Could not find BME280 sensor!"));
+    debug("BME280 not found");
     delay(1000);
   }
   switch(bme.chipModel()) {
      case BME280::ChipModel_BME280:
-       Serial.println(F("Found BME280 sensor! Success."));
+       debug("BME280 OK");
        break;
      case BME280::ChipModel_BMP280:
-       Serial.println(F("Found BMP280 sensor! No Humidity available."));
+       debug("BME280 without humidity");
        break;
      default:
-       Serial.println(F("Found UNKNOWN sensor! Error!"));
+       debug("BME280 Error");
   }
 }

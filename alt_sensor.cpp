@@ -8,7 +8,8 @@
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
-#include "temp_sensor.h"
+#include "bme280.h"
+#include "alt_sensor.h"
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
@@ -29,7 +30,7 @@ static Sensor sensor(
 
 static SensorContext sensorContext;  //  Remembers the sensor context.
 static float sensorData = NAN;  //  Default the sensor data to "Not A Number".
-static uint8_t newData = 0;  //  Set to non-zero if there is new sensor data to be received.
+static uint8_t newDataSize = 0;  //  Number of new sensor data floats to be received.
 
 static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
   //  Initialise the sensor.
@@ -43,15 +44,18 @@ static uint8_t poll_sensor(void) {
   debug(sensor.info.name, " >> poll_sensor"); ////
   
   //  Read sensor data from BME280.
-  extern BME280I2C bme;  ////  TODO
-  BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-  sensorData = bme.temp(tempUnit);  //  Get temperature in Celsius.
+  BME280::PresUnit presUnit(BME280::PresUnit_Pa);
+  float pressure = bme.pres(presUnit);  //  Get air pressure in Pa.
+  EnvironmentCalculations::AltitudeUnit envAltUnit = EnvironmentCalculations::AltitudeUnit_Meters;
+  float altitude = EnvironmentCalculations::Altitude(
+    pressure, envAltUnit);  //  Compute altitude in metres above sea level.
+  sensorData = altitude;
 
   //  Simulated sensor.
   //// sensorData = 12.3 + rand() % 10;
 
-  newData = 1;  //  New sensor data now available, size is 1 float.
-  return newData;  //  Data should always be available.
+  newDataSize = 1;  //  New sensor data now available, size is 1 float.
+  return newDataSize;  //  Data should always be available.
 }
 
 static uint8_t receive_sensor_data(float *data, uint8_t size) {
@@ -59,7 +63,7 @@ static uint8_t receive_sensor_data(float *data, uint8_t size) {
   //  Return the number of floats copied.
   //// debug("temp.receive_sensor_data"); ////
   if (size >= 1) data[0] = sensorData;
-  newData = 0;  //  Indicate that there is no new sensor data.
+  newDataSize = 0;  //  Indicate that there is no new sensor data.
   return 1;  //  Only 1 float returned.
 }
 

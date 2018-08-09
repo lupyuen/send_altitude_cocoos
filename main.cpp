@@ -50,20 +50,27 @@ int main(void) {
 }
 
 static void sensor_setup(uint8_t display_task_id) {
-  //  Start the sensor tasks for each sensor to read and process sensor data.  
+  //  Start the sensor tasks for each sensor to read and process sensor data.
+  //  Edit this function to add your own sensors.
   bme280_setup();  //  Set up the BME280 API.
 
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 500;  //  Poll the sensor every 500 milliseconds.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, display_task_id);
+  SensorContext *humidContext = setup_humid_sensor(pollInterval, display_task_id);
+  SensorContext *altContext = setup_alt_sensor(pollInterval, display_task_id);
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, display_task_id);
 
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug("task_create"); ////
-  task_create(sensor_task, tempContext, 10,  //  Priority 10 = highest priority
+  task_create(sensor_task, tempContext, 10,   //  Priority 10 = highest priority
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, gyroContext, 20,  //  Priority 20
+  task_create(sensor_task, humidContext, 20,  //  Priority 20
+    0, 0, 0);  //  Will not receive message queue data.
+  task_create(sensor_task, altContext, 30,  //  Priority 30
+    0, 0, 0);  //  Will not receive message queue data.
+  task_create(sensor_task, gyroContext, 50,   //  Priority 50
     0, 0, 0);  //  Will not receive message queue data.
 }
 
@@ -72,7 +79,7 @@ static uint8_t display_setup(void) {
   uint8_t display_task_id = task_create(
     display_task,   //  Task will run this function.
     get_display(),  //  task_get_data() will be set to the display object.
-    100,            //  Priority 100 = lowest priority
+    1000,            //  Priority 1000 = lowest priority
     (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
     displayMsgPoolSize,        //  Size of queue pool.
     sizeof(DisplayMsg));       //  Size of queue message.
