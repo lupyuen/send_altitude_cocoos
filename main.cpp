@@ -135,7 +135,7 @@ static void arduino_start_timer(void) {
 }
 
 ISR(TIMER1_OVF_vect) {
-  //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform background processing.
+  //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
   ////  debug("os_tick"); ////
   os_tick();  
 }
