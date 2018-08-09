@@ -38,11 +38,11 @@ int main(void) {
   sensor_setup(display_task_id);
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
-  //// debug("arduino_start_timer"); ////
+  //// debug(F("arduino_start_timer")); ////
   arduino_start_timer(); ////
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
-  //// debug("os_start"); ////
+  //// debug(F("os_start")); ////
   os_start();  //  Never returns.  
 	return EXIT_SUCCESS;
 }
@@ -60,7 +60,7 @@ static void sensor_setup(uint8_t display_task_id) {
 
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
-  //// debug("task_create"); ////
+  //// debug(F("task_create")); ////
   task_create(sensor_task, tempContext, 10,   //  Priority 10 = highest priority
     0, 0, 0);  //  Will not receive message queue data.
   task_create(sensor_task, humidContext, 20,  //  Priority 20
@@ -85,11 +85,11 @@ static uint8_t display_setup(void) {
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
-  arduino_setup(); //// debug("init_display"); ////
+  arduino_setup(); //// debug(F("init_display")); ////
   init_display();
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-  debug("Create semaphore", 0); ////
+  debug(F("Create semaphore")); ////
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   i2cSemaphore = sem_counting_create( maxCount, initValue );
@@ -98,7 +98,7 @@ static void system_setup(void) {
 static void arduino_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
   init();
-  debug("----arduino_setup", 0);
+  debug(F("----arduino_setup"));
 }
 
 static void arduino_start_timer(void) {
@@ -115,6 +115,6 @@ static void arduino_start_timer(void) {
 
 ISR(TIMER1_OVF_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
-  ////  debug("os_tick"); ////
+  ////  debug(F("os_tick")); ////
   os_tick();  
 }

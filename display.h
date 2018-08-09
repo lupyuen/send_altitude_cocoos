@@ -32,16 +32,29 @@ Display *get_display(void);  //  Return the global instance of the display inter
 void init_display(void);  //  Initialise the display interface.
 void display_task(void);  //  Display Task runs this function to display messages received.
 
-//  Print a message to the Arduino serial console.
+#ifdef __cplusplus
+}  //  End of extern C scope.
+#endif
+
+//  Print a message to the Arduino serial console.  The function is overloaded to support
+//  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
 void debug(
-  const char *s1,  //  Text to be printed.
-  const char *s2  //  Another text to be printed.
+  const char *s1,  //  String in dynamic memory.
+  const char *s2  //  Another string in dynamic memory.
   #ifdef __cplusplus
     = 0  //  Second parameter may be omitted.
   #endif
   );
 
 #ifdef __cplusplus
-}  //  End of extern C scope.
+void debug(
+  const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
+);
+
+void debug(
+  const char *s1,  //  String in dynamic memory.
+  const __FlashStringHelper *s2  //  String in flash memory e.g. F("the string")
+);
 #endif
+
 #endif  //  DISPLAY_H_

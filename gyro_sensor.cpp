@@ -33,7 +33,7 @@ static void init_sensor(void) {
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
-  debug(sensor.info.name, " >> poll_sensor"); ////
+  debug(sensor.info.name, F(" >> poll_sensor")); ////
 
   //  Simulated sensor data with random numbers.
   sensorDataArray[0] = (rand() % 500) / 10.0;

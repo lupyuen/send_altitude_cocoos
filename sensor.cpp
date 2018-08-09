@@ -47,9 +47,9 @@ void sensor_task(void) {
 
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug(context->sensor->info.name, " >> Wait for semaphore"); ////
+    debug(context->sensor->info.name, F(" >> Wait for semaphore")); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
-    debug(context->sensor->info.name, " >> Got semaphore"); ////
+    debug(context->sensor->info.name, F(" >> Got semaphore")); ////
 
     //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
@@ -66,26 +66,26 @@ void sensor_task(void) {
     //  Do we have new data?
     if (msg.count > 0) {
       //  If we have new data, send the message. Note: When posting a message, its contents are cloned into the message queue.
-      debug(msg.name, " >> Send msg"); ////
+      debug(msg.name, F(" >> Send msg")); ////
       msg_post(context->display_task_id, msg);
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
-    debug(context->sensor->info.name, " >> Release semaphore"); ////
+    debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
 
     //  Wait a short while before polling the sensor again.
-    debug(context->sensor->info.name, " >> Wait interval"); ////
+    debug(context->sensor->info.name, F(" >> Wait interval")); ////
     task_wait(context->sensor->info.poll_interval);
   }
-  debug("task_close", 0); ////
+  debug(F("task_close")); ////
   task_close();  //  End of the task. Should never come here.
 }
 
 uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
   //  Copy the received sensor data array into the provided data buffer.
   //  Return the number of floats copied.
-  //// debug("temp.receive_sensor_data"); ////
+  //// debug(F("receive_sensor_data")); ////
   uint8_t i;
   //  Copy the floats safely: Don't exceed the array size provided by caller.
   //  Also don't exceed the number of available sensor data items.

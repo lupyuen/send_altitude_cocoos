@@ -3,16 +3,8 @@
 //  https://github.com/finitespace/BME280
 #include <Arduino.h>
 #include <Wire.h>
+#include "display.h"
 #include "bme280.h"
-
-//  TODO: Print a message to the Arduino serial console. Defined in main.cpp.
-extern "C" void debug(
-  const char *s1,  //  Text to be printed.
-  const char *s2  //  Another text to be printed.
-  #ifdef __cplusplus
-    = 0  //  Second parameter may be omitted.
-  #endif
-  );
 
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
@@ -26,17 +18,17 @@ void bme280_setup(void) {
   
   Wire.begin();
   while(!bme.begin()) {
-    debug("BME280 not found");
+    debug(F("BME280 not found"));
     delay(1000);
   }
   switch(bme.chipModel()) {
      case BME280::ChipModel_BME280:
-       debug("BME280 OK");
+       debug(F("BME280 OK"));
        break;
      case BME280::ChipModel_BMP280:
-       debug("BME280 without humidity");
+       debug(F("BME280 without humidity"));
        break;
      default:
-       debug("BME280 Error");
+       debug(F("BME280 Error"));
   }
 }

@@ -71,9 +71,9 @@ gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
 tmp:            32.6
-hmd:            60.0
-alt:            45.5
-gyr:            7.0,            39.0,           31.0
+hmd:            60.6
+alt:            41.5
+gyr:            30.7,           8.8,            48.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
 tmp >> poll_sensor
@@ -99,9 +99,9 @@ gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-hmd:            60.0
-alt:            44.5
-gyr:            14.0,           10.0,           40.0
+hmd:            60.6
+alt:            41.2
+gyr:            11.3,           21.0,           24.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
 tmp >> poll_sensor
@@ -127,9 +127,8 @@ gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-hmd:            60.0
-alt:            44.9
-gyr:            0.0,            8.0,            49.0
-
+hmd:            60.6
+alt:            41.0
+gyr:            30.0,           5.8,            9.8
 
 ```

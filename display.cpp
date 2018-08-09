@@ -20,16 +20,16 @@ void display_task(void) {
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) { //  Run the display processing code forever. So the task never ends.
     //  Wait for an incoming display message containing sensor data.
-    //// debug("msg_receive", 0); ////
+    //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
     Display *display = (Display *) task_get_data();
 
     //  Update the sensor data to be displayed.
-    //// debug(msg.name, " >> updateData"); ////
+    //// debug(msg.name, F(" >> updateData")); ////
     display->update_data_func(msg.super.signal, msg.name, msg.data, msg.count);
 
     //  Display the sensor data.
-    //// debug(msg.name, " >> refresh"); ////
+    //// debug(msg.name, F(" >> refresh")); ////
     display->refresh_func();
   }
   task_close();  //  End of the task. Should never come here.
@@ -77,7 +77,7 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   if (index < 0) { 
     index = firstEmptyIndex; 
     if (index < 0) {
-      debug("Out of rows");  //  Need to increase sensorDisplaySize.
+      debug(F("Out of rows"));  //  Need to increase sensorDisplaySize.
       return;
     }
   }
@@ -110,8 +110,31 @@ Display *get_display(void) {
   return &display;
 }
 
+//  Print a message to the Arduino serial console.  The function is overloaded to support
+//  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
+
 void debug(const char *s1, const char *s2) {
-  //  Print a message to the Arduino serial console.
+  //  Print 2 dynamics strings.
+  Serial.begin(SERIAL_BAUD);
+  while (!Serial) {}  //  Wait for Serial to be ready.
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
+}
+
+void debug(const __FlashStringHelper *s1) {
+  //  Print 1 flash string.
+  Serial.begin(SERIAL_BAUD);
+  while (!Serial) {}  //  Wait for Serial to be ready.
+  Serial.print(s1);
+  // if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
+}
+
+void debug(const char *s1, const __FlashStringHelper *s2) {
+  //  Print 1 dynamic string and 1 flash string.
   Serial.begin(SERIAL_BAUD);
   while (!Serial) {}  //  Wait for Serial to be ready.
   Serial.print(s1);
