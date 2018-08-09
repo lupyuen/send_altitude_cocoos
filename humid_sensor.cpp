@@ -15,17 +15,13 @@
 static void init_sensor(void);
 static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);
-static void next_channel(void);
-static void prev_channel(void);
 
 //  Construct a sensor object with the sensor functions.
 static Sensor sensor(
-  "hmd",  //  Name of sensor. The Structured Message field will use this name.
-  &init_sensor,  //  Function for initialising the sensor.
-  &poll_sensor,  //  Function for polling sensor data.
-  &receive_sensor_data,  //  Function for receiving sensor data.
-  &next_channel,  //  Not used.
-  &prev_channel  //  Not used.
+  "hmd",                //  Name of sensor. The Structured Message field will use this name.
+  &init_sensor,         //  Function for initialising the sensor.
+  &poll_sensor,         //  Function for polling sensor data.
+  &receive_sensor_data  //  Function for receiving sensor data.
 );
 
 static SensorContext sensorContext;  //  Remembers the sensor context.
@@ -34,6 +30,7 @@ static uint8_t newDataSize = 0;  //  Set to non-zero if there is new sensor data
 
 static void init_sensor(void) {
   //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
+  bme280_setup();  //  Set up the BME280 API.
 }
 
 static uint8_t poll_sensor(void) {
@@ -67,7 +64,3 @@ SensorContext *setup_humid_sensor(
   setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
-
-//  Not used.
-static void next_channel(void) {}
-static void prev_channel(void) {}

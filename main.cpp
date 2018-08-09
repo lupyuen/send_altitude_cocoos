@@ -8,7 +8,6 @@
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "sensor.h"
-#include "bme280.h"        //  BME280 interface
 #include "temp_sensor.h"   //  Temperature sensor (BME280)
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
@@ -52,7 +51,6 @@ int main(void) {
 static void sensor_setup(uint8_t display_task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
   //  Edit this function to add your own sensors.
-  bme280_setup();  //  Set up the BME280 API.
 
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 500;  //  Poll the sensor every 500 milliseconds.

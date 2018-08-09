@@ -12,15 +12,13 @@
 static void init_sensor(void);
 static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);
-static void next_channel(void);
 
+//  Construct a sensor object with the sensor functions.
 static Sensor sensor(
-  "gyr",  //  Name of sensor. The Structured Message field will use this name.
-  &init_sensor,  //  Function for initialising the sensor.
-  &poll_sensor,  //  Function for polling sensor data.
-  &receive_sensor_data,  //  Function for receiving sensor data.
-  &next_channel,  //  Not used.
-  &next_channel  //  Not used.
+  "gyr",                //  Name of sensor. The Structured Message field will use this name.
+  &init_sensor,         //  Function for initialising the sensor.
+  &poll_sensor,         //  Function for polling sensor data.
+  &receive_sensor_data  //  Function for receiving sensor data.
 );
 
 #define sensorDataSize 3  //  Our sensor data will have 3 floats.
@@ -37,10 +35,10 @@ static uint8_t poll_sensor(void) {
   //  Poll the sensor for new data. Return size of new data if new data available, 0 otherwise.
   debug(sensor.info.name, " >> poll_sensor"); ////
 
-  //  Simulated sensor.
-  sensorDataArray[0] = rand() % 50;
-  sensorDataArray[1] = rand() % 50;
-  sensorDataArray[2] = rand() % 50;
+  //  Simulated sensor data with random numbers.
+  sensorDataArray[0] = (rand() % 500) / 10.0;
+  sensorDataArray[1] = (rand() % 500) / 10.0;
+  sensorDataArray[2] = (rand() % 500) / 10.0;
 
   newDataSize = sensorDataSize;  //  Return the size of sensor data.
   return newDataSize;  //  Data should always be available.
@@ -68,6 +66,3 @@ SensorContext *setup_gyro_sensor(
   setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
-
-//  Not used.
-static void next_channel(void) {}

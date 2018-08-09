@@ -19,7 +19,11 @@ BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
                   // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
 void bme280_setup(void) {
-  //  Set up the BME280 module for reading.
+  //  Set up the BME280 module for reading.  Skip if already set up.
+  static bool firstTime = true;
+  if (!firstTime) return;  //  Already set up, quit.
+  firstTime = false;
+  
   Wire.begin();
   while(!bme.begin()) {
     debug("BME280 not found");

@@ -64,8 +64,8 @@ struct Sensor {
     //  number of floats that the function can copy into the buffer.
     //  Returns number of floats copied.
     uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
-    void (*next_channel_func)(void),  //  TODO: Set sensor to measure next channel.
-    void (*prev_channel_func)(void)  //  TODO: Set sensor to measure previous channel.
+    void (*next_channel_func)(void) = NULL,  //  TODO: Set sensor to measure next channel.
+    void (*prev_channel_func)(void) = NULL  //  TODO: Set sensor to measure previous channel.
   );
   #endif // __cplusplus
 };
