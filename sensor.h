@@ -2,10 +2,12 @@
 #define SENSOR_H_
 
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
-#define sensorDataSize 3  //  Max number of floats that can be returned by a sensor as sensor data.
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
+
+#define sensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define sensorNameSize 3  //  Max number of letters/digits in sensor name.
 
 //  Interface for getting sensor data, by polling and by events.
 struct SensorInfo {
@@ -106,5 +108,4 @@ void debug(
 #ifdef __cplusplus
 }  //  End of extern C scope.
 #endif
-
 #endif  //  SENSOR_H_
