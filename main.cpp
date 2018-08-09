@@ -1,54 +1,20 @@
-/**
- * Example application demonstrating handling of multiple IoT sensors.
- * Derived from https://github.com/lupyuen/cocoOSExample-arduino
- *
- * The application consists of 3 tasks:
- *
- *  - temp sensor task: waits for an event to signaled from the temp sensor driver. New temp
- *    data is fetched from the sensor and sent in a message to the display task.
- *
- *  - gyro sensor task: waits for a timeout and then polls the sensor for new data. New data is
- *    fetched from the sensor and sent in a message to the display task.
- *
- *  - display task: writes sensor values to the terminal
- *
- *  Main flow of execution:
- *  When the sensors are serviced they eventually signals new data available by signaling an event (temp
- *  sensor) or sets a polled flag (gyro sensor). The sensor tasks waiting for event/timeout, checks the
- *  sensor for new data and posts a message with the new data to the display task.
- *
- *  Task procedure sharing
- *  The two sensor tasks use the same task procedure. All work and data handling is done through the task
- *  data pointer assigned to each task. This points to a structure holding sensor configuration/functions
- *  and an array holding sensor data.
- *
- */
-//  Arduino declarations
-#include <Arduino.h> ////
-#include <Time.h> ////
-#include <TimeLib.h> ////
-typedef unsigned long time_t; ////  TODO: Fix the declaration
-
-//  Other declarations
+//  Sample application demonstrating handling of multiple IoT sensors on Arduino.
+//  Based on https://github.com/lupyuen/cocoOSExample-arduino
+#include <Arduino.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
+#include "display.h"
 #include "sensor.h"
 #include "temp_sensor.h"
 #include "gyro_sensor.h"
-#include "display.h"
 
-//  Serial Monitor will run at this bitrate.
-#define SERIAL_BAUD 9600
-
-//  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-Sem_t i2cSemaphore;  //  Declared in sensor.h
-
-//  Pool of display messages that make up the display message queue.
-#define displayMsgPoolSize 6  //  Allow only 6 messages, which means fewer than 6 devices.
-static DisplayMsg displayMsgPool[displayMsgPoolSize];
+#define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
+Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+#define displayMsgPoolSize 6  //  Allow only 6 display messages, which means fewer than 6 sensors allowed.
+static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 
 //////////////////////////////////////////////
 //  TODO: Move to bme280.cpp
@@ -78,47 +44,33 @@ void bme280_setup(void) {
   }
 }
 
-/********************************************/
-/*            System threads                */
-/********************************************/
-
-static void arduino_start_timer(void) { ////
+static void arduino_start_timer(void) {
   //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform
-  //  background processing.  AVR Timer 0 is reserved for Arduino timekeeping.
-  
-  // Set PORTB pins as output, but off
-	DDRB = 0xFF;
+  //  background processing.  AVR Timer 0 is reserved for Arduino timekeeping.    
+	DDRB = 0xFF;  //  Set PORTB pins as output, but off.
 	PORTB = 0x00;
+	//  Turn on timer.
+	//  TCCR1B |= _BV(CS10);  //  No prescaler.
+	TCCR1B = (1<<CS10) | (1<<CS12); //  Set the prescaler as 1024.
+	TIMSK1 |= _BV(TOIE1);	
+	sei();	// Turn interrupts on.
+}
 
-	// Turn on timer 
-	// TCCR1B |= _BV(CS10);  // no prescaler
-	TCCR1B = (1<<CS10) | (1<<CS12); //set the prescaler as 1024
-	TIMSK1 |= _BV(TOIE1);
-
-	// Turn interrupts on.
-	sei();	
-} ////
-
-ISR(TIMER1_OVF_vect) { ////
+ISR(TIMER1_OVF_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform background processing.
-  // debug("os_tick"); ////
+  ////  debug("os_tick"); ////
   os_tick();  
-} ////
+}
 
-/********************************************/
-/*            Setup and main                */
-/********************************************/
-
-static void arduino_setup(void) { ////
-  //  Run initialisation for Arduino, since we are using main() instead of setup()+loop().
-  init();  // Initialize Arduino timers,
+static void arduino_setup(void) {
+  //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
+  init();
   debug("----arduino_setup", 0);
-} ////
+}
 
 static void system_setup(void) {
-  //  Run system initialisation.
-  arduino_setup(); ////
-  //// debug("init_display", 0); ////
+  //  Initialise the system. Create the semaphore.
+  arduino_setup(); //// debug("init_display"); ////
   init_display();
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -129,12 +81,10 @@ static void system_setup(void) {
 }
 
 static void sensor_setup(uint8_t display_task_id) {
-  //  Start the sensor tasks for each sensor to read and process sensor data.
+  //  Start the sensor tasks for each sensor to read and process sensor data.  
+  bme280_setup();  //  Set up the BME280 API.
 
-  //  Set up the BME280 API.
-  bme280_setup();
-
-  //  Set up the sensors and get the sensor contexts.
+  //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 500;  //  Poll the sensor every 500 milliseconds.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, display_task_id);
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, display_task_id);
@@ -158,14 +108,14 @@ int main(void) {
 
   //  Start the display task that displays sensor readings
   uint8_t display_task_id = task_create(
-    display_task,  //  Task will run this function.
+    display_task,   //  Task will run this function.
     get_display(),  //  task_get_data() will be set to the display object.
-    100,  //  Priority 100 = lowest priority
+    100,            //  Priority 100 = lowest priority
     (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
-    displayMsgPoolSize,  //  Size of queue pool.
-    sizeof(DisplayMsg));  //  Size of queue message.
+    displayMsgPoolSize,        //  Size of queue pool.
+    sizeof(DisplayMsg));       //  Size of queue message.
   
-  //  Start the sensor tasks for each sensor to read and process sensor data.
+  //  Start the sensor tasks for each sensor to read sensor data.
   sensor_setup(display_task_id);
 
   //  Start the AVR timer to generate ticks for background processing.
@@ -174,17 +124,15 @@ int main(void) {
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   //// debug("os_start"); ////
-  os_start();  //  Never returns.
-  
+  os_start();  //  Never returns.  
 	return EXIT_SUCCESS;
 }
 
-void debug(const char *s1, const char *s2 = 0) {
+void debug(const char *s1, const char *s2) {
   //  Print a message to the Arduino serial console. This code is located here because 
   //  Serial API may only be used in a C++ module.  Declared in sensor.h
   Serial.begin(SERIAL_BAUD);
-  while(!Serial) {}  //  Wait for Serial to be ready.
-
+  while (!Serial) {}  //  Wait for Serial to be ready.
   Serial.print(s1);
   if (s2) Serial.print(s2);
   Serial.println("");
