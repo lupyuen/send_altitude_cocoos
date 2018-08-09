@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
+#include "display.h"
 #include "sensor.h"
 #include "bme280.h"
 #include "temp_sensor.h"

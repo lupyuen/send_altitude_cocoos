@@ -3,11 +3,13 @@
 
 #include <stdint.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
-#include "sensor.h"
+#include "sensor.h"  //  Defines maxSensorNameSize and maxSensorDataSize
+
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
+#define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 #define sensorDisplaySize 4  //  Max number of sensors that can be displayed during a single refresh.
 #define displayMsgPoolSize 6  //  Allow only 6 display messages to be queued, which means fewer than 6 sensors allowed.
 #define DISPLAY_MSG 34  //  TODO: Signal the display to update.
@@ -29,6 +31,15 @@ struct Display {
 Display *get_display(void);  //  Return the global instance of the display interface.
 void init_display(void);  //  Initialise the display interface.
 void display_task(void);  //  Display Task runs this function to display messages received.
+
+//  Print a message to the Arduino serial console.
+void debug(
+  const char *s1,  //  Text to be printed.
+  const char *s2  //  Another text to be printed.
+  #ifdef __cplusplus
+    = 0  //  Second parameter may be omitted.
+  #endif
+  );
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

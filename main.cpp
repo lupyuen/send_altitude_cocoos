@@ -13,16 +13,15 @@
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 
-#define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
-Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
-
 //  These are the functions that we will implement in this file.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static void system_setup(void);  //  Initialise the system.
 static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
+
+Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 
 int main(void) {
   //  The application starts here. We create the tasks to read and display sensor data 
@@ -118,15 +117,4 @@ ISR(TIMER1_OVF_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
   ////  debug("os_tick"); ////
   os_tick();  
-}
-
-void debug(const char *s1, const char *s2) {
-  //  Print a message to the Arduino serial console. This code is located here because 
-  //  Serial API may only be used in a C++ module.  Declared in sensor.h
-  Serial.begin(SERIAL_BAUD);
-  while (!Serial) {}  //  Wait for Serial to be ready.
-  Serial.print(s1);
-  if (s2) Serial.print(s2);
-  Serial.println("");
-  Serial.flush();  //  Let serial printing finish.
 }

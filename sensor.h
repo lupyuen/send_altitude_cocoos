@@ -88,15 +88,6 @@ uint8_t receive_sensor_data(
 //  Background task to receive and process sensor data.
 void sensor_task(void);
 
-//  Print a message to the Arduino serial console. Defined in main.cpp.
-void debug(
-  const char *s1,  //  Text to be printed.
-  const char *s2  //  Another text to be printed.
-  #ifdef __cplusplus
-    = 0  //  Second parameter may be omitted.
-  #endif
-  );
-
 #ifdef __cplusplus
 }  //  End of extern C scope.
 #endif

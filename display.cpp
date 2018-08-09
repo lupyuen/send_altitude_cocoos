@@ -109,3 +109,13 @@ Display *get_display(void) {
   //  Return the global instance of the display object.
   return &display;
 }
+
+void debug(const char *s1, const char *s2) {
+  //  Print a message to the Arduino serial console.
+  Serial.begin(SERIAL_BAUD);
+  while (!Serial) {}  //  Wait for Serial to be ready.
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
+}
