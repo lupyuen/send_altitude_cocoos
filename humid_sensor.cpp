@@ -12,7 +12,7 @@
 #include "humid_sensor.h"
 
 //  These are the sensor functions that we will implement in this file.
-static void init_sensor(uint8_t id, Evt_t *event, uint16_t period_ms);
+static void init_sensor(void);
 static uint8_t poll_sensor(void);
 static uint8_t receive_sensor_data(float *data, uint8_t size);
 static void next_channel(void);
@@ -32,11 +32,8 @@ static SensorContext sensorContext;  //  Remembers the sensor context.
 static float sensorData = NAN;  //  Default the sensor data to "Not A Number".
 static uint8_t newDataSize = 0;  //  Set to non-zero if there is new sensor data to be received.
 
-static void init_sensor(uint8_t id, Evt_t *event, uint16_t poll_interval) {
-  //  Initialise the sensor.
-  sensor.info.id = id;
-  sensor.info.event = event;
-  sensor.info.poll_interval = poll_interval;
+static void init_sensor(void) {
+  //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
 }
 
 static uint8_t poll_sensor(void) {

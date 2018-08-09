@@ -34,15 +34,13 @@ struct SensorInfo {
 
 //  Interface for controlling the sensor.
 struct SensorControl {
-  //  Function for initialising the sensor with the specified sensor ID and
-  //  polling interval. event will be triggered when sensor data is available.
-  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval);
+  void (*init_sensor_func)(void);  //  Function for initialising the sensor.
   void (*next_channel_func)(void);  //  TODO: Set sensor to measure next channel.
   void (*prev_channel_func)(void);  //  TODO: Set sensor to measure previous channel.
 
   #ifdef __cplusplus
   SensorControl(  //  Constructor for C++
-    void (*init_sensor_func0)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+    void (*init_sensor_func0)(void),
     void (*next_channel_func0)(void),
     void (*prev_channel_func0)(void));
   #endif // __cplusplus
@@ -56,9 +54,8 @@ struct Sensor {
   #ifdef __cplusplus
   Sensor(  //  Constructor for C++
     const char name[],  //  Name of sensor.
-    //  Function for initialising the sensor with the specified sensor ID and
-    //  polling interval. event will be triggered when sensor data is available.
-    void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+    //  Function for initialising the sensor.
+    void (*init_sensor_func)(void),
     //  Poll for new sensor data. If new sensor data is available,
     //  return the number of float values available.  Else return 0.
     uint8_t (*poll_sensor_func)(void),

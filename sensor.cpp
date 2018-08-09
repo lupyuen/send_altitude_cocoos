@@ -14,7 +14,8 @@ void setup_sensor_context(
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {
-  //  Set up the sensor context. Allocate a unique sensor ID.
+  //  Set up the sensor context and call the sensor to initialise itself.
+  //  Allocate a unique sensor ID and create the event.
   uint8_t sensorID =  nextSensorID++;
   Evt_t event = event_create();
 
@@ -28,7 +29,7 @@ void setup_sensor_context(
   context->display_task_id = displayTaskID;
 
   //  Call the sensor to do initialisation.
-  sensor->control.init_sensor_func(sensorID, &event, pollInterval);
+  sensor->control.init_sensor_func();
 }
 
 void sensor_task(void) {
@@ -100,7 +101,7 @@ SensorInfo::SensorInfo(
 
 //  SensorInfo constructor for C++ only.
 SensorControl::SensorControl(
-  void (*init_sensor_func0)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+  void (*init_sensor_func0)(void),
   void (*next_channel_func0)(void),
   void (*prev_channel_func0)(void)
 ) {
@@ -112,7 +113,7 @@ SensorControl::SensorControl(
 //  Sensor constructor for C++ only.
 Sensor::Sensor(
   const char name[],
-  void (*init_sensor_func)(uint8_t id, Evt_t *event, uint16_t poll_interval),
+  void (*init_sensor_func)(void),
   uint8_t (*poll_sensor_func)(void),
   uint8_t (*receive_sensor_data_func)(float *data, uint8_t size),
   void (*next_channel_func)(void),
