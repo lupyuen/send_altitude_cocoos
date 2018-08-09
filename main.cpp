@@ -8,8 +8,10 @@
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "sensor.h"
-#include "temp_sensor.h"
-#include "gyro_sensor.h"
+#include "temp_sensor.h"   //  Temperature sensor (BME280)
+#include "humid_sensor.h"  //  Humidity sensor (BME280)
+#include "alt_sensor.h"    //  Altitude sensor (BME280)
+#include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
