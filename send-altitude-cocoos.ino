@@ -7,4 +7,4 @@
 
 //  If you wish, you may use this file as a staging area while
 //  porting your Arduino code to .h and .cpp files. That's how
-//  bme.h and bme.cpp were created.
+//  bme280.h and bme280.cpp were created.

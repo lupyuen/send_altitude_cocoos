@@ -42,7 +42,6 @@ ln -s ../*.h .
 ## Sample Log
 
 ```text
-
 ----arduino_setup
 Create semaphore
 BME280 OK
@@ -70,9 +69,9 @@ gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-tmp:            32.6
-hmd:            60.6
-alt:            41.5
+tmp:            27.5
+hmd:            61.8
+alt:            14.2
 gyr:            30.7,           8.8,            48.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
@@ -80,7 +79,7 @@ tmp >> poll_sensor
 tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
-tmp:            32.6
+tmp:            27.4
 hmd >> Wait for semaphore
 hmd >> Got semaphore
 hmd >> poll_sensor
@@ -99,8 +98,8 @@ gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-hmd:            60.6
-alt:            41.2
+hmd:            61.8
+alt:            13.5
 gyr:            11.3,           21.0,           24.0
 tmp >> Wait for semaphore
 tmp >> Got semaphore
@@ -108,7 +107,7 @@ tmp >> poll_sensor
 tmp >> Send msg
 tmp >> Release semaphore
 tmp >> Wait interval
-tmp:            32.6
+tmp:            27.4
 hmd >> Wait for semaphore
 hmd >> Got semaphore
 hmd >> poll_sensor
@@ -127,8 +126,64 @@ gyr >> poll_sensor
 gyr >> Send msg
 gyr >> Release semaphore
 gyr >> Wait interval
-hmd:            60.6
-alt:            41.0
+hmd:            61.8
+alt:            13.1
 gyr:            30.0,           5.8,            9.8
+tmp >> Wait for semaphore
+tmp >> Got semaphore
+tmp >> poll_sensor
+tmp >> Send msg
+tmp >> Release semaphore
+tmp >> Wait interval
+tmp:            27.4
+hmd >> Wait for semaphore
+hmd >> Got semaphore
+hmd >> poll_sensor
+hmd >> Send msg
+hmd >> Release semaphore
+hmd >> Wait interval
+alt >> Wait for semaphore
+alt >> Got semaphore
+alt >> poll_sensor
+alt >> Send msg
+alt >> Release semaphore
+alt >> Wait interval
+gyr >> Wait for semaphore
+gyr >> Got semaphore
+gyr >> poll_sensor
+gyr >> Send msg
+gyr >> Release semaphore
+gyr >> Wait interval
+hmd:            61.8
+alt:            13.1
+gyr:            10.1,           29.6,           44.5
+tmp >> Wait for semaphore
+tmp >> Got semaphore
+tmp >> poll_sensor
+tmp >> Send msg
+tmp >> Release semaphore
+tmp >> Wait interval
+tmp:            27.4
+hmd >> Wait for semaphore
+hmd >> Got semaphore
+hmd >> poll_sensor
+hmd >> Send msg
+hmd >> Release semaphore
+hmd >> Wait interval
+alt >> Wait for semaphore
+alt >> Got semaphore
+alt >> poll_sensor
+alt >> Send msg
+alt >> Release semaphore
+alt >> Wait interval
+gyr >> Wait for semaphore
+gyr >> Got semaphore
+gyr >> poll_sensor
+gyr >> Send msg
+gyr >> Release semaphore
+gyr >> Wait interval
+hmd:            61.8
+alt:            13.5
+gyr:            24.7,           2.2,            18.2
 
 ```

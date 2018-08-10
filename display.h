@@ -1,6 +1,9 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif  //  ARDUINO
 #include <stdint.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"  //  Defines maxSensorNameSize and maxSensorDataSize
@@ -46,7 +49,9 @@ void debug(
   #endif
   );
 
-#ifdef __cplusplus
+#ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
+#ifdef ARDUINO  //  Flash memory for Arduino only.
+
 void debug(
   const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
 );
@@ -55,6 +60,8 @@ void debug(
   const char *s1,  //  String in dynamic memory.
   const __FlashStringHelper *s2  //  String in flash memory e.g. F("the string")
 );
-#endif
+
+#endif  //  ARDUINO
+#endif  //  __cplusplus
 
 #endif  //  DISPLAY_H_

@@ -38,7 +38,6 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  uint8_t sensorDataCount;
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_post() in C++.
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.
