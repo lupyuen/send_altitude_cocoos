@@ -1,11 +1,10 @@
-Arduino sketch to read BME280 temperature, humidity and altitude sensors and process the data concurrently.  Multitasking of the sensors
-is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
+Arduino sketch to read BME280 temperature, humidity and altitude sensors (plus a simulated gyro sensor) and process the data concurrently.  Multitasking of the sensors is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
 
-Libraries needed to compile with Arduino IDE or Arduino Web Editor:
+The code above compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
-- `Time`: Download `Time` from Arduino Library Manager
+- `Time`: Download the `Time` library by Michael Margolis from Arduino Library Manager
 
-- `BME280`: Download `BME280` from Arduino Library Manager
+- `BME280`: Download the `BME280` library by Tyler Glenn from Arduino Library Manager
 
 - `cocoOS_5.0.1`: Download from http://www.cocoos.net/download.html, 
     unzip and move all files in `inc` and `src` to top level.
@@ -21,6 +20,7 @@ should be symbolically linked into the folder `src`
 For Windows: Open a Command Prompt with Admin permissions. Run the following:
 
 ```cmd
+git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
 mkdir src
 cd src
@@ -30,6 +30,7 @@ FOR %f IN (..\*.ino ..\*.cpp ..\*.c ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 For MacOS and Linux: Open a Command Prompt. Run the following:
 
 ```bash
+git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
 mkdir src
 cd src
