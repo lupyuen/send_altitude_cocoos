@@ -1,5 +1,5 @@
 Arduino sketch to read BME280 temperature, humidity and altitude sensors and process the data concurrently.  Multitasking of the sensors
-is handled by cocoOS, the portable scheduling task framework: http://www.cocoos.net
+is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
 
 Libraries needed to compile with Arduino IDE or Arduino Web Editor:
 
