@@ -1,6 +1,8 @@
 Arduino sketch to read BME280 temperature, humidity and altitude sensors (plus a simulated gyro sensor) and process the data concurrently.  Multitasking of the sensors is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
 
-The code above compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
+Read the tutorial: https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
+
+The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
 - `Time`: Download the `Time` library by Michael Margolis from Arduino Library Manager
 
