@@ -21,7 +21,7 @@ should be symbolically linked into the folder `src`
 For Windows: Open a Command Prompt with Admin permissions. Run the following:
 
 ```cmd
-cd send-altitude-cocoos
+cd send_altitude_cocoos
 mkdir src
 cd src
 FOR %f IN (..\*.ino ..\*.cpp ..\*.c ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
@@ -30,7 +30,7 @@ FOR %f IN (..\*.ino ..\*.cpp ..\*.c ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 For MacOS and Linux: Open a Command Prompt. Run the following:
 
 ```bash
-cd send-altitude-cocoos
+cd send_altitude_cocoos
 mkdir src
 cd src
 ln -s ../*.ino .
