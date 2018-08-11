@@ -4,6 +4,7 @@
 #include "cocoos_cpp.h"
 #include "uart.h"
 
+static String toHex(char c);
 static void logBuffer(const __FlashStringHelper *prefix, const char *buffer, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
 
@@ -45,12 +46,13 @@ bool sendBuffer(
   uint8_t &actualMarkerCount);
 */
 
+static String buffer = "AT$I=10\r";  //  TODO
+static unsigned long timeout = 1000;  //  TODO: COMMAND_TIMEOUT
+static char markerChar = '\r';  //  TODO: END_OF_RESPONSE
+static uint8_t expectedMarkerCount = 1;
+
 void uart_task(void) {
   Serial.begin(9600);  //  TODO
-  String buffer = "AT$I=10\r";  //  TODO
-  unsigned long timeout = 1000;  //  TODO: COMMAND_TIMEOUT
-  char markerChar = '\r';  //  TODO: END_OF_RESPONSE
-  uint8_t expectedMarkerCount = 1;
   String response;
   uint8_t actualMarkerCount;
 
@@ -66,20 +68,25 @@ void uart_task(void) {
   //  The Finite State Machine sets the step parameter to a non-zero value
   //  to indicate the step to jump to.
 
-  bool status = false;  //  Return status.
-  int sendIndex = 0;  //  Index of next char to be sent.
-  unsigned long sentTime = 0;  //  Timestamp at which we completed sending.
+  bool status;  //  Return status.
+  int sendIndex;  //  Index of next char to be sent.
+  unsigned long sentTime;  //  Timestamp at which we completed sending.
   uint8_t sendChar;
-  actualMarkerCount = 0;
-  response = "";
-  serialPort->begin(MODEM_BITS_PER_SECOND);
 
   task_open();  //  Start of the task. Must be matched with task_close().
 
-  //  Start the serial interface for the transceiver.
   log2(F(" - Wisol.sendBuffer: "), buffer);
-  // log2(F("response / expectedMarkerCount / timeout: "), response + " / " + expectedMarkerCount + " / " + timeout);
+  ////
+  log2(F("response / expectedMarkerCount / timeout: "), response + " / " + expectedMarkerCount + " / " + timeout);
 
+  status = false;  //  Return status.
+  sendIndex = 0;  //  Index of next char to be sent.
+  sentTime = 0;  //  Timestamp at which we completed sending.
+  response = "";
+  actualMarkerCount = 0;
+
+  //  Start the serial interface for the transceiver.
+  serialPort->begin(MODEM_BITS_PER_SECOND);
   task_wait(delayAfterStart);
 
   //  Start listening for responses from the transceiver.
@@ -95,7 +102,8 @@ void uart_task(void) {
     sendChar = (uint8_t) buffer.charAt(sendIndex);
     serialPort->write(sendChar);
     sendIndex++;
-    // Serial.println(String("send: ") + String((char) sendChar) + " / " + String(toHex((char)sendChar))); ////
+    ////
+    Serial.println(String("send: ") + String((char) sendChar) + " / " + String(toHex((char)sendChar))); ////
     task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
   }
   sentTime = millis();  //  Start the timer for detecting receive timeout.
@@ -113,7 +121,8 @@ void uart_task(void) {
 
     //  Attempt to read the data.
     int receiveChar = serialPort->read();
-    // Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
+    ////
+    Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
     if (receiveChar == -1) { continue; }  ////  TODO task_wait
@@ -130,8 +139,10 @@ void uart_task(void) {
 
     //  Else append the received char to the response.
     response.concat(String((char) receiveChar));
-    // Serial.println(String("response: ") + response); ////
-    // log2(F("receiveChar "), receiveChar);
+    ////
+    Serial.println(String("response: ") + response); ////
+    ////
+    log2(F("receiveChar "), receiveChar);
   }
   //  Finished the send and receive.  We close the serial port.
   //  In case of timeout, also close the serial port.
@@ -168,7 +179,7 @@ void uart_task(void) {
   return status;
 }
 
-void setup_uart(uint8_t rx, uint8_t tx, bool echo) {
+void setup_uart(UARTContext *uartContext, uint8_t rx, uint8_t tx, bool echo) {
   //  Init the module with the specified transmit and receive pins.
   //  Default to no echo.
   serialPort = new SoftwareSerial(rx, tx);
@@ -203,4 +214,13 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *buffer, cha
     m++;
   }
   echoPort->write('\n');
+}
+
+static String toHex(char c) {
+  //  Convert the char to a string of 2 hex digits.
+  byte *b = (byte *) &c;
+  String bytes;
+  if (b[0] <= 0xF) bytes.concat('0');
+  bytes.concat(String(b[0], 16));
+  return bytes;
 }

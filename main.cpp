@@ -57,6 +57,9 @@ static void network_setup(uint8_t display_task_id) {
   //  Start the network task to send and receive network messages.
 
   //  TODO
+  const uint8_t WISOL_TX = 4;  //  Transmit port for For UnaBiz / Wisol Dev Kit
+  const uint8_t WISOL_RX = 5;  //  Receive port for UnaBiz / Wisol Dev Kit
+  setup_uart(&uartContext, WISOL_RX, WISOL_TX, true);
   task_create(uart_task, &uartContext, 10,   //  Priority 10 = highest priority
     0, 0, 0);  //  Will not receive message queue data.
 }

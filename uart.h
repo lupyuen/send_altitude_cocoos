@@ -11,7 +11,7 @@ struct UARTContext {
 };
 
 void uart_task(void);
-void setup_uart(uint8_t rx, uint8_t tx, bool echo);
+void setup_uart(UARTContext *uartContext, uint8_t rx, uint8_t tx, bool echo);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.
