@@ -15,7 +15,7 @@
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 
 //  These are the functions that we will implement in this file.
-static void network_setup(uint8_t display_task_id);  //  Start the network task to send and receive network messages.
+static uint8_t network_setup(uint8_t display_task_id);  //  Start the network task to send and receive network messages.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static void system_setup(void);  //  Initialise the system.
@@ -25,6 +25,7 @@ static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate in
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 static UARTContext uartContext;
 static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
+static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
 
 int main(void) {
   //  The application starts here. We create the tasks to read and display sensor data 
@@ -53,15 +54,23 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-static void network_setup(uint8_t display_task_id) {
+static uint8_t network_setup(uint8_t display_task_id) {
   //  Start the network task to send and receive network messages.
 
   //  TODO
   const uint8_t WISOL_TX = 4;  //  Transmit port for For UnaBiz / Wisol Dev Kit
   const uint8_t WISOL_RX = 5;  //  Receive port for UnaBiz / Wisol Dev Kit
   setup_uart(&uartContext, WISOL_RX, WISOL_TX, true);
-  task_create(uart_task, &uartContext, 10,   //  Priority 10 = highest priority
-    0, 0, 0);  //  Will not receive message queue data.
+  uint8_t uart_task_id = task_create(
+    uart_task,     //  Task will run this function.
+    &uartContext,  //  task_get_data() will be set to the display object.
+    10,            //  Priority 10 = highest priority
+    (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    uartMsgPoolSize,        //  Size of queue pool.
+    sizeof(UARTMsg));   //  Size of queue message.
+
+  uint8_t network_task_id = 0;
+  return network_task_id;
 }
 
 static void sensor_setup(uint8_t display_task_id) {

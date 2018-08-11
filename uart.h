@@ -6,11 +6,13 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
+#define maxUARTMsgLength 30  //  Max message length. 12-byte message = 24 ASCII chars
+#define uartMsgPoolSize 2  //  Should not have concurrent messages.
 
 //  UART Task accepts messages of this format.
 struct UARTMsg {
   Msg_t super;  //  Required for all cocoOS messages.
-  String buffer;  //  String to be sent.
+  char buffer[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.
   unsigned long timeout;  //  Send timeout in milliseconds.
   char markerChar;  //  End-of-command marker character that we should count e.g. '\r'
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
