@@ -36,16 +36,6 @@ Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Seria
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
 unsigned long lastSend;  //  Timestamp of last send.
 
-/*
-bool sendBuffer(
-  const String &buffer, 
-  unsigned long timeout,
-  char markerChar,
-  uint8_t expectedMarkerCount,
-  String &response,
-  uint8_t &actualMarkerCount);
-*/
-
 void uart_task(void) {
   Serial.begin(9600);  //  TODO
 
