@@ -26,7 +26,7 @@ git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
 mkdir src
 cd src
-FOR %f IN (..\*.ino ..\*.cpp ..\*.c ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
+FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 ```
 
 For MacOS and Linux: Open a Command Prompt. Run the following:
@@ -36,10 +36,7 @@ git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
 mkdir src
 cd src
-ln -s ../*.ino .
-ln -s ../*.cpp .
-ln -s ../*.c .
-ln -s ../*.h .
+ln -s ../*.ino ../*.cpp ../*.h .
 ```
 
 ## Source Files

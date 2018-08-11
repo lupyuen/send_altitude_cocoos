@@ -39,7 +39,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   debug(sensor.info.name, F(" >> poll_sensor")); ////
   
   //  Read sensor data from BME280.
-  BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
+  static BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
   sensorData[0] = bme.temp(tempUnit);  //  Get temperature in Celsius.
 
   //  Simulated sensor.
