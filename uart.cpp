@@ -4,7 +4,7 @@
 #include "cocoos_cpp.h"
 #include "uart.h"
 
-void logBuffer(const __FlashStringHelper *prefix, const char *buffer, char markerChar,
+static void logBuffer(const __FlashStringHelper *prefix, const char *buffer, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
 
 //  Use a macro for logging.
@@ -35,13 +35,25 @@ Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Seria
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
 unsigned long lastSend;  //  Timestamp of last send.
 
+/*
 bool sendBuffer(
   const String &buffer, 
   unsigned long timeout,
   char markerChar,
   uint8_t expectedMarkerCount,
   String &response,
-  uint8_t &actualMarkerCount) {
+  uint8_t &actualMarkerCount);
+*/
+
+void uart_task(void) {
+  Serial.begin(9600);  //  TODO
+  String buffer = "AT$I=10\r";  //  TODO
+  unsigned long timeout = 1000;  //  TODO: COMMAND_TIMEOUT
+  char markerChar = '\r';  //  TODO: END_OF_RESPONSE
+  uint8_t expectedMarkerCount = 1;
+  String response;
+  uint8_t actualMarkerCount;
+
   //  buffer contains a string of ASCII chars to be sent to the transceiver.
   //  We send the buffer to the transceiver.  Return true if successful.
   //  expectedMarkerCount is the number of end-of-command markers '\r' we
@@ -97,14 +109,14 @@ bool sendBuffer(
       break;
     }
     //  No data is available in the serial port buffer to receive now.  We retry later.
-    if (serialPort->available() <= 0) { continue; }
+    if (serialPort->available() <= 0) { continue; }  ////  TODO task_wait
 
     //  Attempt to read the data.
     int receiveChar = serialPort->read();
     // Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
-    if (receiveChar == -1) { continue; }
+    if (receiveChar == -1) { continue; }  ////  TODO task_wait
 
     if (receiveChar == markerChar) {
       //  We see the "\r" marker. Remember the marker location so we can format the debug output.
@@ -146,19 +158,19 @@ bool sendBuffer(
 
   task_close();  //  End of the task.
 
+  ////
+  Serial.print("response = ");
+  Serial.println(response);
+  Serial.print("actualMarkerCount = ");
+  Serial.println(actualMarkerCount);
+  ////
+
   return status;
 }
 
 void setup_uart(uint8_t rx, uint8_t tx, bool echo) {
   //  Init the module with the specified transmit and receive pins.
   //  Default to no echo.
-  //  void setup_uart(Country country0, bool useEmulator0, const String device0, bool echo,
-  /*
-  zone = 4;  //  RCZ4
-  country = country0;
-  useEmulator = useEmulator0;
-  device = device0;
-  */
   serialPort = new SoftwareSerial(rx, tx);
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;
@@ -168,7 +180,7 @@ void setup_uart(uint8_t rx, uint8_t tx, bool echo) {
 //  Convert nibble to hex digit.
 static const char nibbleToHex[] = "0123456789abcdef";
 
-void logBuffer(const __FlashStringHelper *prefix, const char *buffer, char markerChar,
+static void logBuffer(const __FlashStringHelper *prefix, const char *buffer, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount) {
   //  Log the send/receive buffer for debugging.  markerPos is an array of positions in buffer
   //  where the '>' marker was seen and removed.
