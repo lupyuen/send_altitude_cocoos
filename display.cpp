@@ -49,13 +49,23 @@ static void refresh(void) {
       int16_t d1 = (int16_t) d;  //  Compute d1 = 12, d2 = 3.
       int16_t d2 = (d - d1) * 10;
       d2 = d2 % 10;
-      sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
+      //  Implement sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
+      buf[0] = 0;
+      itoa(d1, buf + strlen(buf), 10);
+      strncat(buf, ".", sizeof(buf));
+      itoa(d2, buf + strlen(buf), 10);
+      //  Separate values with tab.
       if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. 12.3, 12.4
       strcat(sensorBuf, buf);      
     }
-    sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);  //  e.g. tmp: 12.3, 12.4
+    //  Implement sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);  //  e.g. tmp: 12.3, 12.4
+    buf[0] = 0;
+    strncat(buf, msg.name, sizeof(buf));
+    strncat(buf, ":\t\t", sizeof(buf));
+    strncat(buf, sensorBuf, sizeof(buf));
+
     displayMessages[i].count = 0;  //  Clear the sensor data.
-    debug(buf);
+    debug(buf);  //  Display the line.
   }
 }
 
