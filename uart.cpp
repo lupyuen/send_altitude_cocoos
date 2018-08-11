@@ -57,9 +57,24 @@ void uart_task(void) {
   task_open();  //  Start of the task. Must be matched with task_close().
   context = (UARTContext *) task_get_data();
 
+#ifndef NOTUSED
+  //  Test whether the timer is accurate while multitasking.
+  context->testTimer = millis();
+  task_wait(10); context = (UARTContext *) task_get_data();
+  Serial.println(String("test 10: ") + String(millis() - context->testTimer));
+
+  context->testTimer = millis();
+  task_wait(100); context = (UARTContext *) task_get_data();
+  Serial.println(String("test 100: ") + String(millis() - context->testTimer));
+
+  context->testTimer = millis();
+  task_wait(200); context = (UARTContext *) task_get_data();
+  Serial.println(String("test 200: ") + String(millis() - context->testTimer));
+#endif // NOTUSED
+
   log2(F(" - Wisol.sendBuffer: "), context->msg->buffer);
   ////
-  log2(F("expectedMarkerCount / timeout: "), context->msg->expectedMarkerCount + " / " + context->msg->timeout);
+  log2(F("expectedMarkerCount / timeout: "), context->msg->expectedMarkerCount + " / " + String(context->msg->timeout));
 
   //  Initialise context.
   context->status = false;  //  Return status.

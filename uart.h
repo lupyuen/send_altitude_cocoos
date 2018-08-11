@@ -26,6 +26,7 @@ struct UARTContext {
   unsigned long sentTime;  //  Timestamp at which we completed sending.
   String response;  //  Received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.
+  unsigned long testTimer;  //  For testing timer.
 };
 
 void uart_task(void);
