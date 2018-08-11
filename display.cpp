@@ -16,13 +16,14 @@ static char sensorBuf[32];  //  Buffer for sensor data for 1 msg.
 void display_task(void) {
   //  Background task that receives display messages and displays them.
   static DisplayMsg msg;
-  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
+  //  Assume only 1 display task runnning, so the following can be made static.
+  static MsgQ_t queue; static Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) { //  Run the display processing code forever. So the task never ends.
     //  Wait for an incoming display message containing sensor data.
     //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
-    Display *display = (Display *) task_get_data();
+    static Display *display = (Display *) task_get_data();  //  Only 1 display task running.
 
     //  Update the sensor data to be displayed.
     //// debug(msg.name, F(" >> updateData")); ////
