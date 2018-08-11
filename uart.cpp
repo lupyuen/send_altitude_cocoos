@@ -96,8 +96,7 @@ void uart_task(void) {
     sendChar = (uint8_t) context->msg->buffer.charAt(context->sendIndex);
     serialPort->write(sendChar);
     context->sendIndex++;
-    ////
-    Serial.println(String("send: ") + String((char) sendChar) + " / " + String(toHex((char)sendChar))); ////
+    ////  Serial.println(String("send: ") + String((char) sendChar) + " / " + String(toHex((char)sendChar))); ////
     task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
   }
@@ -116,8 +115,7 @@ void uart_task(void) {
 
     //  Attempt to read the data.
     int receiveChar = serialPort->read();
-    ////
-    Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
+    ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
     if (receiveChar == -1) { continue; }  ////  TODO task_wait
@@ -136,10 +134,8 @@ void uart_task(void) {
 
     //  Else append the received char to the response.
     context->response.concat(String((char) receiveChar));
-    ////
-    Serial.println(String("response: ") + context->response); ////
-    ////
-    log2(F("receiveChar "), receiveChar);
+    ////  Serial.println(String("response: ") + context->response); ////
+    ////  log2(F("receiveChar "), receiveChar);
   }
   //  Finished the send and receive.  We close the serial port.
   //  In case of timeout, also close the serial port.
