@@ -30,12 +30,6 @@ static String data;
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
-/*
-int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
-Country country;   //  Country to be set for SIGFOX transmission frequencies.
-bool useEmulator;  //  Set to true if using UnaBiz Emulator.
-String device;  //  Name of device if using UnaBiz Emulator.
-*/
 SoftwareSerial *serialPort = NULL;  //  Serial port for the SIGFOX module.
 Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
