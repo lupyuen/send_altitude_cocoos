@@ -65,6 +65,7 @@ void wisol_task(void) {
         cmd = &context->cmdList[context->cmdIndex];
         if (cmd->processFunc !== NULL) {
           const char *response = context->uartContext->response;
+          debug(F("wisol_task: response="), response);
           context->status = (cmd->processFunc)(context, response);
           //  If response processing failed, stop.
           if (context->status != true) {
@@ -118,10 +119,21 @@ void wisol_task(void) {
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
-static void getBeginCmd(WisolContext *context, WisolCmd list[]) {  //  Fetch list of startup commands for Wisol.
-for() {
-  #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.  //  Must get context after msg_post.
+static WisolCmd endOfList = { NULL, 0, NULL };  //  Indicate end of command list.
+
+static bool getID(WisolContext *context, const char *response) {
+  debug(F("getID: ", response));
+  //  TODO
+  return true;
 }
+
+static bool getPAC(WisolContext *context, const char *response) {
+  debug(F("getPAC: ", response));
+  //  TODO
+  return true;
+}
+
+static void getBeginCmd(WisolContext *context, WisolCmd list[]) {  //  Fetch list of startup commands for Wisol.
   //  Return the list of UART commands to start up the Wisol module.
   int i = 0;
   //  Set emulation mode.
@@ -131,9 +143,10 @@ for() {
       : F(CMD_EMULATOR_DISABLE),  //  Else device will only talk to Sigfox network.
     1, NULL);
   //  Get Sigfox device ID and PAC.
-  list[i++] = WisolCmd(F(CMD_GET_ID), 1, NULL);  //  TODO
-  list[i++] = WisolCmd(F(CMD_GET_PAC), 1, NULL);  //  TODO
-  list[i++] = WisolCmd(NULL, 0, NULL);  //  End of list.
+  list[i++] = WisolCmd(F(CMD_GET_ID), 1, getID);
+  list[i++] = WisolCmd(F(CMD_GET_PAC), 1, getPAC);
+  list[i++] = endOfList;
+  // list[i++] = WisolCmd(NULL, 0, NULL);  //  End of list.
   context->cmdList = list;
   context->cmdIndex = 0;
 }
