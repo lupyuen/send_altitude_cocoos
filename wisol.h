@@ -10,7 +10,7 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define wisolMsgPoolSize 2  //  Allow up to 5 outgoing sensor messages to be queued.
+#define wisolMsgPoolSize 5  //  Allow up to 5 outgoing sensor messages to be queued.
 #define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
 #define maxWisolCmdPayloadSize maxUARTMsgLength+5  //    Max number of chars in payload. Cater for CMD_SEND_MESSAGE_RESPONSE (2 chars).
 #define maxSigfoxDeviceSize 10  //  Max number of chars in Sigfox device name.

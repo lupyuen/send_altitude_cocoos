@@ -10,6 +10,11 @@
 
 static int getCmdIndex(WisolCmd list[]);
 static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
+static void getCmdSend(
+  WisolContext *context, 
+  WisolCmd list[], 
+  const char *payload,
+  bool downlinkMode);
 static void convertCmdToUART(
   WisolCmd *cmd,
   WisolContext *context, 
@@ -56,15 +61,17 @@ void wisol_task(void) {
     context->msg = &msg;  //  Remember the message until it's sent via UART.
     context->cmdList = cmdList;
     context->cmdIndex = 0;
-    cmdList[0] = endOfList;  //  Empty the command list.
 
     //  Convert received sensor data to a list of Wisol commands.
+    cmdList[0] = endOfList;  //  Empty the command list.
     if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
       //  If sensor name is "000", this is the "begin" message.
       getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
     } else {
       //  TODO: Check whether we should transmit.
       static const char *payload = "0102030405060708090a0b0c";  //  TODO
+      bool downlinkMode = false;
+      getCmdSend(context, cmdList, payload, downlinkMode);
     }
 
     for (;;) {  //  Send each command in the list.
