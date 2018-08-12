@@ -14,6 +14,7 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
 #define maxSigfoxDeviceSize 10  //  Max number of chars in Sigfox device name.
 #define maxSigfoxPACSize 20  //  Max number of chars in Sigfox PAC code.
+#define beginSensorName "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
 
 //  According to regulation, messages should be sent only every 10 minutes.
 const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;
@@ -37,9 +38,12 @@ enum Country {
 //  Wisol Task accepts messages containing sensor data, in this format.
 struct WisolMsg {
   Msg_t super;  //  Required for all cocoOS messages.
+  char name[maxSensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
+  float data[maxSensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  uint8_t count;  //  Number of float sensor data values returned by the sensor.
 };
 
-struct WisolContext;
+struct WisolContext;  //  Forward declaration.
 
 //  Defines a Wisol AT command string, to be sent via UART Task.
 struct WisolCmd {

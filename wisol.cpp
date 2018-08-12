@@ -19,73 +19,90 @@ static void convertCmdToUART(
 static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
+static WisolCmd endOfList = { NULL, 0, NULL };  //  Command to indicate end of command list.
 
 void wisol_task(void) {
   //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
-  Serial.begin(9600);  //  TODO
-
+  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   WisolContext *context;
   WisolCmd *cmd;
   static WisolMsg msg;  //  TODO
+  static WisolMsg beginMsg;  //  First message that will be sent to self upon startup.
   static UARTMsg uartMsg;  //  TODO
-  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
 
-  task_open();  //  Start of the task. Must be matched with task_close().
+  task_open();  //  Start of the task. Must be matched with task_close().  
   context = (WisolContext *) task_get_data();
   successEvent = event_create();  //  Create event for UART Task to indicate success.
   failureEvent = event_create();  //  Another event to indicate failure.
   context->status = true;  //  Assume no error.
 
+  //  Init the first message that will be sent to self upon startup.
+  beginMsg.count = 0;  //  No data.
+  strncpy(beginMsg.name, beginSensorName, maxSensorNameSize);  //  Sensor name "000" denotes "begin" message.
+  beginMsg.name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
+
   for (;;) { //  Receiving sensor data Run the data sending code forever. So the task never ends.
     context = (WisolContext *) task_get_data();
-    //  On task startup, send the UART commands to initialise the Wisol module.
+
+    //  On task startup, send "begin" message to self so that we can process the Wisol "begin" commands.
     if (context->firstTime) {
       context->firstTime = false;
-      getBeginCmd(context, cmdList);  //  Fetch list of startup commands for Wisol.
-      for (;;) {  //  Send each command in the list.
-        context = (WisolContext *) task_get_data();  //  Must get context to be safe.
-        if (context->cmdIndex >= maxWisolCmdListSize) { break; }  //  Check bounds.
-        cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
-        if (cmd->sendData == NULL) { break; }  //  No more commands to send.
-
-        //  Convert Wisol command to UART command and send it.
-        convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
-        // debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
-        msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
-
-        //  Wait for success or failure.
-        event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
-        context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
-        
-        //  In case of failure, stop.
-        if (context->uartContext->status != true) {
-          debug(F("wisol_task: UART failed"));
-          context->status = false;  //  Propagate status to Wisol context.
-          break;  //  Quit processing.
-        }
-        //  Process the response.
-        cmd = &context->cmdList[context->cmdIndex];
-        if (cmd->processFunc != NULL) {
-          const char *response = context->uartContext->response;
-          debug(F("wisol_task: response = "), response);
-          context->status = (cmd->processFunc)(context, response);
-          //  If response processing failed, stop.
-          if (context->status != true) {
-            debug(F("wisol_task: Result processing failed"));
-            break;  //  Quit processing.
-          }
-        }
-        context->cmdIndex++;  //  Next Wisol command.
-      }
+      const uint8_t taskID = os_get_running_tid(); //  Send the message to our own task.
+      msg_post(taskID, beginMsg);
+      continue;  //  Process the next incoming message, which should be the "begin" message.
+      //// getBeginCmd(context, cmdList);  //  Fetch list of startup commands for Wisol.
     }
-    //  Wait for an incoming message containing sensor data to be transmitted.
-    //// debug(F("msg_receive")); ////
+
+    //  Wait for an incoming message containing sensor data.
     msg_receive(os_get_running_tid(), &msg);
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
+    cmdList[0] = endOfList;
 
-    //  TODO: Check whether we should transmit.
-  }
+    //  Convert received sensor data to a list of Wisol commands.
+    if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
+      //  If sensor name is "000", this is the "begin" message.
+      getBeginCmd(context, cmdList);  //  Fetch list of startup commands for Wisol.
+    } else {
+      //  TODO: Check whether we should transmit.
+    }
+
+    for (;;) {  //  Send each command in the list.
+      context = (WisolContext *) task_get_data();  //  Must get context to be safe.
+      if (context->cmdIndex >= maxWisolCmdListSize) { break; }  //  Check bounds.
+      cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
+      if (cmd->sendData == NULL) { break; }  //  No more commands to send.
+
+      //  Convert Wisol command to UART command and send it.
+      convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
+      // debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
+      msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
+
+      //  Wait for success or failure.
+      event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
+      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
+      
+      //  In case of failure, stop.
+      if (context->uartContext->status != true) {
+        debug(F("wisol_task: UART failed"));
+        context->status = false;  //  Propagate status to Wisol context.
+        break;  //  Quit processing.
+      }
+      //  Process the response.
+      cmd = &context->cmdList[context->cmdIndex];
+      if (cmd->processFunc != NULL) {
+        const char *response = context->uartContext->response;
+        debug(F("wisol_task: response = "), response);
+        context->status = (cmd->processFunc)(context, response);
+        //  If response processing failed, stop.
+        if (context->status != true) {
+          debug(F("wisol_task: Result processing failed"));
+          break;  //  Quit processing.
+        }
+      }
+      context->cmdIndex++;  //  Next Wisol command.
+    }  //  Loop to next Wisol command.
+  }  //  Loop to next sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
 
@@ -111,12 +128,11 @@ void wisol_task(void) {
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
-static WisolCmd endOfList = { NULL, 0, NULL };  //  Indicate end of command list.
-
 bool getID(WisolContext *context, const char *response) {
   //  Save the device ID to context.
   debug(F("getID: "), response);
   strncpy(context->device, response, maxSigfoxDeviceSize);
+  context->device[maxSigfoxDeviceSize] = 0;  //  Terminate the device ID in case of overflow.
   return true;
 }
 
@@ -124,6 +140,7 @@ bool getPAC(WisolContext *context, const char *response) {
   //  Save the PAC code to context.
   debug(F("getPAC: "), response);
   strncpy(context->pac, response, maxSigfoxPACSize);
+  context->pac[maxSigfoxPACSize] = 0;  //  Terminate the PAC code in case of overflow.
   return true;
 }
 
@@ -159,6 +176,7 @@ static void convertCmdToUART(
   // strncpy(uartMsg->sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
   strncpy(uartMsg->sendData, strSendData, maxUARTMsgLength);  //  Copy the command string.
   strncat(uartMsg->sendData, CMD_END, maxUARTMsgLength);  //  Terminate the command with "\r".
+  uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
   // debug(F("uartMsg->sendData="), uartMsg->sendData);  ////
 
   uartMsg->timeout = COMMAND_TIMEOUT;

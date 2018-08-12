@@ -95,8 +95,9 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   //  Overwrite the message at the index.
   //  static char buf[128]; sprintf(buf, " %d, %d", index, count); debug("overwrite", buf); ////
   DisplayMsg *msgPtr = &displayMessages[index];
-  memset(msgPtr->name, 0, maxSensorNameSize + 1);  //  Zero the name array.
+  //// memset(msgPtr->name, 0, maxSensorNameSize + 1);  //  Zero the name array.
   strncpy(msgPtr->name, name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
+  msgPtr->name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
   msgPtr->count = count;  //  Number of floats returned as sensor data.
   for (int i = 0; i < msgPtr->count && i < maxSensorDataSize; i++) {
     msgPtr->data[i] = data[i];

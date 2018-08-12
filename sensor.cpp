@@ -56,8 +56,9 @@ void sensor_task(void) {
     //  Prepare a display message for copying the sensor data.
     DisplayMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
+    //// memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
     strncpy(msg.name, context->sensor->info.name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
+    msg.name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
 
     //  Poll for the sensor data and copy into the display message.
     msg.count = context->sensor->info.poll_sensor_func(msg.data, maxSensorDataSize);
