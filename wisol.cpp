@@ -8,7 +8,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-static WisolCmd *getBeginCmd(WisolContext *context);  //  Fetch list of startup commands for Wisol.
+static void getBeginCmd(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
 static void convertCmdToUART(
   WisolCmd *cmd,
   WisolContext *context, 
@@ -25,6 +25,7 @@ void wisol_task(void) {
   Serial.begin(9600);  //  TODO
 
   WisolContext *context;
+  WisolCmd *cmd;
   static WisolMsg msg;  //  TODO
   static UARTMsg uartMsg;  //  TODO
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
@@ -44,7 +45,7 @@ void wisol_task(void) {
       for (;;) {  //  Send each command in the list.
         context = (WisolContext *) task_get_data();  //  Must get context to be safe.
         if (context->cmdIndex >= maxWisolCmdListSize) { break; }  //  Check bounds.
-        WisolCmd *cmd = &context->cmdList[context->cmdIndex];        
+        cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
         if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
         //  Convert Wisol command to UART command and send it.
@@ -63,9 +64,9 @@ void wisol_task(void) {
         }
         //  Process the response.
         cmd = &context->cmdList[context->cmdIndex];
-        if (cmd->processFunc !== NULL) {
+        if (cmd->processFunc != NULL) {
           const char *response = context->uartContext->response;
-          debug(F("wisol_task: response="), response);
+          debug(F("wisol_task: response = "), response);
           context->status = (cmd->processFunc)(context, response);
           //  If response processing failed, stop.
           if (context->status != true) {
@@ -121,14 +122,14 @@ void wisol_task(void) {
 
 static WisolCmd endOfList = { NULL, 0, NULL };  //  Indicate end of command list.
 
-static bool getID(WisolContext *context, const char *response) {
-  debug(F("getID: ", response));
+bool getID(WisolContext *context, const char *response) {
+  debug(F("getID: "), response);
   //  TODO
   return true;
 }
 
-static bool getPAC(WisolContext *context, const char *response) {
-  debug(F("getPAC: ", response));
+bool getPAC(WisolContext *context, const char *response) {
+  debug(F("getPAC: "), response);
   //  TODO
   return true;
 }
@@ -137,14 +138,14 @@ static void getBeginCmd(WisolContext *context, WisolCmd list[]) {  //  Fetch lis
   //  Return the list of UART commands to start up the Wisol module.
   int i = 0;
   //  Set emulation mode.
-  list[i++] = WisolCmd(
+  list[i++] = {
     context->useEmulator  //  If emulator mode,
       ? F(CMD_EMULATOR_ENABLE)  //  Device will only talk to SNEK emulator.
       : F(CMD_EMULATOR_DISABLE),  //  Else device will only talk to Sigfox network.
-    1, NULL);
+    1, NULL };
   //  Get Sigfox device ID and PAC.
-  list[i++] = WisolCmd(F(CMD_GET_ID), 1, getID);
-  list[i++] = WisolCmd(F(CMD_GET_PAC), 1, getPAC);
+  list[i++] = { F(CMD_GET_ID), 1, getID };
+  list[i++] = { F(CMD_GET_PAC), 1, getPAC };
   list[i++] = endOfList;
   // list[i++] = WisolCmd(NULL, 0, NULL);  //  End of list.
   context->cmdList = list;

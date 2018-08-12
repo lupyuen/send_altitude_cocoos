@@ -153,3 +153,13 @@ void debug(const char *s1, const __FlashStringHelper *s2) {
   Serial.println("");
   Serial.flush();  //  Let serial printing finish.
 }
+
+void debug(const __FlashStringHelper *s1, const char *s2) {
+  //  Print 1 flash string and 1 dynamic string.
+  Serial.begin(SERIAL_BAUD);
+  while (!Serial) {}  //  Wait for Serial to be ready.
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
+}

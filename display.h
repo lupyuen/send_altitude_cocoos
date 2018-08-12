@@ -61,6 +61,11 @@ void debug(
   const __FlashStringHelper *s2  //  String in flash memory e.g. F("the string")
 );
 
+void debug(
+  const __FlashStringHelper *s1,  //  String in flash memory e.g. F("the string")
+  const char *s2  //  String in dynamic memory.
+);
+
 #endif  //  ARDUINO
 #endif  //  __cplusplus
 

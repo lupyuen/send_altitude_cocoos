@@ -141,13 +141,14 @@ void uart_task(void) {
       //  If we hit an error, trigger the failure event to the caller.
       event_signal(context->msg->failureEvent);  //  Trigger the failure event.
     }
-    
+    #ifdef NOTUSED    
     //  Test whether the timer is accurate while multitasking.
     context->testTimer = millis();
     task_wait(10); TEST_TIMER(10);  //  10 milliseconds. First time may not be accurate.
     task_wait(10); TEST_TIMER(10);  //  10 milliseconds
     task_wait(100); TEST_TIMER(100);  //  100 milliseconds
     task_wait(200); TEST_TIMER(200);  //  200 milliseconds
+    #endif  //  NOTUSED
   }  //  Loop back and wait for next queued message.
   task_close();  //  End of the task. Should not come here.
 }
@@ -173,12 +174,10 @@ static void logSendReceive(UARTContext *context) {
   //  log2(F(">> "), echoSend); if (echoReceive.length() > 0) { log2(F("<< "), echoReceive); }
   logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
   logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
-  Serial.print(F("<< status: "));
-  Serial.println(context->status);
-  Serial.print(F("<< response: "));
-  Serial.println(context->response);
-  Serial.print(F("<< actualMarkerCount: "));
-  Serial.println(context->actualMarkerCount);
+
+  // Serial.print(F("<< status: ")); Serial.println(context->status);
+  // Serial.print(F("<< response: ")); Serial.println(context->response);
+  // Serial.print(F("<< actualMarkerCount: ")); Serial.println(context->actualMarkerCount);
 
   if (context->status == true) { log2(F(" - Wisol.sendData: response: "), context->response); }
   else if (strlen(context->response) == 0) { log1(F(" - Wisol.sendData: Error: Response timeout")); }

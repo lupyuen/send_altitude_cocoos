@@ -1,6 +1,9 @@
 #ifndef WISOL_H_
 #define WISOL_H_
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif  //  ARDUINO
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "uart.h"  //  For UARTContext
 #ifdef __cplusplus
@@ -33,6 +36,8 @@ enum Country {
 struct WisolMsg {
   Msg_t super;  //  Required for all cocoOS messages.
 };
+
+struct WisolContext;
 
 //  Defines a Wisol AT command string, to be sent via UART Task.
 struct WisolCmd {
