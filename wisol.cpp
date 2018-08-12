@@ -8,7 +8,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-static void getBeginCmd(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
+static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
 static void convertCmdToUART(
   WisolCmd *cmd,
   WisolContext *context, 
@@ -53,14 +53,17 @@ void wisol_task(void) {
     msg_receive(os_get_running_tid(), &msg);
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
-    cmdList[0] = endOfList;
+    context->cmdList = cmdList;
+    context->cmdIndex = 0;
+    cmdList[0] = endOfList;  //  Empty the command list.
 
     //  Convert received sensor data to a list of Wisol commands.
     if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
       //  If sensor name is "000", this is the "begin" message.
-      getBeginCmd(context, cmdList);  //  Fetch list of startup commands for Wisol.
+      getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
     } else {
       //  TODO: Check whether we should transmit.
+      static const char *payload = "0102030405060708090a0b0c";  //  TODO
     }
 
     for (;;) {  //  Send each command in the list.
@@ -140,7 +143,20 @@ bool getPAC(WisolContext *context, const char *response) {
   return true;
 }
 
-static void getBeginCmd(WisolContext *context, WisolCmd list[]) {  //  Fetch list of startup commands for Wisol.
+bool getDownlink(WisolContext *context, const char *response) {
+  //  Extract the downlink message and write into response.
+  debug(F("getDownlink: "), response);
+  /* TODO:
+  //  Successful response: OK\nRX=01 23 45 67 89 AB CD EF
+  //  Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+  //  Remove the prefix and spaces.
+  response.replace("OK\nRX=", "");
+  response.replace(" ", "");
+  */
+  return true;
+}
+
+static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
   int i = 0;
   //  Set emulation mode.
@@ -153,9 +169,71 @@ static void getBeginCmd(WisolContext *context, WisolCmd list[]) {  //  Fetch lis
   list[i++] = { F(CMD_GET_ID), 1, getID };
   list[i++] = { F(CMD_GET_PAC), 1, getPAC };
   list[i++] = endOfList;
-  // list[i++] = WisolCmd(NULL, 0, NULL);  //  End of list.
-  context->cmdList = list;
-  context->cmdIndex = 0;
+}
+
+static void getCmdSend(
+  WisolContext *context, 
+  WisolCmd list[], 
+  const char *payload,
+  bool getDownlink) {
+  //  Return the list of UART commands to send the payload.
+  //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
+  //  We prefix with AT$SF= and send to the transceiver.
+  //  If getDownlink is true, we append the
+  //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
+  //  The downlink response message from Sigfox will be returned in the response parameter.
+  //  Warning: This may take up to 1 min to run.
+  int i = 0;
+  //  Set the output power for the zone.  If error, return false to caller.
+  //  status = setOutputPower(state);
+
+  /*
+  labelStart:  //  Get the command based on the zone.
+  // log2(F(" - Wisol.setOutputPower: zone "), String(zone));
+  data = "";
+  switch(zone) {
+    case 1:  //  RCZ1
+    case 3:  //  RCZ3
+      status = sendCommand(String(CMD_OUTPUT_POWER_MAX) + CMD_END, 1, data, markers, state);
+      if (state) return state->suspend(stepEnd);  //  For State Machine: Wait for sendCommand to complete then resume at end step.
+      break;
+    case 2:  //  RCZ2
+    case 4: {  //  RCZ4
+      status = sendCommand(String(CMD_PRESEND) + CMD_END, 1, data, markers, state);
+      if (state) return state->suspend(stepPower);  //  For State Machine: Wait for sendCommand to complete then resume at send step.
+
+labelPower:  //  Parse the returned "X,Y" to determine if we need to send the second power command.
+      if (data.length() < 3) {  //  If too short, return error.
+        log2(F(" - Wisol.setOutputPower: Unknown response "), data);
+        status = false;
+        break;
+      }
+      x = data.charAt(0) - '0';
+      y = data.charAt(2) - '0';
+      if (x != 0 && y >= 3) break; //  No need to send second power command.
+      if (state) return state->suspend(stepSend);  //  For State Machine: Exit now and resume at send step.
+
+labelSend:  //  Send second power command.
+      status = sendCommand(String(CMD_PRESEND2) + CMD_END, 1, data, markers, state);
+      if (state) return state->suspend(stepEnd);  //  For State Machine: Wait for sendCommand to complete then resume at end step.
+      break;
+    }
+  */
+
+  uint8_t markers = 1;  //  Wait for 1 line of response.
+  bool (*processFunc)(WisolContext *context, const char *response) = NULL;
+  cmd = String(CMD_SEND_MESSAGE) + payload;
+  if (getDownlink) {
+    //  For downlink mode, append CMD_SEND_MESSAGE_RESPONSE command.
+    cmd = cmd + CMD_SEND_MESSAGE_RESPONSE;
+    markers++;  //  Wait for one more response line.
+    processFunc = getDownlink;  //  Process the downlink message.
+  }
+  list[i++] = { cmd, markers, processFunc };
+
+  //  TODO: Throttle.
+
+  list[i++] = endOfList;
 }
 
 static void convertCmdToUART(
