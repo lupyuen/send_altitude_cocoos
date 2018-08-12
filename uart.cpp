@@ -150,64 +150,6 @@ void uart_task(void) {
   task_close();  //  End of the task. Should not come here.
 }
 
-#ifdef NOTUSED
-bool Wisol::begin() {
-  //  Wait for the module to power up, configure transmission frequency.
-  //  Return true if module is ready to send.
-  lastSend = 0;
-  for (int i = 0; i < 5; i++) {
-    //  Retry 5 times.
-    #ifdef BEAN_BEAN_BEAN_H
-        Bean.sleep(7000);  //  For Bean, delay longer to allow Bluetooth debug console to connect.
-    #else  // BEAN_BEAN_BEAN_H
-        delay(2000);
-    #endif // BEAN_BEAN_BEAN_H
-    String result;
-    if (useEmulator) {
-      //  Emulation mode.
-      if (!enableEmulator(result)) continue;
-    } else {
-      //  Disable emulation mode.
-      if (!disableEmulator(result)) continue;
-    }
-    //  TODO: Check whether emulator is used for transmission.
-    //  log1(F(" - Checking emulation mode (expecting 0)...")); int emulator = 0;
-    //  if (!getEmulator(emulator)) continue;
-
-    //  Read SIGFOX ID and PAC from module.
-    log1(F(" - Getting SIGFOX ID..."));  String id, pac;
-    if (!getID(id, pac)) continue;
-    echoPort->print(F(" - SIGFOX ID = "));  Serial.println(id);
-    echoPort->print(F(" - PAC = "));  Serial.println(pac);
-
-    //  Set the frequency of SIGFOX module.
-    // log1(F(" - Setting frequency for country "));
-    // echoPort->write((uint8_t) (country / 8));
-    // echoPort->write((uint8_t) (country % 8));
-    if (country == COUNTRY_JP) {  //  Set Japan frequency (RCZ3).
-      if (!setFrequencyJP(result)) continue;
-    } else if (country == COUNTRY_US) {  //  Set US frequency (RCZ2).
-      if (!setFrequencyUS(result)) continue;
-    } else if (
-      country == COUNTRY_FR
-      || country == COUNTRY_OM
-      || country == COUNTRY_SA) {  //  Set France frequency (RCZ1).
-      if (!setFrequencyETSI(result)) continue;
-    } else { //  Rest of the world runs on RCZ4.
-      if (!setFrequencySG(result)) continue;
-    }
-    log2(F(" - Set frequency result = "), result);
-
-    //  Get and display the frequency used by the SIGFOX module.  Should return 3 for RCZ4 (SG/TW).
-    log1(F(" - Getting frequency (expecting 3)..."));  String frequency;
-    if (!getFrequency(frequency)) continue;
-    log2(F(" - Frequency (expecting 3) = "), frequency);
-    return true;  //  Init module succeeded.
-  }
-  return false;  //  Failed to init module.
-}
-#endif
-
 void setup_uart(UARTContext *context, uint8_t rx, uint8_t tx, bool echo) {
   //  Init the module with the specified transmit and receive pins.
   //  Default to no echo.
