@@ -58,7 +58,7 @@ void wisol_task(void) {
 
     //  TODO: Check whether we should transmit.
   }
-  task_close();  //  End of the task.
+  task_close();  //  End of the task. Should not come here.
 }
 
 void setup_wisol(
