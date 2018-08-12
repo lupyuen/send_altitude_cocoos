@@ -38,7 +38,7 @@ struct WisolContext {
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
   bool useEmulator;  //  Set to true if using UnaBiz Emulator.
   String device;  //  Name of device if using UnaBiz Emulator.
-  bool firstTime;  //  Set by wisol_task() to true if this is the first run.
+  bool firstTime;  //  Set by setup_wisol() to true if this is the first run.
   WisolMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
 };
 

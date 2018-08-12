@@ -45,7 +45,9 @@ int main(void) {
   network_setup(display_task_id);
   
   //  Start the sensor tasks for each sensor to read sensor data.
+  //  Previously, we send sensor data to the Display Task for display.
   //// TODO: sensor_setup(display_task_id);
+  //  Now we send sensor data to the Network Task for transmission.
   //// TODO: sensor_setup(network_task_id);
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.

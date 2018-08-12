@@ -81,7 +81,8 @@ void uart_task(void) {
 #endif // TEST_TIMER
 
     log2(F(" - Wisol.sendBuffer: "), context->msg->buffer);
-    //// log2(F("expectedMarkerCount / timeout: "), context->msg->expectedMarkerCount + " / " + String(context->msg->timeout));
+    //// 
+    log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise context.
     context->status = false;  //  Return status.
@@ -108,7 +109,8 @@ void uart_task(void) {
       sendChar = (uint8_t) context->msg->buffer[context->sendIndex];
       serialPort->write(sendChar);
       context->sendIndex++;
-      ////  Serial.println(String("send: ") + String((char) sendChar) + " / " + String(toHex((char)sendChar))); ////
+      ////  
+      Serial.println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
       task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
       context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
     }
@@ -173,11 +175,11 @@ void uart_task(void) {
 
     ////
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
-    Serial.print("status = ");
+    Serial.print(F("status = "));
     Serial.println(context->status);
-    Serial.print("response = ");
+    Serial.print(F("response = "));
     Serial.println(context->response);
-    Serial.print("actualMarkerCount = ");
+    Serial.print(F("actualMarkerCount = "));
     Serial.println(context->actualMarkerCount);
     ////
 

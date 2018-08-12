@@ -27,6 +27,8 @@
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
+static UARTMsg uartMsg;  //  TODO
+
 void wisol_task(void) {
   Serial.begin(9600);  //  TODO
 
@@ -35,21 +37,18 @@ void wisol_task(void) {
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
 
   task_open();  //  Start of the task. Must be matched with task_close().
-  context = (WisolContext *) task_get_data();
-  context->firstTime = true;
-
   for (;;) { //  Run the data sending code forever. So the task never ends.
     //  TODO: On task startup, send the UART commands to initialise the Wisol module.
     context = (WisolContext *) task_get_data();
     if (context->firstTime) {
-      static UARTMsg msg;  //  TODO
-      strncpy(msg.buffer, "AT$I=10\r", maxUARTMsgLength);  //  TODO
-      msg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
-      msg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
-      msg.expectedMarkerCount = 1;  //  TODO
-      msg.successEvent = event_create();  //  TODO
-      msg.failureEvent = event_create();  //  TODO
-      msg_post(context->uartTaskID, msg);  //  Send the message to the UART task for transmission.
+      context->firstTime = false;
+      strncpy(uartMsg.buffer, "AT$I=10\r", maxUARTMsgLength);  //  TODO
+      uartMsg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
+      uartMsg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
+      uartMsg.expectedMarkerCount = 1;  //  TODO
+      uartMsg.successEvent = event_create();  //  TODO
+      uartMsg.failureEvent = event_create();  //  TODO
+      msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
     }
 
     //  Wait for an incoming message containing sensor data to be transmitted.
@@ -69,8 +68,10 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0) {
   //  Init the Wisol module.
+  context->uartTaskID = uartTaskID;
   context->zone = 4;  //  RCZ4
   context->country = country0;
   context->useEmulator = useEmulator0;
   context->device = "";
+  context->firstTime = true;
 }
