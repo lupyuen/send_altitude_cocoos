@@ -52,7 +52,8 @@ static void refresh(void) {
       //  Implement sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
       buf[0] = 0;
       itoa(d1, buf + strlen(buf), 10);
-      strncat(buf, ".", sizeof(buf));
+      strncat(buf, ".", sizeof(buf) - strlen(buf) - 1);
+      buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
       itoa(d2, buf + strlen(buf), 10);
       //  Separate values with tab.
       if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. 12.3, 12.4
@@ -60,9 +61,12 @@ static void refresh(void) {
     }
     //  Implement sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);  //  e.g. tmp: 12.3, 12.4
     buf[0] = 0;
-    strncat(buf, msg.name, sizeof(buf));
-    strncat(buf, ":\t\t", sizeof(buf));
-    strncat(buf, sensorBuf, sizeof(buf));
+    strncat(buf, msg.name, sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
+    strncat(buf, ":\t\t", sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
+    strncat(buf, sensorBuf, sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
 
     displayMessages[i].count = 0;  //  Clear the sensor data.
     debug(buf);  //  Display the line.

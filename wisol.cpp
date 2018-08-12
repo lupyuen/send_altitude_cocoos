@@ -8,6 +8,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
+static int getCmdIndex(WisolCmd list[]);
 static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
 static void convertCmdToUART(
   WisolCmd *cmd,
@@ -105,6 +106,7 @@ void wisol_task(void) {
   task_close();  //  End of the task. Should not come here.
 }
 
+#define CMD_NONE "AT"  //  Empty placeholder command.
 #define CMD_OUTPUT_POWER_MAX "ATS302=15"  //  For RCZ1: Set output power to maximum power level.
 #define CMD_PRESEND "AT$GI?"  //  For RCZ2, 4: Send this command before sending messages.  Returns X,Y.
 #define CMD_PRESEND2 "AT$RC"  //  For RCZ2, 4: Send this command if presend returns X=0 or Y<3.
@@ -156,9 +158,41 @@ bool getDownlink(WisolContext *context, const char *response) {
   return true;
 }
 
+bool checkPower(WisolContext *context, const char *response) {  
+  //  Parse the power response "X,Y" to determine if we need to send the second power command.
+  //  If not needed, change the next command to CMD_NONE.
+  //  debug(F("checkPower: "), response);
+  if (strlen(response) < 3) {  //  If too short, return error.
+    debug(F("checkPower Error: Unknown response "), response);
+    return false;  //  Failure
+  }
+  //  Change chars to numbers.
+  int x = response[0] - '0';
+  int y = response[2] - '0';
+  if (x != 0 && y >= 3) {
+    //  No need to send second power command. We change CMD_PRESEND2 to CMD_NONE.
+    debug(F("checkPower: change CMD_PRESEND2"));
+    int cmdIndex = context->cmdIndex;  //  Current index.
+    cmdIndex++;  //  Next index, to be updated.
+    if (cmdIndex >= maxWisolCmdListSize) {      
+      debug(F("checkPower Error: No cmd space"));  //  List is full.
+      return false;  //  Failure
+    }    
+    if (context->cmdList[cmdIndex].sendData == NULL) {
+      debug(F("checkPower Error: Empty cmd"));  //  Not supposed to be empty.
+      return false;  //  Failure
+    }
+    context->cmdList[cmdIndex].sendData = F(CMD_NONE);
+  } else {
+    //  Continue to send CMD_PRESEND2
+    debug(F("checkPower: continue CMD_PRESEND2"));
+  }
+  return true;  //  Success
+}
+
 static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
-  int i = 0;
+  int i = getCmdIndex(list);  //  Get next available index.
   //  Set emulation mode.
   list[i++] = {
     context->useEmulator  //  If emulator mode,
@@ -171,65 +205,71 @@ static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   list[i++] = endOfList;
 }
 
+static void getCmdPower(WisolContext *context, WisolCmd list[]) {
+  //  Set the output power for the zone.
+  //  Get the command based on the zone.
+  //  log2(F(" - Wisol.setOutputPower: zone "), String(zone));
+  int i = getCmdIndex(list);  //  Get next available index.
+  switch(context->zone) {
+    case 1:  //  RCZ1
+    case 3:  //  RCZ3
+      //  Send CMD_OUTPUT_POWER_MAX
+      list[i++] = { F(CMD_OUTPUT_POWER_MAX), 1, NULL };
+      break;
+    case 2:  //  RCZ2
+    case 4: {  //  RCZ4
+      //  Send CMD_PRESEND
+      list[i++] = { F(CMD_PRESEND), 1, checkPower };
+      //  Send second power command: CMD_PRESEND2.  
+      //  Note: checkPower() may change this command to CMD_NONE if not required.
+      list[i++] = { F(CMD_PRESEND2), 1, NULL };
+      break;
+    }
+  }
+  list[i++] = endOfList;
+}
+
 static void getCmdSend(
   WisolContext *context, 
   WisolCmd list[], 
   const char *payload,
-  bool getDownlink) {
+  bool downlinkMode) {
   //  Return the list of UART commands to send the payload.
   //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
   //  We prefix with AT$SF= and send to the transceiver.
-  //  If getDownlink is true, we append the
+  //  If downlinkMode is true, we append the
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
-  int i = 0;
-  //  Set the output power for the zone.  If error, return false to caller.
-  //  status = setOutputPower(state);
 
-  /*
-  labelStart:  //  Get the command based on the zone.
-  // log2(F(" - Wisol.setOutputPower: zone "), String(zone));
-  data = "";
-  switch(zone) {
-    case 1:  //  RCZ1
-    case 3:  //  RCZ3
-      status = sendCommand(String(CMD_OUTPUT_POWER_MAX) + CMD_END, 1, data, markers, state);
-      if (state) return state->suspend(stepEnd);  //  For State Machine: Wait for sendCommand to complete then resume at end step.
-      break;
-    case 2:  //  RCZ2
-    case 4: {  //  RCZ4
-      status = sendCommand(String(CMD_PRESEND) + CMD_END, 1, data, markers, state);
-      if (state) return state->suspend(stepPower);  //  For State Machine: Wait for sendCommand to complete then resume at send step.
+  //  Set the output power for the zone.
+  getCmdPower(context, list);
 
-labelPower:  //  Parse the returned "X,Y" to determine if we need to send the second power command.
-      if (data.length() < 3) {  //  If too short, return error.
-        log2(F(" - Wisol.setOutputPower: Unknown response "), data);
-        status = false;
-        break;
-      }
-      x = data.charAt(0) - '0';
-      y = data.charAt(2) - '0';
-      if (x != 0 && y >= 3) break; //  No need to send second power command.
-      if (state) return state->suspend(stepSend);  //  For State Machine: Exit now and resume at send step.
-
-labelSend:  //  Send second power command.
-      status = sendCommand(String(CMD_PRESEND2) + CMD_END, 1, data, markers, state);
-      if (state) return state->suspend(stepEnd);  //  For State Machine: Wait for sendCommand to complete then resume at end step.
-      break;
-    }
-  */
-
+  //  Compose the payload sending command.
+  int i = getCmdIndex(list);  //  Get next available index.
   uint8_t markers = 1;  //  Wait for 1 line of response.
-  bool (*processFunc)(WisolContext *context, const char *response) = NULL;
-  cmd = String(CMD_SEND_MESSAGE) + payload;
-  if (getDownlink) {
-    //  For downlink mode, append CMD_SEND_MESSAGE_RESPONSE command.
-    cmd = cmd + CMD_SEND_MESSAGE_RESPONSE;
-    markers++;  //  Wait for one more response line.
+  bool (*processFunc)(WisolContext *context, const char *response) = NULL;  //  Function to process result.
+  char *suffix = "";  //  Text to be appended to payload.
+
+  // If no downlink: Send CMD_SEND_MESSAGE + payload
+  if (downlinkMode) {
+    //  For downlink mode: send CMD_SEND_MESSAGE + payload + CMD_SEND_MESSAGE_RESPONSE
+    markers++;  //  Wait for one more response line.   
     processFunc = getDownlink;  //  Process the downlink message.
+    suffix = CMD_SEND_MESSAGE_RESPONSE;  //  Append suffix to payload.
   }
-  list[i++] = { cmd, markers, processFunc };
+  list[i] = { F(CMD_SEND_MESSAGE), markers, processFunc };
+  //  TODO: Check payload size.
+  strncpy(list[i].payload, payload, maxWisolCmdPayloadSize);
+  list[i].payload[maxWisolCmdPayloadSize] = 0;  //  Terminate payload in case of overflow.
+  strncat(list[i].payload, suffix, maxWisolCmdPayloadSize - strlen(list[i].payload));
+  list[i].payload[maxWisolCmdPayloadSize] = 0;  //  Terminate payload in case of overflow.
+  //  Check total msg length
+  if (strlen(list[i].payload) >= maxWisolCmdPayloadSize - 1) {
+    debug(F("Error: cmd.payload overflow"));
+  }
+
+  i++;  //  Next cmd.
 
   //  TODO: Throttle.
 
@@ -249,9 +289,19 @@ static void convertCmdToUART(
   // debug(F("strSendData="), strSendData);  ////
   // strncpy(uartMsg->sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
   strncpy(uartMsg->sendData, strSendData, maxUARTMsgLength);  //  Copy the command string.
-  strncat(uartMsg->sendData, CMD_END, maxUARTMsgLength);  //  Terminate the command with "\r".
   uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
-  // debug(F("uartMsg->sendData="), uartMsg->sendData);  ////
+  if (cmd->payload[0] != 0) {
+    //  Append payload if it exists.
+    strncat(uartMsg->sendData, cmd->payload, maxUARTMsgLength - strlen(uartMsg->sendData));  //  Terminate the command with "\r".
+    uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  }
+  strncat(uartMsg->sendData, CMD_END, maxUARTMsgLength - strlen(uartMsg->sendData));  //  Terminate the command with "\r".
+  uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  //  debug(F("uartMsg->sendData="), uartMsg->sendData);  ////
+  //  Check total msg length
+  if (strlen(uartMsg->sendData) >= maxUARTMsgLength - 1) {
+    debug(F("Error: uartMsg.sendData overflow"));
+  }
 
   uartMsg->timeout = COMMAND_TIMEOUT;
   uartMsg->markerChar = END_OF_RESPONSE;
@@ -285,4 +335,19 @@ void setup_wisol(
     //  Rest of the world runs on RCZ4.
     default: context->zone = 4;
   }
+}
+
+static int getCmdIndex(WisolCmd list[]) {
+  //  Given a list of commands, return the index of the next empty element.
+  int i;
+  for (i = 0;  //  Search all elements in list.
+    list[i].sendData != NULL &&   //  Skip no-empty elements.
+    i < maxWisolCmdListSize;  //  Don't exceed the list size.
+    i++) {}
+  if (i >= maxWisolCmdListSize) {
+    //  List is full.
+    debug(F("Error: Out of wisol cmd space"));
+    i = maxWisolCmdListSize - 1;
+  }
+  return i;
 }
