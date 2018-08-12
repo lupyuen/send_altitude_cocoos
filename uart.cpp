@@ -193,18 +193,20 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
   size_t m = 0, i = 0;
   for (i = 0; i < strlen(sendData); i = i + 2) {
     if (m < markerCount && markerPos[m] == i) {
-      echoPort->print("0x");
+      echoPort->print("[0x");
       echoPort->write((uint8_t) nibbleToHex[markerChar / 16]);
       echoPort->write((uint8_t) nibbleToHex[markerChar % 16]);
+      echoPort->print("]");
       m++;
     }
     echoPort->write((uint8_t) sendData[i]);
     echoPort->write((uint8_t) sendData[i + 1]);
   }
   if (m < markerCount && markerPos[m] == i) {
-    echoPort->print("0x");
+    echoPort->print("[0x");
     echoPort->write((uint8_t) nibbleToHex[markerChar / 16]);
     echoPort->write((uint8_t) nibbleToHex[markerChar % 16]);
+    echoPort->print("]");
     m++;
   }
   echoPort->write('\n');

@@ -114,14 +114,16 @@ void wisol_task(void) {
 static WisolCmd endOfList = { NULL, 0, NULL };  //  Indicate end of command list.
 
 bool getID(WisolContext *context, const char *response) {
+  //  Save the device ID to context.
   debug(F("getID: "), response);
-  //  TODO
+  strncpy(context->device, response, maxSigfoxDeviceSize);
   return true;
 }
 
 bool getPAC(WisolContext *context, const char *response) {
+  //  Save the PAC code to context.
   debug(F("getPAC: "), response);
-  //  TODO
+  strncpy(context->pac, response, maxSigfoxPACSize);
   return true;
 }
 
@@ -177,7 +179,8 @@ void setup_wisol(
   context->uartTaskID = uartTaskID;
   context->country = country0;
   context->useEmulator = useEmulator0;
-  context->device = "";
+  context->device[0] = 0;  //  Clear the device ID.
+  context->pac[0] = 0;  //  Clear the PAC code.
   context->firstTime = true;
 
   switch(context->country) {

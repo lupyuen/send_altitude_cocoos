@@ -12,6 +12,8 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 
 #define wisolMsgPoolSize 2  //  Allow up to 5 outgoing sensor messages to be queued.
 #define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
+#define maxSigfoxDeviceSize 10  //  Max number of chars in Sigfox device name.
+#define maxSigfoxPACSize 20  //  Max number of chars in Sigfox PAC code.
 
 //  According to regulation, messages should be sent only every 10 minutes.
 const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;
@@ -52,8 +54,10 @@ struct WisolContext {
   uint8_t uartTaskID;  //  Task ID of the UART Task.  Wisol Task transmits UART data by sending a message to this task. 
   int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
-  bool useEmulator;  //  Set to true if using UnaBiz Emulator.
-  String device;  //  Name of device if using UnaBiz Emulator.
+  bool useEmulator;  //  Set to true if using SNEK Emulator.
+
+  char device[maxSigfoxDeviceSize];  //  Sigfox device ID read from device e.g. 002C2EA1
+  char pac[maxSigfoxPACSize];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
   bool firstTime;  //  Set by setup_wisol() to true if this is the first run.  
   bool status;  //  Return status.  True if command was successful.
   WisolMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
