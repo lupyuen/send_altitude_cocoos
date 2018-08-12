@@ -5,6 +5,7 @@
 #include "uart.h"
 
 static String toHex(char c);
+static void rememberMarker(UARTContext *context);
 static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
@@ -19,6 +20,7 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
 #define TEST_TIMER(ms) \
     context = (UARTContext *) task_get_data(); \
     Serial.println(String(F("Expect ")) + String(ms) + String(F(": ")) + String(millis() - context->testTimer)); \
+    Serial.flush(); \
     context->testTimer = millis();
 
 static const uint16_t delayAfterStart = 200;
@@ -27,11 +29,11 @@ static const uint16_t delayAfterReceive = 10;
 
 //  Drop all data passed to this port.  Used to suppress echo output.
 class NullPort: public Print {
-  virtual size_t write(uint8_t) {}
+  virtual size_t write(uint8_t) { return 0; }
 };
 
 static NullPort nullPort;
-static uint8_t markers = 0;
+//// static uint8_t markers = 0;
 static String data;
 
 //  Remember where in response the '>' markers were seen.
@@ -44,6 +46,13 @@ Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
 unsigned long lastSend;  //  Timestamp of last send.
 
 void uart_task(void) {
+  //  This task loops and waits for an incoming message containing UART data to be sent.
+  //  sendData contains a string of ASCII chars to be sent to the UART port.
+  //  We send the sendData to the port.  expectedMarkerCount is the number of 
+  //  end-of-command markers '\r' we expect to see.  actualMarkerCount 
+  //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
+  //  depending on success/failure sending the data.  Response is recorded in the
+  //  "response" variable of the context, for the caller to retrieve.
   Serial.begin(9600);  //  TODO
   UARTContext *context;  //  The context for the task.
   static UARTMsg msg;  //  The received message.
@@ -52,20 +61,11 @@ void uart_task(void) {
 
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) { //  Run the UART sending code forever. So the task never ends.
-    //  Wait for an incoming message containing UART data to be sent.
-    //  sendData contains a string of ASCII chars to be sent to the UART port.
-    //  We send the sendData to the port.  expectedMarkerCount is the number of 
-    //  end-of-command markers '\r' we expect to see.  actualMarkerCount 
-    //  contains the actual number seen.
     //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
     log2(F(" - Wisol.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
     context->msg = &msg;  //  Remember the message until it's sent via UART.
-    context->testTimer = millis();  //  Test whether the timer is accurate while multitasking.
-    task_wait(10); TEST_TIMER(10);
-    task_wait(100); TEST_TIMER(100); 
-    task_wait(200); TEST_TIMER(200);
 
     //  Initialise the context for the task. These variables will change while sending.
     context->status = true;  //  Assume the return status will be successful.
@@ -110,17 +110,14 @@ void uart_task(void) {
       if (receiveChar == -1) { continue; }  ////  TODO task_wait
 
       if (receiveChar == context->msg->markerChar) {
-        //  We see the "\r" marker. Remember the marker location so we can format the debug output.
-        if (context->actualMarkerCount < markerPosMax) {
-          markerPos[context->actualMarkerCount] = strlen(context->response); 
-        }
+        //  We see the "\r" marker.
+        rememberMarker(context);  //  Remember the marker location so we can format the debug output.
         context->actualMarkerCount++;  //  Count the number of end markers.
         //  If we have encountered all the markers we need, stop receiving.
         if (context->actualMarkerCount >= context->msg->expectedMarkerCount) { break; }
         continue;  //  Else continue to receive next char.
       }
-      //  Else append the received char to the response.
-      //  Previously: context->response.concat(String((char) receiveChar));
+      //  If not "\r" marker, append the received char to the response.
       int len = strlen(context->response);
       if (len < maxUARTMsgLength) {
         context->response[len] = (char) receiveChar;
@@ -128,25 +125,27 @@ void uart_task(void) {
       }  ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
     }
     serialPort->end();  //  Finished the send/receive.  We close the UART port.
-    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
-    logSendReceive(context);  //  Log the actual bytes sent and received.
+    context = (UARTContext *) task_get_data();  //  Must fetch again to be safe.
 
-    //  If we hit an error or did not see the expected number of '\r' markers, trigger the failure event.
-    if (context->status = false || context->actualMarkerCount < context->msg->expectedMarkerCount) {
-      if (strlen(context->response) == 0) {
-        log1(F(" - Wisol.sendData: Error: No response"));  //  Response timeout.
-      } else {
-        log2(F(" - Wisol.sendData: Error: Unknown response: "), context->response);
-      }
-      Serial.flush();
-      event_signal(context->msg->failureEvent);  //  Trigger the failure event.
+    //  If we did not see the expected number of '\r' markers, record the error.
+    if (context->actualMarkerCount < context->msg->expectedMarkerCount) { context->status = false; }
+    logSendReceive(context);  //  Log the status and actual bytes sent and received.
+
+    if (context->status == true) {
+      //  If no error, trigger the success event to caller.
+      //  The caller can read the response from the context.response.
+      event_signal(context->msg->successEvent);      
     } else {
-      //  Else trigger the success event to caller.
-      //  The caller can read the response from the context.
-      log2(F(" - Wisol.sendData: response: "), context->response);
-      Serial.flush();
-      event_signal(context->msg->successEvent);  //  Trigger the success event.
+      //  If we hit an error, trigger the failure event to the caller.
+      event_signal(context->msg->failureEvent);  //  Trigger the failure event.
     }
+    
+    //  Test whether the timer is accurate while multitasking.
+    context->testTimer = millis();
+    task_wait(10); TEST_TIMER(10);  //  10 milliseconds. First time may not be accurate.
+    task_wait(10); TEST_TIMER(10);  //  10 milliseconds
+    task_wait(100); TEST_TIMER(100);  //  100 milliseconds
+    task_wait(200); TEST_TIMER(200);  //  200 milliseconds
   }  //  Loop back and wait for next queued message.
   task_close();  //  End of the task. Should not come here.
 }
@@ -158,11 +157,11 @@ bool Wisol::begin() {
   lastSend = 0;
   for (int i = 0; i < 5; i++) {
     //  Retry 5 times.
-#ifdef BEAN_BEAN_BEAN_H
-    Bean.sleep(7000);  //  For Bean, delay longer to allow Bluetooth debug console to connect.
-#else  // BEAN_BEAN_BEAN_H
-    delay(2000);
-#endif // BEAN_BEAN_BEAN_H
+    #ifdef BEAN_BEAN_BEAN_H
+        Bean.sleep(7000);  //  For Bean, delay longer to allow Bluetooth debug console to connect.
+    #else  // BEAN_BEAN_BEAN_H
+        delay(2000);
+    #endif // BEAN_BEAN_BEAN_H
     String result;
     if (useEmulator) {
       //  Emulation mode.
@@ -218,17 +217,29 @@ void setup_uart(UARTContext *context, uint8_t rx, uint8_t tx, bool echo) {
   lastEchoPort = &Serial;
 }
 
+static void rememberMarker(UARTContext *context) {
+  //  When we see the "\r" marker: Remember the marker location so we can format the debug output.
+  if (context->actualMarkerCount < markerPosMax) {
+    markerPos[context->actualMarkerCount] = strlen(context->response); 
+  }
+}
+
 static void logSendReceive(UARTContext *context) {
-  //  Log the actual bytes sent and received.
+  //  Log the status and actual bytes sent and received.
   //  log2(F(">> "), echoSend); if (echoReceive.length() > 0) { log2(F("<< "), echoReceive); }
   logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
   logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
-  Serial.print(F("status = "));
+  Serial.print(F("<< status: "));
   Serial.println(context->status);
-  Serial.print(F("response = "));
+  Serial.print(F("<< response: "));
   Serial.println(context->response);
-  Serial.print(F("actualMarkerCount = "));
+  Serial.print(F("<< actualMarkerCount: "));
   Serial.println(context->actualMarkerCount);
+
+  if (context->status == true) { log2(F(" - Wisol.sendData: response: "), context->response); }
+  else if (strlen(context->response) == 0) { log1(F(" - Wisol.sendData: Error: Response timeout")); }
+  else { log2(F(" - Wisol.sendData: Error: Unknown response: "), context->response); }
+  Serial.flush();
 }
 
 //  Convert nibble to hex digit.
@@ -239,7 +250,7 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
   //  Log the send/receive sendData for debugging.  markerPos is an array of positions in sendData
   //  where the '>' marker was seen and removed.
   echoPort->print(prefix);
-  int m = 0, i = 0;
+  size_t m = 0, i = 0;
   for (i = 0; i < strlen(sendData); i = i + 2) {
     if (m < markerCount && markerPos[m] == i) {
       echoPort->print("0x");

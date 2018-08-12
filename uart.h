@@ -24,7 +24,7 @@ struct UARTMsg {
 //  UART Task maintains this context in the task data.
 struct UARTContext {
   bool status;  //  Return status.  True if successfully sent.
-  int sendIndex;  //  Index of next char to be sent.
+  size_t sendIndex;  //  Index of next char to be sent.
   unsigned long sentTime;  //  Timestamp at which we completed sending.
   char response[maxUARTMsgLength + 1];  //  Received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.

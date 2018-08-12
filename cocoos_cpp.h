@@ -11,6 +11,7 @@
 //    /* MsgQ_t */ queue = os_msgQ_find(task_id);\
 //    /* Evt_t */ event = os_msgQ_event_get( queue );\
 
+#undef OS_MSG_Q_POST
 #define OS_MSG_Q_POST(task_id, msg, delay, period, async )     do {\
                                                                 uint8_t os_posted;\
                                                                 /* MsgQ_t */ queue = os_msgQ_find(task_id);\
@@ -45,6 +46,7 @@
 //    /* MsgQ_t */ queue = os_msgQ_find(task_id);\
 //    /* Evt_t */ event = os_msgQ_event_get(queue);\
 
+#undef OS_MSG_Q_RECEIVE
 #define OS_MSG_Q_RECEIVE(task_id, pMsg, async)     do {\
                                                     uint8_t os_received;\
                                                     /* MsgQ_t */ queue = os_msgQ_find(task_id);\
