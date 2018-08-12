@@ -152,26 +152,17 @@ void uart_task(void) {
         context->response[len] = (char) receiveChar;
         context->response[len + 1] = 0;
       }
-      ////  
-      Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
+      ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
     }
     //  Finished the send and receive.  We close the serial port.
     //  In case of timeout, also close the serial port.
     serialPort->end();
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
 
-    ////
-    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
-    Serial.println(String(F("aaa response: ")) + context->response); ////
-
     //  Log the actual bytes sent and received.
     //  log2(F(">> "), echoSend); if (echoReceive.length() > 0) { log2(F("<< "), echoReceive); }
     logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
     logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
-
-    ////
-    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
-    Serial.println(String(F("bbb response: ")) + context->response); ////
 
     //  If we did not see the expected number of '\r', something is wrong.
     if (context->actualMarkerCount < context->msg->expectedMarkerCount) {
@@ -188,17 +179,13 @@ void uart_task(void) {
 
     ////
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
-    Serial.println(String(F("zzz response: ")) + context->response); ////
-    Serial.flush();
-
-    ////
-    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
     Serial.print(F("status = "));
     Serial.println(context->status);
     Serial.print(F("response = "));
     Serial.println(context->response);
     Serial.print(F("actualMarkerCount = "));
     Serial.println(context->actualMarkerCount);
+    Serial.flush();
     ////
 
     //  Return the event to the caller.
