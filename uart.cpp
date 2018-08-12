@@ -61,13 +61,10 @@ void uart_task(void) {
 
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) { //  Run the UART sending code forever. So the task never ends.
-    //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
-    log2(F(" - Wisol.sendData: "), context->msg->sendData);  
-    //// 
-    log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
     context->msg = &msg;  //  Remember the message until it's sent via UART.
+    log2(F(" - Wisol.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.
     context->status = true;  //  Assume the return status will be successful.

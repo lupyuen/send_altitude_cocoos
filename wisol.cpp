@@ -50,6 +50,7 @@ void wisol_task(void) {
 
         //  Convert Wisol command to UART command and send it.
         convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
+        // debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
         msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
 
         //  Wait for success or failure.
@@ -76,17 +77,7 @@ void wisol_task(void) {
         }
         context->cmdIndex++;  //  Next Wisol command.
       }
-      /*
-      strncpy(uartMsg.sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
-      uartMsg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
-      uartMsg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
-      uartMsg.expectedMarkerCount = 1;  //  TODO
-      uartMsg.successEvent = event_create();  //  TODO
-      uartMsg.failureEvent = event_create();  //  TODO
-      msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
-      */
     }
-
     //  Wait for an incoming message containing sensor data to be transmitted.
     //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
@@ -158,12 +149,16 @@ static void convertCmdToUART(
   UARTMsg *uartMsg, 
   Evt_t successEvent0, 
   Evt_t failureEvent0) {
-  String sendData(cmd->sendData);
   //  Convert the Wisol command into a UART message.
+  String sendData;
+  sendData = cmd->sendData;
   const char *strSendData = sendData.c_str();
+  // debug(F("strSendData="), strSendData);  ////
   // strncpy(uartMsg->sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
   strncpy(uartMsg->sendData, strSendData, maxUARTMsgLength);  //  Copy the command string.
   strncat(uartMsg->sendData, CMD_END, maxUARTMsgLength);  //  Terminate the command with "\r".
+  // debug(F("uartMsg->sendData="), uartMsg->sendData);  ////
+
   uartMsg->timeout = COMMAND_TIMEOUT;
   uartMsg->markerChar = END_OF_RESPONSE;
   uartMsg->expectedMarkerCount = cmd->expectedMarkerCount;
