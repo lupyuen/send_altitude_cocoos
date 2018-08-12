@@ -12,9 +12,8 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 
 #define wisolMsgPoolSize 5  //  Allow up to 5 outgoing sensor messages to be queued.
 #define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
-#define maxWisolCmdPayloadSize maxUARTMsgLength+5  //    Max number of chars in payload. Cater for CMD_SEND_MESSAGE_RESPONSE (2 chars).
-#define maxSigfoxDeviceSize 10  //  Max number of chars in Sigfox device name.
-#define maxSigfoxPACSize 20  //  Max number of chars in Sigfox PAC code.
+#define maxSigfoxDeviceSize 8  //  Max number of chars in Sigfox device name.
+#define maxSigfoxPACSize 16  //  Max number of chars in Sigfox PAC code.
 #define beginSensorName "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
 
 //  According to regulation, messages should be sent only every 10 minutes.
@@ -46,13 +45,15 @@ struct WisolMsg {
 
 struct WisolContext;  //  Forward declaration.
 
-//  Defines a Wisol AT command string, to be sent via UART Task.
+//  Defines a Wisol AT command string, to be sent via UART Task. Sequence is
+//    sendData + payload + sendData2
 struct WisolCmd {
-  const __FlashStringHelper *sendData;  //  String to be sent, in F() flash memory. 
+  const __FlashStringHelper *sendData;  //  Command string to be sent, in F() flash memory. 
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
   bool (*processFunc)(WisolContext *context, const char *response);  //  Function to process the response, NULL if none.
-  char payload[maxWisolCmdPayloadSize + 1];  //  Additional payload to be sent right after sendData.
-};  //  TODO: Optimise payload.
+  const char *payload;  //  Additional payload to be sent right after sendData. Note: This is a pointer, not a buffer.
+  const __FlashStringHelper *sendData2;  //  Second command string to be sent, in F() flash memory. 
+};
 
 //  Wisol Task maintains this context in the task data.
 struct WisolContext {

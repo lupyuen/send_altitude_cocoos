@@ -145,7 +145,9 @@ static uint8_t display_setup(void) {
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
   arduino_setup(); //// debug(F("init_display")); ////
+#ifdef SENSOR_DISPLAY  
   init_display();
+#endif  //  SENSOR_DISPLAY
 
   //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
   debug(F("Create semaphore")); ////

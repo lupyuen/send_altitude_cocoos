@@ -25,7 +25,7 @@ static void convertCmdToUART(
 static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
-static WisolCmd endOfList = { NULL, 0, NULL };  //  Command to indicate end of command list.
+static WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 
 void wisol_task(void) {
   //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
@@ -138,17 +138,17 @@ void wisol_task(void) {
 
 bool getID(WisolContext *context, const char *response) {
   //  Save the device ID to context.
-  debug(F("getID: "), response);
   strncpy(context->device, response, maxSigfoxDeviceSize);
   context->device[maxSigfoxDeviceSize] = 0;  //  Terminate the device ID in case of overflow.
+  debug(F("getID: "), context->device);
   return true;
 }
 
 bool getPAC(WisolContext *context, const char *response) {
   //  Save the PAC code to context.
-  debug(F("getPAC: "), response);
   strncpy(context->pac, response, maxSigfoxPACSize);
   context->pac[maxSigfoxPACSize] = 0;  //  Terminate the PAC code in case of overflow.
+  debug(F("getPAC: "), context->pac);
   return true;
 }
 
@@ -205,10 +205,10 @@ static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
     context->useEmulator  //  If emulator mode,
       ? F(CMD_EMULATOR_ENABLE)  //  Device will only talk to SNEK emulator.
       : F(CMD_EMULATOR_DISABLE),  //  Else device will only talk to Sigfox network.
-    1, NULL };
+    1, NULL, NULL, NULL };
   //  Get Sigfox device ID and PAC.
-  list[i++] = { F(CMD_GET_ID), 1, getID };
-  list[i++] = { F(CMD_GET_PAC), 1, getPAC };
+  list[i++] = { F(CMD_GET_ID), 1, getID, NULL, NULL };
+  list[i++] = { F(CMD_GET_PAC), 1, getPAC, NULL, NULL };
   list[i++] = endOfList;
 }
 
@@ -221,15 +221,15 @@ static void getCmdPower(WisolContext *context, WisolCmd list[]) {
     case 1:  //  RCZ1
     case 3:  //  RCZ3
       //  Send CMD_OUTPUT_POWER_MAX
-      list[i++] = { F(CMD_OUTPUT_POWER_MAX), 1, NULL };
+      list[i++] = { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL };
       break;
     case 2:  //  RCZ2
     case 4: {  //  RCZ4
       //  Send CMD_PRESEND
-      list[i++] = { F(CMD_PRESEND), 1, checkPower };
+      list[i++] = { F(CMD_PRESEND), 1, checkPower, NULL, NULL };
       //  Send second power command: CMD_PRESEND2.  
       //  Note: checkPower() may change this command to CMD_NONE if not required.
-      list[i++] = { F(CMD_PRESEND2), 1, NULL };
+      list[i++] = { F(CMD_PRESEND2), 1, NULL, NULL, NULL };
       break;
     }
   }
@@ -256,32 +256,23 @@ static void getCmdSend(
   int i = getCmdIndex(list);  //  Get next available index.
   uint8_t markers = 1;  //  Wait for 1 line of response.
   bool (*processFunc)(WisolContext *context, const char *response) = NULL;  //  Function to process result.
-  char *suffix = "";  //  Text to be appended to payload.
+  const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
 
   // If no downlink: Send CMD_SEND_MESSAGE + payload
   if (downlinkMode) {
     //  For downlink mode: send CMD_SEND_MESSAGE + payload + CMD_SEND_MESSAGE_RESPONSE
     markers++;  //  Wait for one more response line.   
     processFunc = getDownlink;  //  Process the downlink message.
-    suffix = CMD_SEND_MESSAGE_RESPONSE;  //  Append suffix to payload.
+    sendData2 = F(CMD_SEND_MESSAGE_RESPONSE);  //  Append suffix to payload.
   }
-  list[i] = { F(CMD_SEND_MESSAGE), markers, processFunc };
-  //  TODO: Check payload size.
-  strncpy(list[i].payload, payload, maxWisolCmdPayloadSize);
-  list[i].payload[maxWisolCmdPayloadSize] = 0;  //  Terminate payload in case of overflow.
-  strncat(list[i].payload, suffix, maxWisolCmdPayloadSize - strlen(list[i].payload));
-  list[i].payload[maxWisolCmdPayloadSize] = 0;  //  Terminate payload in case of overflow.
-  //  Check total msg length
-  if (strlen(list[i].payload) >= maxWisolCmdPayloadSize - 1) {
-    debug(F("Error: cmd.payload overflow"));
-  }
-
-  i++;  //  Next cmd.
+  list[i++] = { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 };
 
   //  TODO: Throttle.
 
   list[i++] = endOfList;
 }
+
+static String cmdData;
 
 static void convertCmdToUART(
   WisolCmd *cmd,
@@ -290,24 +281,37 @@ static void convertCmdToUART(
   Evt_t successEvent0, 
   Evt_t failureEvent0) {
   //  Convert the Wisol command into a UART message.
-  String sendData;
-  sendData = cmd->sendData;
-  const char *strSendData = sendData.c_str();
-  // debug(F("strSendData="), strSendData);  ////
-  // strncpy(uartMsg->sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
-  strncpy(uartMsg->sendData, strSendData, maxUARTMsgLength);  //  Copy the command string.
-  uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
-  if (cmd->payload[0] != 0) {
-    //  Append payload if it exists.
-    strncat(uartMsg->sendData, cmd->payload, maxUARTMsgLength - strlen(uartMsg->sendData));  //  Terminate the command with "\r".
-    uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  char *uartData = uartMsg->sendData;
+  uartData[0] = 0;  //  Clear the dest buffer.
+
+  if (cmd->sendData != NULL) {
+    //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
+    cmdData = cmd->sendData;
+    const char *cmdDataStr = cmdData.c_str();
+    // debug(F("strSendData="), strSendData);  ////
+    // strncpy(uartData, "AT$I=10\r", maxUARTMsgLength - strlen(uartData));  //  For testing
+    strncpy(uartData, cmdDataStr, maxUARTMsgLength - strlen(uartData));  //  Copy the command string.
+    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
   }
-  strncat(uartMsg->sendData, CMD_END, maxUARTMsgLength - strlen(uartMsg->sendData));  //  Terminate the command with "\r".
-  uartMsg->sendData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
-  //  debug(F("uartMsg->sendData="), uartMsg->sendData);  ////
+  if (cmd->payload != NULL) {
+    //  Append payload if it exists.
+    strncat(uartData, cmd->payload, maxUARTMsgLength - strlen(uartData));
+    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  }
+  if (cmd->sendData2 != NULL) {
+    //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
+    cmdData = cmd->sendData2;
+    const char *cmdDataStr = cmdData.c_str();
+    strncat(uartData, cmdDataStr, maxUARTMsgLength - strlen(uartData));
+    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  }
+  //  Terminate the command with "\r".
+  strncat(uartData, CMD_END, maxUARTMsgLength - strlen(uartData));
+  uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  //  debug(F("uartData="), uartData);  ////
   //  Check total msg length
-  if (strlen(uartMsg->sendData) >= maxUARTMsgLength - 1) {
-    debug(F("Error: uartMsg.sendData overflow"));
+  if (strlen(uartData) >= maxUARTMsgLength - 1) {
+    debug(F("Error: uartData overflow"));
   }
 
   uartMsg->timeout = COMMAND_TIMEOUT;
@@ -353,7 +357,7 @@ static int getCmdIndex(WisolCmd list[]) {
     i++) {}
   if (i >= maxWisolCmdListSize) {
     //  List is full.
-    debug(F("Error: Out of wisol cmd space"));
+    debug(F("Error: Cmd list overflow"));
     i = maxWisolCmdListSize - 1;
   }
   return i;
