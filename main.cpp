@@ -81,7 +81,8 @@ static uint8_t network_setup(uint8_t display_task_id) {
 
   //  Start the Wisol Task for receiving sensor data and transmitting to UART Task.
   setup_wisol(
-    &wisolContext, 
+    &wisolContext,
+    &uartContext,
     uartTaskID, 
     COUNTRY_SG, 
     false);

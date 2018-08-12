@@ -2,11 +2,13 @@
 #define WISOL_H_
 
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
+#include "uart.h"  //  For UARTContext
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 #define wisolMsgPoolSize 2  //  Allow up to 5 outgoing sensor messages to be queued.
+#define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
 
 //  According to regulation, messages should be sent only every 10 minutes.
 const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;
@@ -32,19 +34,32 @@ struct WisolMsg {
   Msg_t super;  //  Required for all cocoOS messages.
 };
 
+//  Defines a Wisol AT command string, to be sent via UART Task.
+struct WisolCmd {
+  const __FlashStringHelper *sendData;  //  String to be sent, in F() flash memory. 
+  uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
+  bool (*processFunc)(WisolContext *context, const char *response);  //  Function to process the response, NULL if none.  
+};
+
 //  Wisol Task maintains this context in the task data.
 struct WisolContext {
+  UARTContext *uartContext;  //  Context of the UART Task.
   uint8_t uartTaskID;  //  Task ID of the UART Task.  Wisol Task transmits UART data by sending a message to this task. 
   int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
   bool useEmulator;  //  Set to true if using UnaBiz Emulator.
   String device;  //  Name of device if using UnaBiz Emulator.
-  bool firstTime;  //  Set by setup_wisol() to true if this is the first run.
+  bool firstTime;  //  Set by setup_wisol() to true if this is the first run.  
+  bool status;  //  Return status.  True if command was successful.
   WisolMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
+
+  WisolCmd *cmdList;  //  List of Wisol AT commands being sent.
+  int cmdIndex;  //  Index of cmdList being sent.
 };
 
 void setup_wisol(
   WisolContext *context, 
+  UARTContext *uartContext, 
   int8_t uartTaskID, 
   Country country0, 
   bool useEmulator0);
