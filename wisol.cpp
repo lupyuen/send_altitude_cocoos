@@ -7,6 +7,15 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
+//  Defines a Wisol command string, to be sent via UART Task.
+struct WisolCmd {
+  const __FlashStringHelper *sendData;  //  String to be sent, in F() flash memory. 
+  uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
+  bool (*handlerFunc)(UARTContext *uartContext);  //  Handler function for the response.  
+};
+
+static WisolCmd *wisol_begin(WisolContext *context);
+
 void wisol_task(void) {
   //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
   Serial.begin(9600);  //  TODO
@@ -69,13 +78,6 @@ enum Cmd {
   CMD_LAST  //  Last command ID.
 };
 
-//  Defines a Wisol command string, to be sent via UART Task.
-struct WisolCmd {
-  const __FlashStringHelper *sendData;  //  String to be sent, in F() flash memory. 
-  uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
-  bool (*handlerFunc)(UARTContext *uartContext);  //  Handler function for the response.  
-};
-
 #define CMD_OUTPUT_POWER_MAX "ATS302=15"  //  For RCZ1: Set output power to maximum power level.
 #define CMD_PRESEND "AT$GI?"  //  For RCZ2, 4: Send this command before sending messages.  Returns X,Y.
 #define CMD_PRESEND2 "AT$RC"  //  For RCZ2, 4: Send this command if presend returns X=0 or Y<3.
@@ -98,7 +100,8 @@ struct WisolCmd {
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
-void wisol_begin(WisolContext *context) {
+static WisolCmd *wisol_begin(WisolContext *context) {
+  //  Return the list of UART commands to start up the Wisol module.
   WisolCmd cmdList[] = {
     //  Set emulation mode.
     { context->useEmulator  //  If emulator mode,
@@ -110,6 +113,17 @@ void wisol_begin(WisolContext *context) {
     { F(CMD_GET_PAC), 1, NULL },  //  TODO
     //  Set frequency zone (RCZ).
   };
+  return cmdList;
+}
+
+static void expandCmd() {
+  strncpy(uartMsg.sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
+  uartMsg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
+  uartMsg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
+  uartMsg.expectedMarkerCount = 1;  //  TODO
+  uartMsg.successEvent = event_create();  //  TODO
+  uartMsg.failureEvent = event_create();  //  TODO
+  msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
 }
 
 static WisolCmd allWisolCmd[CMD_LAST] = {
