@@ -43,16 +43,12 @@ void wisol_task(void) {
 
   for (;;) { //  Receiving sensor data Run the data sending code forever. So the task never ends.
     context = (WisolContext *) task_get_data();
-
     //  On task startup, send "begin" message to self so that we can process the Wisol "begin" commands.
     if (context->firstTime) {
       context->firstTime = false;
-      const uint8_t taskID = os_get_running_tid(); //  Send the message to our own task.
-      msg_post(taskID, beginMsg);
+      msg_post(os_get_running_tid(), beginMsg); //  Send the message to our own task.
       continue;  //  Process the next incoming message, which should be the "begin" message.
-      //// getBeginCmd(context, cmdList);  //  Fetch list of startup commands for Wisol.
     }
-
     //  Wait for an incoming message containing sensor data.
     msg_receive(os_get_running_tid(), &msg);
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
@@ -102,7 +98,7 @@ void wisol_task(void) {
       }
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
-  }  //  Loop to next sensor data message.
+  }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
 
