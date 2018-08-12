@@ -41,7 +41,7 @@ void wisol_task(void) {
     context = (WisolContext *) task_get_data();
     if (context->firstTime) {
       context->firstTime = false;
-      strncpy(uartMsg.buffer, "AT$I=10\r", maxUARTMsgLength);  //  TODO
+      strncpy(uartMsg.sendData, "AT$I=10\r", maxUARTMsgLength);  //  TODO
       uartMsg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
       uartMsg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
       uartMsg.expectedMarkerCount = 1;  //  TODO

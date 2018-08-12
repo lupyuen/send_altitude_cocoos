@@ -13,7 +13,7 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 //  UART Task accepts messages of this format.
 struct UARTMsg {
   Msg_t super;  //  Required for all cocoOS messages.
-  char buffer[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.
+  char sendData[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.
   unsigned long timeout;  //  Send timeout in milliseconds.
   char markerChar;  //  End-of-command marker character that we should count e.g. '\r'
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
