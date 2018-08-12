@@ -27,13 +27,12 @@
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
-static UARTMsg uartMsg;  //  TODO
-
 void wisol_task(void) {
   Serial.begin(9600);  //  TODO
 
   WisolContext *context;
-  WisolMsg msg;
+  static WisolMsg msg;  //  TODO
+  static UARTMsg uartMsg;  //  TODO
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
 
   task_open();  //  Start of the task. Must be matched with task_close().

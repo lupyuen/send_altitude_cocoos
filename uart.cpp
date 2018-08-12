@@ -52,7 +52,7 @@ void uart_task(void) {
   //  to indicate the step to jump to.
 
   UARTContext *context;
-  UARTMsg msg;
+  static UARTMsg msg;
   uint8_t sendChar;
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
 
