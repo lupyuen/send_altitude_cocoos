@@ -5,6 +5,8 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
+#define wisolMsgPoolSize 2  //  Allow up to 5 outgoing sensor messages to be queued.
+
 //  According to regulation, messages should be sent only every 10 minutes.
 const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;
 const unsigned int MAX_BYTES_PER_MESSAGE = 12;  //  Only 12 bytes per message.
@@ -23,6 +25,29 @@ enum Country {
   COUNTRY_US = 'U'+('S' << 8),  //  USA: RCZ2
   COUNTRY_TW = 'T'+('W' << 8),  //  Taiwan: RCZ4
 };
+
+//  Wisol Task accepts messages containing sensor data, in this format.
+struct WisolMsg {
+  Msg_t super;  //  Required for all cocoOS messages.
+};
+
+//  Wisol Task maintains this context in the task data.
+struct WisolContext {
+  uint8_t uartTaskID;  //  Task ID of the UART Task.  Wisol Task transmits UART data by sending a message to this task. 
+  int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
+  Country country;   //  Country to be set for SIGFOX transmission frequencies.
+  bool useEmulator;  //  Set to true if using UnaBiz Emulator.
+  String device;  //  Name of device if using UnaBiz Emulator.
+  bool firstTime;  //  Set by wisol_task() to true if this is the first run.
+  WisolMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
+};
+
+void setup_wisol(
+  WisolContext *context, 
+  int8_t uartTaskID, 
+  Country country0, 
+  bool useEmulator0);
+void wisol_task(void);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

@@ -62,21 +62,23 @@ void uart_task(void) {
     //// debug(F("msg_receive")); ////
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
+    context->msg = &msg;  //  Remember the message until it's sent via UART.
 
-#ifndef NOTUSED
+#define TEST_TIMER
+#ifdef TEST_TIMER
     //  Test whether the timer is accurate while multitasking.
     context->testTimer = millis();
     task_wait(10); context = (UARTContext *) task_get_data();
-    Serial.println(String("test 10: ") + String(millis() - context->testTimer));
+    Serial.println(String(F("Expect 10: ")) + String(millis() - context->testTimer));
 
     context->testTimer = millis();
     task_wait(100); context = (UARTContext *) task_get_data();
-    Serial.println(String("test 100: ") + String(millis() - context->testTimer));
+    Serial.println(String(F("Expect 100: ")) + String(millis() - context->testTimer));
 
     context->testTimer = millis();
     task_wait(200); context = (UARTContext *) task_get_data();
-    Serial.println(String("test 200: ") + String(millis() - context->testTimer));
-#endif // NOTUSED
+    Serial.println(String(F("Expect 200: ")) + String(millis() - context->testTimer));
+#endif // TEST_TIMER
 
     log2(F(" - Wisol.sendBuffer: "), context->msg->buffer);
     //// log2(F("expectedMarkerCount / timeout: "), context->msg->expectedMarkerCount + " / " + String(context->msg->timeout));
@@ -187,23 +189,13 @@ void uart_task(void) {
   task_close();  //  End of the task.
 }
 
-static UARTMsg msg;  //  TODO
-
-void setup_uart(UARTContext *uartContext, uint8_t rx, uint8_t tx, bool echo) {
+void setup_uart(UARTContext *context, uint8_t rx, uint8_t tx, bool echo) {
   //  Init the module with the specified transmit and receive pins.
   //  Default to no echo.
   serialPort = new SoftwareSerial(rx, tx);
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;
   lastEchoPort = &Serial;
-
-  strncpy(msg.buffer, "AT$I=10\r", maxUARTMsgLength);  //  TODO
-  msg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
-  msg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
-  msg.expectedMarkerCount = 1;
-  msg.successEvent = event_create();
-  msg.failureEvent = event_create();
-  uartContext->msg = &msg;
 }
 
 //  Convert nibble to hex digit.

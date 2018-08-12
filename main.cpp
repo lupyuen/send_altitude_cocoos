@@ -24,8 +24,10 @@ static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate in
 
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 static UARTContext uartContext;
+static WisolContext wisolContext;
 static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
+static WisolMsg wisolMsgPool[wisolMsgPoolSize];  //  Pool of UART messages for the UART queue.
 
 int main(void) {
   //  The application starts here. We create the tasks to read and display sensor data 
@@ -36,13 +38,15 @@ int main(void) {
   os_init();
 
   //  Start the display task that displays sensor data.
-  uint8_t display_task_id = display_setup();
+  //// TODO: uint8_t display_task_id = display_setup();
+  uint8_t display_task_id = 0;
 
   //  Start the network task to send and receive network messages.
   network_setup(display_task_id);
   
   //  Start the sensor tasks for each sensor to read sensor data.
   //// TODO: sensor_setup(display_task_id);
+  //// TODO: sensor_setup(network_task_id);
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
   //// debug(F("arduino_start_timer")); ////
@@ -57,11 +61,15 @@ int main(void) {
 static uint8_t network_setup(uint8_t display_task_id) {
   //  Start the network task to send and receive network messages.
 
-  //  TODO
-  const uint8_t WISOL_TX = 4;  //  Transmit port for For UnaBiz / Wisol Dev Kit
-  const uint8_t WISOL_RX = 5;  //  Receive port for UnaBiz / Wisol Dev Kit
-  setup_uart(&uartContext, WISOL_RX, WISOL_TX, true);
-  uint8_t uart_task_id = task_create(
+  //  Start the UART Task for transmitting UART data to the Wisol module.
+  const uint8_t WISOL_TX = 4;  //  Transmit port for Wisol module.
+  const uint8_t WISOL_RX = 5;  //  Receive port for Wisol module.
+  setup_uart(
+    &uartContext, 
+    WISOL_RX, 
+    WISOL_TX, 
+    true);
+  uint8_t uartTaskID = task_create(
     uart_task,     //  Task will run this function.
     &uartContext,  //  task_get_data() will be set to the display object.
     10,            //  Priority 10 = highest priority
@@ -69,8 +77,21 @@ static uint8_t network_setup(uint8_t display_task_id) {
     uartMsgPoolSize,        //  Size of queue pool.
     sizeof(UARTMsg));   //  Size of queue message.
 
-  uint8_t network_task_id = 0;
-  return network_task_id;
+  //  Start the Wisol Task for receiving sensor data and transmitting to UART Task.
+  setup_wisol(
+    &wisolContext, 
+    uartTaskID, 
+    COUNTRY_SG, 
+    false);
+  uint8_t networkTaskID = task_create(
+    wisol_task,     //  Task will run this function.
+    &wisolContext,  //  task_get_data() will be set to the display object.
+    20,             //  Priority 20 = lower priority than UART task
+    (Msg_t *) wisolMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    wisolMsgPoolSize,        //  Size of queue pool.
+    sizeof(WisolMsg));   //  Size of queue message.
+    
+  return networkTaskID;
 }
 
 static void sensor_setup(uint8_t display_task_id) {
@@ -87,13 +108,13 @@ static void sensor_setup(uint8_t display_task_id) {
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
   //// debug(F("task_create")); ////
-  task_create(sensor_task, tempContext, 20,   //  Priority 20 = lower priority than network task
+  task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, humidContext, 30,  //  Priority 30
+  task_create(sensor_task, humidContext, 120,  //  Priority 120
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, altContext, 40,  //  Priority 40
+  task_create(sensor_task, altContext, 130,  //  Priority 130
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, gyroContext, 50,   //  Priority 50
+  task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.
 }
 

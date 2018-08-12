@@ -22,17 +22,17 @@ struct UARTMsg {
 
 //  UART Task maintains this context in the task data.
 struct UARTContext {
-  UARTMsg *msg;  //  Message being sent.
   bool status;  //  Return status.  True if successfully sent.
   int sendIndex;  //  Index of next char to be sent.
   unsigned long sentTime;  //  Timestamp at which we completed sending.
   String response;  //  Received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.
+  UARTMsg *msg;  //  Message being sent. Set by uart_task() upon receiving a message.
 };
 
-void uart_task(void);
 void setup_uart(UARTContext *uartContext, uint8_t rx, uint8_t tx, bool echo);
+void uart_task(void);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

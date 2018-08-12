@@ -27,15 +27,50 @@
 #define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
 #define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
 
-static int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
-static Country country;   //  Country to be set for SIGFOX transmission frequencies.
-static bool useEmulator;  //  Set to true if using UnaBiz Emulator.
-static String device;  //  Name of device if using UnaBiz Emulator.
+void wisol_task(void) {
+  Serial.begin(9600);  //  TODO
 
-void setup_wisol(Country country0, bool useEmulator0, const String device0) {
-  //  Init the module.
-  zone = 4;  //  RCZ4
-  country = country0;
-  useEmulator = useEmulator0;
-  device = device0;
+  WisolContext *context;
+  WisolMsg msg;
+  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
+
+  task_open();  //  Start of the task. Must be matched with task_close().
+  context = (WisolContext *) task_get_data();
+  context->firstTime = true;
+
+  for (;;) { //  Run the data sending code forever. So the task never ends.
+    //  TODO: On task startup, send the UART commands to initialise the Wisol module.
+    context = (WisolContext *) task_get_data();
+    if (context->firstTime) {
+      static UARTMsg msg;  //  TODO
+      strncpy(msg.buffer, "AT$I=10\r", maxUARTMsgLength);  //  TODO
+      msg.timeout = 1000;  //  TODO: COMMAND_TIMEOUT
+      msg.markerChar = '\r';  //  TODO: END_OF_RESPONSE
+      msg.expectedMarkerCount = 1;  //  TODO
+      msg.successEvent = event_create();  //  TODO
+      msg.failureEvent = event_create();  //  TODO
+      msg_post(context->uartTaskID, msg);  //  Send the message to the UART task for transmission.
+    }
+
+    //  Wait for an incoming message containing sensor data to be transmitted.
+    //// debug(F("msg_receive")); ////
+    msg_receive(os_get_running_tid(), &msg);
+    context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
+    context->msg = &msg;  //  Remember the message until it's sent via UART.
+
+    //  TODO: Check whether we should transmit.
+  }
+  task_close();  //  End of the task.
+}
+
+void setup_wisol(
+  WisolContext *context, 
+  int8_t uartTaskID, 
+  Country country0, 
+  bool useEmulator0) {
+  //  Init the Wisol module.
+  context->zone = 4;  //  RCZ4
+  context->country = country0;
+  context->useEmulator = useEmulator0;
+  context->device = "";
 }
