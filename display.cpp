@@ -6,6 +6,7 @@
 #include "sensor.h"
 #include "display.h"
 
+#ifdef SENSOR_DISPLAY
 //  Message buffer to be displayed at next refresh().
 //  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
 static DisplayMsg displayMessages[sensorDisplaySize];
@@ -125,6 +126,8 @@ Display *get_display(void) {
   //  Return the global instance of the display object.
   return &display;
 }
+
+#endif  //  SENSOR_DISPLAY
 
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).

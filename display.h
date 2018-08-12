@@ -1,6 +1,9 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
+//  Uncomment to use original sensor display instead of sending to network.
+//  #define SENSOR_DISPLAY
+
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif  //  ARDUINO

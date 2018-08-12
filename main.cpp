@@ -25,9 +25,11 @@ static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate in
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 static UARTContext uartContext;
 static WisolContext wisolContext;
-static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
 static WisolMsg wisolMsgPool[wisolMsgPoolSize];  //  Pool of UART messages for the UART queue.
+#ifdef SENSOR_DISPLAY
+static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
+#endif  //  SENSOR_DISPLAY
 
 int main(void) {
   //  The application starts here. We create the tasks to read and display sensor data 
@@ -38,17 +40,22 @@ int main(void) {
   os_init();
 
   //  Start the display task that displays sensor data.
-  //// TODO: uint8_t display_task_id = display_setup();
   uint8_t display_task_id = 0;
+#ifdef SENSOR_DISPLAY
+  display_task_id = display_setup();
+#endif  //  SENSOR_DISPLAY
 
   //  Start the network task to send and receive network messages.
-  network_setup(display_task_id);
+  uint8_t network_task_id = network_setup(display_task_id);
   
   //  Start the sensor tasks for each sensor to read sensor data.
+#ifdef SENSOR_DISPLAY
   //  Previously, we send sensor data to the Display Task for display.
-  //// TODO: sensor_setup(display_task_id);
+  sensor_setup(display_task_id);
+#else
   //  Now we send sensor data to the Network Task for transmission.
   //// TODO: sensor_setup(network_task_id);
+#endif  //  SENSOR_DISPLAY
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
   //// debug(F("arduino_start_timer")); ////
@@ -121,6 +128,7 @@ static void sensor_setup(uint8_t display_task_id) {
     0, 0, 0);  //  Will not receive message queue data.
 }
 
+#ifdef SENSOR_DISPLAY
 static uint8_t display_setup(void) {
   //  Start the display task that displays sensor data.  Return the task ID.
   uint8_t display_task_id = task_create(
@@ -132,6 +140,7 @@ static uint8_t display_setup(void) {
     sizeof(DisplayMsg));       //  Size of queue message.
   return display_task_id;
 }
+#endif  //  SENSOR_DISPLAY
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
