@@ -5,7 +5,7 @@
 #include "uart.h"
 
 static String toHex(char c);
-static void logsendData(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
+static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
 
 //  Use a macro for logging.
@@ -80,7 +80,7 @@ void uart_task(void) {
     Serial.println(String(F("Expect 200: ")) + String(millis() - context->testTimer));
 #endif // TEST_TIMER
 
-    log2(F(" - Wisol.sendsendData: "), context->msg->sendData);
+    log2(F(" - Wisol.sendData: "), context->msg->sendData);
     //// 
     log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
@@ -88,7 +88,7 @@ void uart_task(void) {
     context->status = false;  //  Return status.
     context->sendIndex = 0;  //  Index of next char to be sent.
     context->sentTime = 0;  //  Timestamp at which we completed sending.
-    context->response = "";
+    context->response[0] = 0;
     context->actualMarkerCount = 0;
 
     //  Start the serial interface for the transceiver.
@@ -109,8 +109,7 @@ void uart_task(void) {
       sendChar = (uint8_t) context->msg->sendData[context->sendIndex];
       serialPort->write(sendChar);
       context->sendIndex++;
-      ////  
-      Serial.println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
+      ////  Serial.println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
       task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
       context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
     }
@@ -121,7 +120,7 @@ void uart_task(void) {
       //  If receive step has timed out, quit.
       const unsigned long currentTime = millis();
       if (currentTime - context->sentTime > context->msg->timeout) {
-        logsendData(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
+        logBuffer(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
         break;
       }
       //  No data is available in the serial port sendData to receive now.  We retry later.
@@ -137,41 +136,60 @@ void uart_task(void) {
       if (receiveChar == context->msg->markerChar) {
         //  We see the "\r" marker. Remember the marker location so we can format the debug output.
         if (context->actualMarkerCount < markerPosMax) {
-          markerPos[context->actualMarkerCount] = context->response.length(); 
+          markerPos[context->actualMarkerCount] = strlen(context->response); 
         }
         context->actualMarkerCount++;  //  Count the number of end markers.
 
         //  We have encountered all the markers we need.  Stop receiving.
-        if (context->actualMarkerCount >= context->msg->expectedMarkerCount) break;
+        if (context->actualMarkerCount >= context->msg->expectedMarkerCount) { break; }
         continue;  //  Continue to receive next char.
       }
 
       //  Else append the received char to the response.
-      context->response.concat(String((char) receiveChar));
-      ////  Serial.println(String("response: ") + context->response); ////
-      ////  log2(F("receiveChar "), receiveChar);
+      //  Previously: context->response.concat(String((char) receiveChar));
+      int len = strlen(context->response);
+      if (len < maxUARTMsgLength) {
+        context->response[len] = (char) receiveChar;
+        context->response[len + 1] = 0;
+      }
+      ////  
+      Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
     }
     //  Finished the send and receive.  We close the serial port.
     //  In case of timeout, also close the serial port.
     serialPort->end();
+    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
+
+    ////
+    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
+    Serial.println(String(F("aaa response: ")) + context->response); ////
 
     //  Log the actual bytes sent and received.
     //  log2(F(">> "), echoSend); if (echoReceive.length() > 0) { log2(F("<< "), echoReceive); }
-    logsendData(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
-    logsendData(F("<< "), context->response.c_str(), context->msg->markerChar, markerPos, context->actualMarkerCount);
+    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
+    logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
+
+    ////
+    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
+    Serial.println(String(F("bbb response: ")) + context->response); ////
 
     //  If we did not see the expected number of '\r', something is wrong.
     if (context->actualMarkerCount < context->msg->expectedMarkerCount) {
       context->status = false;  //  Return failure.
-      if (context->response.length() == 0) {
-        log1(F(" - Wisol.sendsendData: Error: No response"));  //  Response timeout.
+      if (strlen(context->response) == 0) {
+        log1(F(" - Wisol.sendData: Error: No response"));  //  Response timeout.
       } else {
-        log2(F(" - Wisol.sendsendData: Error: Unknown response: "), context->response);
+        log2(F(" - Wisol.sendData: Error: Unknown response: "), context->response);
       }
     } else {
       context->status = true;  //  Return success.
-      log2(F(" - Wisol.sendsendData: response: "), context->response);
+      log2(F(" - Wisol.sendData: response: "), context->response);
     }
+
+    ////
+    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
+    Serial.println(String(F("zzz response: ")) + context->response); ////
+    Serial.flush();
 
     ////
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
@@ -203,7 +221,7 @@ void setup_uart(UARTContext *context, uint8_t rx, uint8_t tx, bool echo) {
 //  Convert nibble to hex digit.
 static const char nibbleToHex[] = "0123456789abcdef";
 
-static void logsendData(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
+static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount) {
   //  Log the send/receive sendData for debugging.  markerPos is an array of positions in sendData
   //  where the '>' marker was seen and removed.

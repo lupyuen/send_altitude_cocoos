@@ -26,7 +26,7 @@ struct UARTContext {
   bool status;  //  Return status.  True if successfully sent.
   int sendIndex;  //  Index of next char to be sent.
   unsigned long sentTime;  //  Timestamp at which we completed sending.
-  String response;  //  Received response.
+  char response[maxUARTMsgLength + 1];  //  Received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.
   UARTMsg *msg;  //  Message being sent. Set by uart_task() upon receiving a message.
