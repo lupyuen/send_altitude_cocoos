@@ -87,6 +87,9 @@ With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecima
   { "002C2EA1" : { "downlinkData" : "0102030405060708" } }
 ```
 
+Note: Only the first 4 downlinks per day are guaranteed.  You may send more downlink
+requests but they are not guaranteed.
+
 -----
 ## Source Files
 

@@ -180,16 +180,46 @@ With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecima
 The downlink data must be 8 bytes in hexadecimal format.  For example:
   {"002C2EA1" : { "downlinkData" : "0102030405060708"}} */
 
-bool getDownlink(WisolContext *context, const char *response) {
+bool getDownlink(WisolContext *context, const char *response0) {
   //  Extract the downlink message and write into response.
-  //  Successful response: OK\nRX=01 23 45 67 89 AB CD EF
+  //  If Successful response: OK\nRX=01 23 45 67 89 AB CD EF
   //  -> Change response to: 0123456789ABCDEF
-  //  Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+  //  If Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
   //  -> Keep response as: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+  //  Get a writeable response pointer in the uartContext.
+  char *response = context->uartContext->response;
   debug(F("getDownlink: "), response);
   //  Remove the prefix and spaces:
-  //    replace "OK\nRX=" by ""
-  //    replace " " by ""
+  //    replace "OK\nRX=" by "", replace " " by ""
+  #define downlinkPrefix "OK\nRX="
+  char *foundPtr = strstr(response, downlinkPrefix);
+  if (foundPtr != NULL) {
+    //  Found the delimiter. Transform <<BEFORE>>OK\nRX=<<AFTER>>
+    //  To <<BEFORE>><<AFTER>>
+    //  foundPtr points to "OK\nRX=".
+    foundPtr[0] = 0;  //  Terminate <<BEFORE>>
+    const char *after = foundPtr + strlen(downlinkPrefix);
+    //  Shift <<AFTER>> next to <<BEFORE>>.
+    strncat(response, after, maxUARTMsgLength - strlen(response));
+    response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
+  }
+  //  Remove all spaces.
+  int src = 0, dst = 0;
+  for (;;) {
+    if (src >= maxUARTMsgLength) break;
+    //  Don't copy spaces in the source.
+    if (response[src] == ' ') { 
+      src++; 
+      continue;
+    }
+    //  Copy only if the indexes are different.
+    if (dst != src) { response[dst] = response[src]; }
+    //  If we have copied the terminating null, quit.
+    if (response[dst] == 0) break;
+    dst++; src++;  //  Shift to next char.
+  }
+  response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
   return true;
 }
 
