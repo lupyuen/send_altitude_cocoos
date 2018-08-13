@@ -2,7 +2,7 @@
 #define SENSOR_H_
 
 //  Uncomment to use real sensor data instead of simulated data.
-//  #define SENSOR_DATA
+#define SENSOR_DATA
 
 //  Uncomment to use simulated sensor data instead of real data.
 //  #define SIMULATED_DATA

@@ -118,7 +118,7 @@ void wisol_task(void) {
         //  If response processing failed, stop.
         if (processStatus != true) {
           context->status = false;  //  Propagate status to Wisol context.
-          debug(F(" - wisol_task Result processing failed, response: "), response);
+          debug(F("***** Error: wisol_task Result processing failed, response: "), response);
           break;  //  Quit processing.
         }
       }
@@ -126,7 +126,7 @@ void wisol_task(void) {
       //  In case of failure, stop.
       if (context->uartContext->status != true) {
         context->status = false;  //  Propagate status to Wisol context.
-        debug(F(" - wisol_task Failed, response: "), response);
+        debug(F("***** Error: wisol_task Failed, response: "), response);
         break;  //  Quit processing.
       }
 
