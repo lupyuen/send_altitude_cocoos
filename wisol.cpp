@@ -348,6 +348,7 @@ static void getCmdSend(
 }
 
 static String cmdData;
+static char uartData[maxUARTMsgLength + 1];
 
 static void convertCmdToUART(
   WisolCmd *cmd,
@@ -356,7 +357,9 @@ static void convertCmdToUART(
   Evt_t successEvent0, 
   Evt_t failureEvent0) {
   //  Convert the Wisol command into a UART message.
-  char *uartData = uartMsg->sendData;
+
+  ////char *uartData = uartMsg->sendData;
+  uartMsg->sendData = uartData;
   uartData[0] = 0;  //  Clear the dest buffer.
 
   if (cmd->sendData != NULL) {

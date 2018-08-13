@@ -4,9 +4,7 @@
 //  Uncomment to log sensor data to console via Display Task instead of sending to network.
 //  #define SENSOR_DISPLAY
 
-#ifdef ARDUINO
 #include "platform.h"
-#endif  //  ARDUINO
 #include <stdint.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"  //  Defines maxSensorNameSize and maxSensorDataSize

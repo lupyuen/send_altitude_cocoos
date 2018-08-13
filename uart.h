@@ -15,7 +15,8 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 //  TODO fix sendData
 struct UARTMsg {
   Msg_t super;  //  Required for all cocoOS messages.
-  char sendData[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.
+  ////char sendData[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.
+  const char *sendData;  //  Pointer to the string to be sent.
   unsigned long timeout;  //  Send timeout in milliseconds.
   char markerChar;  //  End-of-command marker character that we should count e.g. '\r'
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
