@@ -1,6 +1,7 @@
-#ifdef SENSOR_DATA
-
 #include <Arduino.h>
+#include "sensor.h"  //  Defines SENSOR_DATA
+
+#ifdef SENSOR_DATA
 #include <SPI.h>  //  Needed by BME280 library.
 
 //  Where's the code? Look in main.cpp.

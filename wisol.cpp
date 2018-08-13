@@ -15,7 +15,7 @@ static void getCmdSend(
   WisolContext *context, 
   WisolCmd list[], 
   const char *payload,
-  bool downlinkMode);
+  bool enableDownlink);
 static void convertCmdToUART(
   WisolCmd *cmd,
   WisolContext *context, 
@@ -85,8 +85,9 @@ void wisol_task(void) {
 
       //  TODO: Check whether we should transmit.
 
-      bool downlinkMode = false;
-      getCmdSend(context, cmdList, testPayload, downlinkMode);
+      // bool enableDownlink = false;  //  Uplink only
+      bool enableDownlink = true;  //  Uplink and downlink
+      getCmdSend(context, cmdList, testPayload, enableDownlink);
     }
 
     for (;;) {  //  Send each command in the list.
@@ -167,16 +168,25 @@ bool getPAC(WisolContext *context, const char *response) {
   return true;
 }
 
+/* Downlink Server Support: https://backend.sigfox.com/apidocs/callback
+When a message needs to be acknowledged, the callback selected for the downlink data must 
+send data in the response. It must contain the 8 bytes data that will be sent to the device 
+asking for acknowledgment. The data is json formatted, and must be structured as the following :
+  {"YOUR_DEVICE_ID" : { "downlinkData" : "deadbeefcafebabe"}}    
+With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecimal format, up to 8 digits. 
+The downlink data must be 8 bytes in hexadecimal format.  For example:
+  {"002C2EA1" : { "downlinkData" : "0102030405060708"}} */
+
 bool getDownlink(WisolContext *context, const char *response) {
   //  Extract the downlink message and write into response.
-  debug(F("getDownlink: "), response);
-  /* TODO:
   //  Successful response: OK\nRX=01 23 45 67 89 AB CD EF
+  //  -> Change response to: 0123456789ABCDEF
   //  Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
-  //  Remove the prefix and spaces.
-  response.replace("OK\nRX=", "");
-  response.replace(" ", "");
-  */
+  //  -> Keep response as: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+  debug(F("getDownlink: "), response);
+  //  Remove the prefix and spaces:
+  //    replace "OK\nRX=" by ""
+  //    replace " " by ""
   return true;
 }
 
@@ -259,11 +269,11 @@ static void getCmdSend(
   WisolContext *context, 
   WisolCmd list[], 
   const char *payload,
-  bool downlinkMode) {
+  bool enableDownlink) {
   //  Return the list of UART commands to send the payload.
   //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
   //  We prefix with AT$SF= and send to the transceiver.
-  //  If downlinkMode is true, we append the
+  //  If enableDownlink is true, we append the
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
@@ -278,7 +288,7 @@ static void getCmdSend(
   const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
 
   // If no downlink: Send CMD_SEND_MESSAGE + payload
-  if (downlinkMode) {
+  if (enableDownlink) {
     //  For downlink mode: send CMD_SEND_MESSAGE + payload + CMD_SEND_MESSAGE_RESPONSE
     markers++;  //  Wait for one more response line.   
     processFunc = getDownlink;  //  Process the downlink message.

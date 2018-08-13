@@ -1,6 +1,9 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+//  Uncomment to use real sensor data instead of simulated data.
+#define SENSOR_DATA
+
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
