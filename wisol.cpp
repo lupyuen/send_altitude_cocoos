@@ -57,8 +57,9 @@ void wisol_task(void) {
   failureEvent = event_create();  //  Another event to indicate failure.
   context->status = true;  //  Assume no error.
 
-  for (;;) { //  Receiving sensor data Run the data sending code forever. So the task never ends.
+  for (;;) { //  Run the sensor data receiving code forever. So the task never ends.
     context = (WisolContext *) task_get_data();
+
     //  On task startup, send "begin" message to self so that we can process the Wisol "begin" commands.
     if (context->firstTime) {
       context->firstTime = false;
@@ -78,9 +79,6 @@ void wisol_task(void) {
       //  If sensor name is "000", this is the "begin" message.
       getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
 
-      //  TODO: Send test sensor message after a short delay.
-      msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
-
     } else {
 
       //  TODO: Check whether we should transmit.
@@ -88,6 +86,7 @@ void wisol_task(void) {
       // bool enableDownlink = false;  //  Uplink only
       bool enableDownlink = true;  //  Uplink and downlink
       getCmdSend(context, cmdList, testPayload, enableDownlink);
+
     }
 
     for (;;) {  //  Send each command in the list.
@@ -125,6 +124,10 @@ void wisol_task(void) {
       }
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
+
+    //  TODO: Send test sensor message after 10 seconds (10,000 milliseconds).
+    msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
+
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
