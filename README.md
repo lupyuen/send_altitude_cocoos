@@ -4,8 +4,6 @@ Read the tutorial: https://medium.com/coinmonks/juggling-arduino-sensors-with-co
 
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
-- `Time`: Download the `Time` library by Michael Margolis from Arduino Library Manager
-
 - `BME280`: Download the `BME280` library by Tyler Glenn from Arduino Library Manager
 
 - `cocoOS_5.0.1`: Download from http://www.cocoos.net/download.html, 
@@ -170,148 +168,630 @@ requests but they are not guaranteed.
 ## Sample Log
 
 ```text
+> Executing task in folder send_altitude_cocoos: platformio device monitor <
+
+--- Miniterm on /dev/cu.usbmodem1411  9600,8,N,1 ---
+--- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 ----arduino_setup
 Create semaphore
-BME280 OK
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-hmd >> Wait for semaphore
-hmd >> Got semaphore
-hmd >> poll_sensor
-hmd >> Send msg
-hmd >> Release semaphore
-hmd >> Wait interval
-alt >> Wait for semaphore
-alt >> Got semaphore
-alt >> poll_sensor
-alt >> Send msg
-alt >> Release semaphore
-alt >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> poll_sensor
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-tmp:            27.5
-hmd:            61.8
-alt:            14.2
-gyr:            30.7,           8.8,            48.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            27.4
-hmd >> Wait for semaphore
-hmd >> Got semaphore
-hmd >> poll_sensor
-hmd >> Send msg
-hmd >> Release semaphore
-hmd >> Wait interval
-alt >> Wait for semaphore
-alt >> Got semaphore
-alt >> poll_sensor
-alt >> Send msg
-alt >> Release semaphore
-alt >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> poll_sensor
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-hmd:            61.8
-alt:            13.5
-gyr:            11.3,           21.0,           24.0
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            27.4
-hmd >> Wait for semaphore
-hmd >> Got semaphore
-hmd >> poll_sensor
-hmd >> Send msg
-hmd >> Release semaphore
-hmd >> Wait interval
-alt >> Wait for semaphore
-alt >> Got semaphore
-alt >> poll_sensor
-alt >> Send msg
-alt >> Release semaphore
-alt >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> poll_sensor
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-hmd:            61.8
-alt:            13.1
-gyr:            30.0,           5.8,            9.8
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            27.4
-hmd >> Wait for semaphore
-hmd >> Got semaphore
-hmd >> poll_sensor
-hmd >> Send msg
-hmd >> Release semaphore
-hmd >> Wait interval
-alt >> Wait for semaphore
-alt >> Got semaphore
-alt >> poll_sensor
-alt >> Send msg
-alt >> Release semaphore
-alt >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> poll_sensor
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-hmd:            61.8
-alt:            13.1
-gyr:            10.1,           29.6,           44.5
-tmp >> Wait for semaphore
-tmp >> Got semaphore
-tmp >> poll_sensor
-tmp >> Send msg
-tmp >> Release semaphore
-tmp >> Wait interval
-tmp:            27.4
-hmd >> Wait for semaphore
-hmd >> Got semaphore
-hmd >> poll_sensor
-hmd >> Send msg
-hmd >> Release semaphore
-hmd >> Wait interval
-alt >> Wait for semaphore
-alt >> Got semaphore
-alt >> poll_sensor
-alt >> Send msg
-alt >> Release semaphore
-alt >> Wait interval
-gyr >> Wait for semaphore
-gyr >> Got semaphore
-gyr >> poll_sensor
-gyr >> Send msg
-gyr >> Release semaphore
-gyr >> Wait interval
-hmd:            61.8
-alt:            13.5
-gyr:            24.7,           2.2,            18.2
+getCmdBegin
+getCmdIndex: 0
+ - Wisol.sendData: ATS410=0
+expectedMarkerCount / timeout: 1 / 60000
+␀> ATS410=0
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$I=10
+expectedMarkerCount / timeout: 1 / 60000
+>> AT$I=10
+<< 002C2EA1[0x0d]
+ - Wisol.sendData: response: 002C2EA1
+wisol_task: response = 002C2EA1
+getID: 002C2EA1
+ - Wisol.sendData: AT$I=11
+expectedMarkerCount / timeout: 1 / 60000
+>> AT$I=11
+<< 5BEB8CF64E869BD1[0x0d]
+ - Wisol.sendData: response: 5BEB8CF64E869BD1
+wisol_task: response = 5BEB8CF64E869BD1
+getPAC: 5BEB8CF64E869BD1
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+␀> AT$SF=0102030405060708090a0b0c,1
+<< OK[0x0d]
+RX=FE DC BA 98 76 54 32 10␀
+ - Wisol.sendData: response: OK
+RX=FE DC BA 98 76 54 32 10
+wisol_task: response = OK
+RX=FE DC BA 98 76 54 32 10
+getDownlink: OK
+RX=FE DC BA 98 76 54 32 10
+getDownlink result: FEDCBA9876543210
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,5␀
+ - Wisol.sendData: response: 1,5
+wisol_task: response = 1,5
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+␀> AT$SF=0102030405060708090a0b0c,1
+<< OK[0x0d]
+RX=FE DC BA 98 76 54 32 10␀
+ - Wisol.sendData: response: OK
+RX=FE DC BA 98 76 54 32 10
+wisol_task: response = OK
+RX=FE DC BA 98 76 54 32 10
+getDownlink: OK
+RX=FE DC BA 98 76 54 32 10
+getDownlink result: FEDCBA9876543210
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,5␀
+ - Wisol.sendData: response: 1,5
+wisol_task: response = 1,5
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+<< (Timeout)
+␀> AT$SF=0102030405060708090a0b0c,1
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+ - Wisol.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+wisol_task: UART failed
+getCmdSend
+getCmdPower
+ - Wisol.sendData: AT$GI?
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT$GI?
+<< 1,6␀
+ - Wisol.sendData: response: 1,6
+wisol_task: response = 1,6
+checkPower: change CMD_PRESEND2
+ - Wisol.sendData: AT
+expectedMarkerCount / timeout: 1 / 60000
+␀> AT
+<< OK[0x0d]
+ - Wisol.sendData: response: OK
+ - Wisol.sendData: AT$SF=0102030405060708090a0b0c,1
+expectedMarkerCount / timeout: 2 / 60000
+
 
 ```
