@@ -2,11 +2,11 @@
 //  Requires the BME280 library to be installed through Arduino Library Manager:
 //  https://github.com/finitespace/BME280
 #include <Arduino.h>
-#include <Wire.h>
 #include "display.h"
-#include "bme280.h"
 
 #ifdef SENSOR_DATA
+#include <Wire.h>
+#include "bme280.h"
 
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
