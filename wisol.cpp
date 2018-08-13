@@ -8,6 +8,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
+static void createWisolMsg(WisolMsg *msg, const char *name);
 static int getCmdIndex(WisolCmd list[]);
 static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
 static void getCmdSend(
@@ -29,13 +30,19 @@ static WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indic
 
 void wisol_task(void) {
   //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
+
+  //  Note: Declare task variables here before the task but don't populate them here
+  //  unless they are not supposed to change. 
+  //  Because the coroutine will execute this code repeatedly and repopulate the values.
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   WisolContext *context;
   WisolCmd *cmd;
-  static WisolMsg msg;  //  TODO
+  static WisolMsg msg;  //  Incoming sensor data message.
   static WisolMsg beginMsg;  //  First message that will be sent to self upon startup.
-  static UARTMsg uartMsg;  //  TODO
+  static WisolMsg sensorMsg;  //  Sensor message that will be sent to self.
+  static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
+  //  Task Starts Here  ///////////////////////////////////
   task_open();  //  Start of the task. Must be matched with task_close().  
   context = (WisolContext *) task_get_data();
   successEvent = event_create();  //  Create event for UART Task to indicate success.
@@ -43,9 +50,10 @@ void wisol_task(void) {
   context->status = true;  //  Assume no error.
 
   //  Init the first message that will be sent to self upon startup.
-  beginMsg.count = 0;  //  No data.
-  strncpy(beginMsg.name, beginSensorName, maxSensorNameSize);  //  Sensor name "000" denotes "begin" message.
-  beginMsg.name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
+  createWisolMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+  createWisolMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
+  sensorMsg.data[0] = 36.9;
+  sensorMsg.count = 1;
 
   for (;;) { //  Receiving sensor data Run the data sending code forever. So the task never ends.
     context = (WisolContext *) task_get_data();
@@ -67,8 +75,14 @@ void wisol_task(void) {
     if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
       //  If sensor name is "000", this is the "begin" message.
       getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
+
+      //  TODO: Send test sensor message after a short delay.
+      ////msg_post_in(os_get_running_tid(), sensorMsg, 5 * 1000); //  Send the message to our own task.
+
     } else {
+
       //  TODO: Check whether we should transmit.
+
       static const char *payload = "0102030405060708090a0b0c";  //  TODO
       bool downlinkMode = false;
       getCmdSend(context, cmdList, payload, downlinkMode);
@@ -182,7 +196,7 @@ bool checkPower(WisolContext *context, const char *response) {
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= maxWisolCmdListSize) {      
-      debug(F("checkPower Error: No cmd space"));  //  List is full.
+      debug(F("checkPower Error: Cmd overflow"));  //  List is full.
       return false;  //  Failure
     }    
     if (context->cmdList[cmdIndex].sendData == NULL) {
@@ -199,7 +213,10 @@ bool checkPower(WisolContext *context, const char *response) {
 
 static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
+  debug(F("getCmdBegin")); ////
   int i = getCmdIndex(list);  //  Get next available index.
+  Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
+  
   //  Set emulation mode.
   list[i++] = {
     context->useEmulator  //  If emulator mode,
@@ -216,6 +233,7 @@ static void getCmdPower(WisolContext *context, WisolCmd list[]) {
   //  Set the output power for the zone.
   //  Get the command based on the zone.
   //  log2(F(" - Wisol.setOutputPower: zone "), String(zone));
+  debug(F("getCmdPower")); ////
   int i = getCmdIndex(list);  //  Get next available index.
   switch(context->zone) {
     case 1:  //  RCZ1
@@ -248,7 +266,7 @@ static void getCmdSend(
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
-
+  debug(F("getCmdSend")); ////
   //  Set the output power for the zone.
   getCmdPower(context, list);
 
@@ -309,9 +327,10 @@ static void convertCmdToUART(
   strncat(uartData, CMD_END, maxUARTMsgLength - strlen(uartData));
   uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
   //  debug(F("uartData="), uartData);  ////
-  //  Check total msg length
+  //  Check total msg length.
   if (strlen(uartData) >= maxUARTMsgLength - 1) {
-    debug(F("Error: uartData overflow"));
+    Serial.print(F("Error: uartData overflow - ")); Serial.print(strlen(uartData));
+    Serial.print(" / "); Serial.println(uartData); Serial.flush();
   }
 
   uartMsg->timeout = COMMAND_TIMEOUT;
@@ -361,4 +380,11 @@ static int getCmdIndex(WisolCmd list[]) {
     i = maxWisolCmdListSize - 1;
   }
   return i;
+}
+
+static void createWisolMsg(WisolMsg *msg, const char *name) {
+  //  Populate the msg fields as an empty message.
+  msg->count = 0;  //  No data.
+  strncpy(msg->name, name, maxSensorNameSize);
+  msg->name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
 }
