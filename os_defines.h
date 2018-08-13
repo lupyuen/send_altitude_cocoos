@@ -47,8 +47,8 @@ extern "C" {
 
 /** Max number of used tasks
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-#define N_TASKS             10
-
+//// #define N_TASKS             10
+#define N_TASKS             5
 
 /** Max number of used message queues
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
@@ -57,12 +57,14 @@ extern "C" {
 
 /** Max number of used semaphores
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-#define N_SEMAPHORES        50
+//// #define N_SEMAPHORES        50
+#define N_SEMAPHORES        10
 
 
 /** Max number of used events
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-#define N_EVENTS            50
+//// #define N_EVENTS            50
+#define N_EVENTS            5
 
 
 /** Round Robin scheduling
