@@ -8,7 +8,7 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
-#define maxUARTMsgLength 30  //  Max message length. 12-byte message = 24 ASCII chars
+#define maxUARTMsgLength 40  //  Max message length, e.g. 30 chars for AT$SF=0102030405060708090a0b0c
 #define uartMsgPoolSize 2  //  Should not have concurrent messages.
 
 //  UART Task accepts messages of this format.

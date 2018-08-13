@@ -27,6 +27,12 @@ static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
 static WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
+static const char testPayload[] = "0102030405060708090a0b0c";  //  TODO
+
+static WisolMsg msg;  //  Incoming sensor data message.
+static WisolMsg beginMsg;  //  First message that will be sent to self upon startup.
+static WisolMsg sensorMsg;  //  Sensor message that will be sent to self.
+static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
 void wisol_task(void) {
   //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
@@ -37,10 +43,12 @@ void wisol_task(void) {
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   WisolContext *context;
   WisolCmd *cmd;
-  static WisolMsg msg;  //  Incoming sensor data message.
-  static WisolMsg beginMsg;  //  First message that will be sent to self upon startup.
-  static WisolMsg sensorMsg;  //  Sensor message that will be sent to self.
-  static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
+
+  //  Init the first message that will be sent to self upon startup.
+  createWisolMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+  createWisolMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
+  sensorMsg.data[0] = 36.9;
+  sensorMsg.count = 1;
 
   //  Task Starts Here  ///////////////////////////////////
   task_open();  //  Start of the task. Must be matched with task_close().  
@@ -48,12 +56,6 @@ void wisol_task(void) {
   successEvent = event_create();  //  Create event for UART Task to indicate success.
   failureEvent = event_create();  //  Another event to indicate failure.
   context->status = true;  //  Assume no error.
-
-  //  Init the first message that will be sent to self upon startup.
-  createWisolMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
-  createWisolMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
-  sensorMsg.data[0] = 36.9;
-  sensorMsg.count = 1;
 
   for (;;) { //  Receiving sensor data Run the data sending code forever. So the task never ends.
     context = (WisolContext *) task_get_data();
@@ -77,15 +79,14 @@ void wisol_task(void) {
       getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
 
       //  TODO: Send test sensor message after a short delay.
-      ////msg_post_in(os_get_running_tid(), sensorMsg, 5 * 1000); //  Send the message to our own task.
+      msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
 
     } else {
 
       //  TODO: Check whether we should transmit.
 
-      static const char *payload = "0102030405060708090a0b0c";  //  TODO
       bool downlinkMode = false;
-      getCmdSend(context, cmdList, payload, downlinkMode);
+      getCmdSend(context, cmdList, testPayload, downlinkMode);
     }
 
     for (;;) {  //  Send each command in the list.
