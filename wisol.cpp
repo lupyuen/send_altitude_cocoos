@@ -114,7 +114,7 @@ void wisol_task(void) {
         //  If response processing failed, stop.
         if (processStatus != true) {
           context->status = false;  //  Propagate status to Wisol context.
-          debug(F(" - wisol_task result processing failed, response = "), response);
+          debug(F(" - wisol_task Result processing failed, response: "), response);
           break;  //  Quit processing.
         }
       }
@@ -122,12 +122,12 @@ void wisol_task(void) {
       //  In case of failure, stop.
       if (context->uartContext->status != true) {
         context->status = false;  //  Propagate status to Wisol context.
-        debug(F(" - wisol_task failed, response = "), response);
+        debug(F(" - wisol_task Failed, response: "), response);
         break;  //  Quit processing.
       }
 
       //  Command was successful. Move to next command.
-      debug(F(" - wisol_task OK, response = "), response);
+      debug(F(" - wisol_task OK, response: "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
 
@@ -187,15 +187,20 @@ The downlink data must be 8 bytes in hexadecimal format.  For example:
   {"002C2EA1" : { "downlinkData" : "0102030405060708"}} */
 
 bool getDownlink(WisolContext *context, const char *response0) {
-  //  Extract the downlink message and write into response.
+  //  Extract the downlink message and write into the context response.
+  //  context response will be returned as an 8-byte hex string, e.g. "0123456789ABCDEF"
+  //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
+
+  //  Get a writeable response pointer in the uartContext.
+  char *response = context->uartContext->response;
+  debug(F(" - wisol.getDownlink: "), response);
+
+  //  Check the original response.
   //  If Successful response: OK\nRX=01 23 45 67 89 AB CD EF
   //  -> Change response to: 0123456789ABCDEF
   //  If Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\n
   //  -> Remove newline: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 
-  //  Get a writeable response pointer in the uartContext.
-  char *response = context->uartContext->response;
-  debug(F(" - wisol.getDownlink: "), response);
   //  Remove the prefix and spaces:
   //    replace "OK\nRX=" by "", replace " " by ""
   #define downlinkPrefix "OK\nRX="
@@ -214,7 +219,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
   int src = 0, dst = 0;
   for (;;) {
     if (src >= maxUARTMsgLength) break;
-    //  Don't copy spaces in the source.
+    //  Don't copy spaces and newlines in the source.
     if (response[src] == ' ' || response[src] == '\n') { 
       src++; 
       continue;
@@ -226,7 +231,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
     dst++; src++;  //  Shift to next char.
   }
   response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
-  debug(F(" - wisol.getDownlink result: "), context->uartContext->response);
+  debug(F(" - wisol.getDownlink Result: "), context->uartContext->response);
   return true;
 }
 
@@ -243,7 +248,7 @@ bool checkPower(WisolContext *context, const char *response) {
   int y = response[2] - '0';
   if (x != 0 && y >= 3) {
     //  No need to send second power command. We change CMD_PRESEND2 to CMD_NONE.
-    debug(F(" - wisol.checkPower: change CMD_PRESEND2"));
+    debug(F(" - wisol.checkPower: Change CMD_PRESEND2"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= maxWisolCmdListSize) {      
@@ -257,7 +262,7 @@ bool checkPower(WisolContext *context, const char *response) {
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
   } else {
     //  Continue to send CMD_PRESEND2
-    debug(F(" - wisol.checkPower: continue CMD_PRESEND2"));
+    debug(F(" - wisol.checkPower: Continue CMD_PRESEND2"));
   }
   return true;  //  Success
 }
