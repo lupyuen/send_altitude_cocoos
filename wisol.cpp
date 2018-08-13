@@ -103,25 +103,31 @@ void wisol_task(void) {
       //  Wait for success or failure.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
+      const char *response = (context && context->uartContext)
+        ? context->uartContext->response
+        : "";        
       
-      //  In case of failure, stop.
-      if (context->uartContext->status != true) {
-        debug(F("wisol_task: UART failed"));
-        context->status = false;  //  Propagate status to Wisol context.
-        break;  //  Quit processing.
-      }
-      //  Process the response.
+      //  Process the response, regardless of success/failure..
       cmd = &context->cmdList[context->cmdIndex];
       if (cmd->processFunc != NULL) {
-        const char *response = context->uartContext->response;
-        debug(F("wisol_task: response = "), response);
-        context->status = (cmd->processFunc)(context, response);
+        bool processStatus = (cmd->processFunc)(context, response);
         //  If response processing failed, stop.
-        if (context->status != true) {
-          debug(F("wisol_task: Result processing failed"));
+        if (processStatus != true) {
+          context->status = false;  //  Propagate status to Wisol context.
+          debug(F(" - wisol_task result processing failed, response = "), response);
           break;  //  Quit processing.
         }
       }
+
+      //  In case of failure, stop.
+      if (context->uartContext->status != true) {
+        context->status = false;  //  Propagate status to Wisol context.
+        debug(F(" - wisol_task failed, response = "), response);
+        break;  //  Quit processing.
+      }
+
+      //  Command was successful. Move to next command.
+      debug(F(" - wisol_task OK, response = "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
 
@@ -159,7 +165,7 @@ bool getID(WisolContext *context, const char *response) {
   //  Save the device ID to context.
   strncpy(context->device, response, maxSigfoxDeviceSize);
   context->device[maxSigfoxDeviceSize] = 0;  //  Terminate the device ID in case of overflow.
-  debug(F("getID: "), context->device);
+  debug(F(" - wisol.getID: "), context->device);
   return true;
 }
 
@@ -167,7 +173,7 @@ bool getPAC(WisolContext *context, const char *response) {
   //  Save the PAC code to context.
   strncpy(context->pac, response, maxSigfoxPACSize);
   context->pac[maxSigfoxPACSize] = 0;  //  Terminate the PAC code in case of overflow.
-  debug(F("getPAC: "), context->pac);
+  debug(F(" - wisol.getPAC: "), context->pac);
   return true;
 }
 
@@ -184,12 +190,12 @@ bool getDownlink(WisolContext *context, const char *response0) {
   //  Extract the downlink message and write into response.
   //  If Successful response: OK\nRX=01 23 45 67 89 AB CD EF
   //  -> Change response to: 0123456789ABCDEF
-  //  If Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
-  //  -> Keep response as: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+  //  If Timeout response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\n
+  //  -> Remove newline: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 
   //  Get a writeable response pointer in the uartContext.
   char *response = context->uartContext->response;
-  debug(F("getDownlink: "), response);
+  debug(F(" - wisol.getDownlink: "), response);
   //  Remove the prefix and spaces:
   //    replace "OK\nRX=" by "", replace " " by ""
   #define downlinkPrefix "OK\nRX="
@@ -209,7 +215,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
   for (;;) {
     if (src >= maxUARTMsgLength) break;
     //  Don't copy spaces in the source.
-    if (response[src] == ' ') { 
+    if (response[src] == ' ' || response[src] == '\n') { 
       src++; 
       continue;
     }
@@ -220,7 +226,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
     dst++; src++;  //  Shift to next char.
   }
   response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
-  debug(F("getDownlink result: "), context->uartContext->response);
+  debug(F(" - wisol.getDownlink result: "), context->uartContext->response);
   return true;
 }
 
@@ -229,7 +235,7 @@ bool checkPower(WisolContext *context, const char *response) {
   //  If not needed, change the next command to CMD_NONE.
   //  debug(F("checkPower: "), response);
   if (strlen(response) < 3) {  //  If too short, return error.
-    debug(F("checkPower Error: Unknown response "), response);
+    debug(F(" - wisol.checkPower Error: Unknown response "), response);
     return false;  //  Failure
   }
   //  Change chars to numbers.
@@ -237,30 +243,30 @@ bool checkPower(WisolContext *context, const char *response) {
   int y = response[2] - '0';
   if (x != 0 && y >= 3) {
     //  No need to send second power command. We change CMD_PRESEND2 to CMD_NONE.
-    debug(F("checkPower: change CMD_PRESEND2"));
+    debug(F(" - wisol.checkPower: change CMD_PRESEND2"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= maxWisolCmdListSize) {      
-      debug(F("checkPower Error: Cmd overflow"));  //  List is full.
+      debug(F(" - wisol.checkPower Error: Cmd overflow"));  //  List is full.
       return false;  //  Failure
     }    
     if (context->cmdList[cmdIndex].sendData == NULL) {
-      debug(F("checkPower Error: Empty cmd"));  //  Not supposed to be empty.
+      debug(F(" - wisol.checkPower Error: Empty cmd"));  //  Not supposed to be empty.
       return false;  //  Failure
     }
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
   } else {
     //  Continue to send CMD_PRESEND2
-    debug(F("checkPower: continue CMD_PRESEND2"));
+    debug(F(" - wisol.checkPower: continue CMD_PRESEND2"));
   }
   return true;  //  Success
 }
 
 static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
-  debug(F("getCmdBegin")); ////
+  debug(F(" - wisol.getCmdBegin")); ////
   int i = getCmdIndex(list);  //  Get next available index.
-  Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
+  // Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
   
   //  Set emulation mode.
   list[i++] = {
@@ -278,7 +284,7 @@ static void getCmdPower(WisolContext *context, WisolCmd list[]) {
   //  Set the output power for the zone.
   //  Get the command based on the zone.
   //  log2(F(" - Wisol.setOutputPower: zone "), String(zone));
-  debug(F("getCmdPower")); ////
+  debug(F(" - wisol.getCmdPower")); ////
   int i = getCmdIndex(list);  //  Get next available index.
   switch(context->zone) {
     case 1:  //  RCZ1
@@ -311,7 +317,7 @@ static void getCmdSend(
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
-  debug(F("getCmdSend")); ////
+  debug(F(" - wisol.getCmdSend")); ////
   //  Set the output power for the zone.
   getCmdPower(context, list);
 
