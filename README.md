@@ -87,6 +87,40 @@ With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecima
   { "002C2EA1" : { "downlinkData" : "0102030405060708" } }
 ```
 
+In AWS Lambda you can create a function to return the downlink like this (use API Gateway to expose as REST URL):
+
+```javascript
+//  Demonstrates a simple Sigfox downlink HTTP endpoint using API Gateway. 
+//  With API Gateway you have full access to the request and response payload, 
+//  including headers and status code.
+
+exports.handler = (event, context, callback) => {
+    console.log('Received event:', JSON.stringify(event, null, 2));
+    
+    //  Get device ID from body.
+    //  event.body = "{\r\n\"device\" : \"2C2EA1\", \r\n\"data\" : \"0102030405060708090a0b0c\", ...}"
+    const body = event.body ? JSON.parse(event.body) : {};
+    
+    //  body = {device: "2C2EA1", data: "0102030405060708090a0b0c", ...}
+    const device = body.device || '002C2EA1';
+
+    //  Downlink data to be returned.    
+    const data = 'fedcba9876543210';
+    const res = { 
+        [device]: { 
+            "downlinkData" : data
+        }
+    };
+    return callback(null, {
+        statusCode: 200,
+        body: JSON.stringify(res),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+};
+```
+
 Note: Only the first 4 downlinks per day are guaranteed.  You may send more downlink
 requests but they are not guaranteed.
 

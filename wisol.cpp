@@ -220,6 +220,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
     dst++; src++;  //  Shift to next char.
   }
   response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
+  debug(F("getDownlink result: "), context->uartContext->response);
   return true;
 }
 
