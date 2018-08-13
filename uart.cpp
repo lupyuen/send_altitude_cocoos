@@ -53,7 +53,7 @@ void uart_task(void) {
   //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
   //  depending on success/failure sending the data.  Response is recorded in the
   //  "response" variable of the context, for the caller to retrieve.
-  Serial.begin(9600);  //  TODO
+  //// Serial.begin(9600);  //  TODO
   UARTContext *context;  //  The context for the task.
   static UARTMsg msg;  //  The received message.
   uint8_t sendChar;  //  Character to be sent.
