@@ -1,6 +1,6 @@
 //  Sample application demonstrating handling of multiple IoT sensors on Arduino with cocoOS.
 //  Based on https://github.com/lupyuen/cocoOSExample-arduino
-#include <Arduino.h>
+#include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

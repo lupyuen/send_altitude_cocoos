@@ -1,5 +1,5 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
-#include <Arduino.h>
+#include "platform.h"
 #include <SoftwareSerial.h>
 #include "cocoos_cpp.h"
 #include "uart.h"

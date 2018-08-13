@@ -1,5 +1,5 @@
 //  Common code for all sensors.
-#include <Arduino.h>
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++

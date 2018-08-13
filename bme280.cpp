@@ -1,7 +1,7 @@
 //  BME280 I2C interface for temperature, humidity and altitude sensors.
 //  Requires the BME280 library to be installed through Arduino Library Manager:
 //  https://github.com/finitespace/BME280
-#include <Arduino.h>
+#include "platform.h"
 #include "display.h"
 
 #ifdef SENSOR_DATA

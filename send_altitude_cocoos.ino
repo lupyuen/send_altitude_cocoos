@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include "platform.h"
 #include "sensor.h"  //  Defines SENSOR_DATA
 
 #ifdef SENSOR_DATA

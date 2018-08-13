@@ -1,6 +1,6 @@
 //  Implements a simulated Gyroscope Sensor with 3 sensor values (x, y, z).
 //  Demonstrates how we may return multiple float values as sensor data.
-#include <Arduino.h>
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

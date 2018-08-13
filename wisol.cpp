@@ -1,5 +1,5 @@
 //  Functions to send and receive messages to/from Sigfox network via Wisol module.
-#include <Arduino.h>
+#include "platform.h"
 #include "cocoos_cpp.h"
 #include "display.h"
 #include "uart.h"

@@ -1,5 +1,5 @@
 //  Implements the Display Task that receives display messages and displays them.
-#include <Arduino.h>
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
@@ -149,6 +149,13 @@ void debug(const __FlashStringHelper *s1) {
   Serial.print(s1);
   // if (s2) Serial.print(s2);
   Serial.println("");
+
+  ////
+  Serial.print("tx/rx: ");
+  Serial.print(SERIAL_TX_BUFFER_SIZE);
+  Serial.println(SERIAL_RX_BUFFER_SIZE);
+  ////
+
   Serial.flush();  //  Let serial printing finish.
 }
 

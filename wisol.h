@@ -2,7 +2,7 @@
 #define WISOL_H_
 
 #ifdef ARDUINO
-#include <Arduino.h>
+#include "platform.h"
 #endif  //  ARDUINO
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "uart.h"  //  For UARTContext

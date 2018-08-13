@@ -5,7 +5,7 @@
 //  #define SENSOR_DISPLAY
 
 #ifdef ARDUINO
-#include <Arduino.h>
+#include "platform.h"
 #endif  //  ARDUINO
 #include <stdint.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
