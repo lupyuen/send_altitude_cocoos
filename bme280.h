@@ -3,7 +3,7 @@
 //  https://github.com/finitespace/BME280
 #ifndef BME280_H_
 #define BME280_H_
-
+#ifdef SENSOR_DATA
 #include <BME280I2C.h>
 
 #ifdef __cplusplus
@@ -19,4 +19,6 @@ extern BME280I2C bme;
 #ifdef __cplusplus
 }  //  End of extern C scope.
 #endif
+
+#endif  //  SENSOR_DATA
 #endif  //  BME280_H_
