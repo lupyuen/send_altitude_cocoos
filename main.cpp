@@ -104,6 +104,7 @@ static uint8_t network_setup(uint8_t display_task_id) {
   return networkTaskID;
 }
 
+#ifdef SENSOR_DATA
 static void sensor_setup(uint8_t display_task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
   //  Edit this function to add your own sensors.
@@ -127,6 +128,7 @@ static void sensor_setup(uint8_t display_task_id) {
   task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.
 }
+#endif  //  SENSOR_DATA
 
 #ifdef SENSOR_DISPLAY
 static uint8_t display_setup(void) {

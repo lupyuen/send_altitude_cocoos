@@ -12,6 +12,8 @@
 #include "bme280.h"
 #include "alt_sensor.h"
 
+#ifdef SENSOR_DATA
+
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
 static uint8_t poll_sensor(float *data, uint8_t size);
@@ -62,3 +64,5 @@ SensorContext *setup_alt_sensor(
   setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
+
+#endif  //  SENSOR_DATA

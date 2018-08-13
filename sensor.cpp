@@ -6,6 +6,8 @@
 #include "sensor.h"
 #include "display.h"
 
+#ifdef SENSOR_DATA
+
 uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
 void setup_sensor_context(
@@ -126,3 +128,5 @@ Sensor::Sensor(
   info(name, poll_sensor_func),
   control(init_sensor_func, next_channel_func, prev_channel_func) {
 }
+
+#endif  //  SENSOR_DATA

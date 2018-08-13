@@ -1,3 +1,5 @@
+#ifdef SENSOR_DATA
+
 #include <Arduino.h>
 #include <SPI.h>  //  Needed by BME280 library.
 
@@ -8,3 +10,5 @@
 //  If you wish, you may use this file as a staging area while
 //  porting your Arduino code to .h and .cpp files. That's how
 //  bme280.h and bme280.cpp were created.
+
+#endif  //  SENSOR_DATA

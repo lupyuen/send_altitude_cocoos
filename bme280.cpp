@@ -6,6 +6,8 @@
 #include "display.h"
 #include "bme280.h"
 
+#ifdef SENSOR_DATA
+
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
                   // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
@@ -32,3 +34,5 @@ void bme280_setup(void) {
        debug(F("BME280 Error"));
   }
 }
+
+#endif  //  SENSOR_DATA
