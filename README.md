@@ -74,7 +74,13 @@ ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.1/src/ ~/Documents/Arduino/libraries
 ```
 
 Arduino IDE does not compile if send_altitude_cocoos/src contains any files. Remove the links before compiling in Arduino IDE.
- 
+
+Or use these 2 helper scripts:
+
+- `scripts/linksrc.sh`: Links the source files to `src` folder and launches Visual Studio Code
+
+- `scripts/unlinksrc.sh`: Unlinks the source files from `src` folder and launches Arduino IDE
+
 -----
 ## Downlink Server Support
 
