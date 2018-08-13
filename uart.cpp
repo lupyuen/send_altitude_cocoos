@@ -177,8 +177,8 @@ static void logSendReceive(UARTContext *context) {
   // Serial.print(F("<< actualMarkerCount: ")); Serial.println(context->actualMarkerCount);
 
   if (context->status == true) { log2(F(" - uart.sendData: response: "), context->response); }
-  else if (strlen(context->response) == 0) { log1(F(" - uart.sendData: Error: Response timeout")); }
-  else { log2(F(" - uart.sendData: Error: Unknown response: "), context->response); }
+  else if (strlen(context->response) == 0) { log1(F("***** uart.sendData: Error: Response timeout")); }
+  else { log2(F("***** uart.sendData: Error: Unknown response: "), context->response); }
   Serial.flush();
 }
 

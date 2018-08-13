@@ -9,9 +9,10 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
 #define maxUARTMsgLength 40  //  Max message length, e.g. 30 chars for AT$SF=0102030405060708090a0b0c
-#define uartMsgPoolSize 2  //  Should not have concurrent messages.
+#define uartMsgPoolSize 2  //  Should not allow concurrent UART messages.  Hangs if <2.
 
 //  UART Task accepts messages of this format.
+//  TODO fix sendData
 struct UARTMsg {
   Msg_t super;  //  Required for all cocoOS messages.
   char sendData[maxUARTMsgLength + 1];  //  String to be sent.  Must be a char array because messages are copied into the queue.

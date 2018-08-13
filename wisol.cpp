@@ -9,6 +9,7 @@
 #define CMD_END "\r"
 
 static void createWisolMsg(WisolMsg *msg, const char *name);
+static void addCmd(WisolCmd list[], WisolCmd cmd);
 static int getCmdIndex(WisolCmd list[]);
 static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
 static void getCmdSend(
@@ -63,11 +64,13 @@ void wisol_task(void) {
     //  On task startup, send "begin" message to self so that we can process the Wisol "begin" commands.
     if (context->firstTime) {
       context->firstTime = false;
-      msg_post(os_get_running_tid(), beginMsg); //  Send the message to our own task.
-      continue;  //  Process the next incoming message, which should be the "begin" message.
+      //  Don't post a message to its own task - it may deadlock for sync sending.
+      //  We create a "begin" message and process it.
+      createWisolMsg(&msg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+    } else {
+      //  If not the first iteration, wait for an incoming message containing sensor data.
+      msg_receive(os_get_running_tid(), &msg);
     }
-    //  Wait for an incoming message containing sensor data.
-    msg_receive(os_get_running_tid(), &msg);
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
     context->cmdList = cmdList;
@@ -97,7 +100,8 @@ void wisol_task(void) {
 
       //  Convert Wisol command to UART command and send it.
       convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
-      // debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
+      //   debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
+      //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
 
       //  Wait for success or failure.
@@ -240,7 +244,7 @@ bool checkPower(WisolContext *context, const char *response) {
   //  If not needed, change the next command to CMD_NONE.
   //  debug(F("checkPower: "), response);
   if (strlen(response) < 3) {  //  If too short, return error.
-    debug(F(" - wisol.checkPower Error: Unknown response "), response);
+    debug(F("***** wisol.checkPower Error: Unknown response "), response);
     return false;  //  Failure
   }
   //  Change chars to numbers.
@@ -252,11 +256,11 @@ bool checkPower(WisolContext *context, const char *response) {
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= maxWisolCmdListSize) {      
-      debug(F(" - wisol.checkPower Error: Cmd overflow"));  //  List is full.
+      debug(F("***** wisol.checkPower Error: Cmd overflow"));  //  List is full.
       return false;  //  Failure
     }    
     if (context->cmdList[cmdIndex].sendData == NULL) {
-      debug(F(" - wisol.checkPower Error: Empty cmd"));  //  Not supposed to be empty.
+      debug(F("***** wisol.checkPower Error: Empty cmd"));  //  Not supposed to be empty.
       return false;  //  Failure
     }
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
@@ -270,19 +274,17 @@ bool checkPower(WisolContext *context, const char *response) {
 static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
   debug(F(" - wisol.getCmdBegin")); ////
-  int i = getCmdIndex(list);  //  Get next available index.
   // Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
-  
-  //  Set emulation mode.
-  list[i++] = {
+  addCmd(list, {
+    //  Set emulation mode.
     context->useEmulator  //  If emulator mode,
       ? F(CMD_EMULATOR_ENABLE)  //  Device will only talk to SNEK emulator.
       : F(CMD_EMULATOR_DISABLE),  //  Else device will only talk to Sigfox network.
-    1, NULL, NULL, NULL };
+    1, NULL, NULL, NULL });
   //  Get Sigfox device ID and PAC.
-  list[i++] = { F(CMD_GET_ID), 1, getID, NULL, NULL };
-  list[i++] = { F(CMD_GET_PAC), 1, getPAC, NULL, NULL };
-  list[i++] = endOfList;
+  addCmd(list, { F(CMD_GET_ID), 1, getID, NULL, NULL });
+  addCmd(list, { F(CMD_GET_PAC), 1, getPAC, NULL, NULL });
+  addCmd(list, endOfList);
 }
 
 static void getCmdPower(WisolContext *context, WisolCmd list[]) {
@@ -295,19 +297,19 @@ static void getCmdPower(WisolContext *context, WisolCmd list[]) {
     case 1:  //  RCZ1
     case 3:  //  RCZ3
       //  Send CMD_OUTPUT_POWER_MAX
-      list[i++] = { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL };
+      addCmd(list, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
       break;
     case 2:  //  RCZ2
     case 4: {  //  RCZ4
       //  Send CMD_PRESEND
-      list[i++] = { F(CMD_PRESEND), 1, checkPower, NULL, NULL };
+      addCmd(list, { F(CMD_PRESEND), 1, checkPower, NULL, NULL });
       //  Send second power command: CMD_PRESEND2.  
       //  Note: checkPower() may change this command to CMD_NONE if not required.
-      list[i++] = { F(CMD_PRESEND2), 1, NULL, NULL, NULL };
+      addCmd(list, { F(CMD_PRESEND2), 1, NULL, NULL, NULL });
       break;
     }
   }
-  list[i++] = endOfList;
+  addCmd(list, endOfList);
 }
 
 static void getCmdSend(
@@ -327,7 +329,6 @@ static void getCmdSend(
   getCmdPower(context, list);
 
   //  Compose the payload sending command.
-  int i = getCmdIndex(list);  //  Get next available index.
   uint8_t markers = 1;  //  Wait for 1 line of response.
   bool (*processFunc)(WisolContext *context, const char *response) = NULL;  //  Function to process result.
   const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
@@ -339,11 +340,11 @@ static void getCmdSend(
     processFunc = getDownlink;  //  Process the downlink message.
     sendData2 = F(CMD_SEND_MESSAGE_RESPONSE);  //  Append suffix to payload.
   }
-  list[i++] = { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 };
+  addCmd(list, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
 
   //  TODO: Throttle.
 
-  list[i++] = endOfList;
+  addCmd(list, endOfList);
 }
 
 static String cmdData;
@@ -385,7 +386,7 @@ static void convertCmdToUART(
   //  debug(F("uartData="), uartData);  ////
   //  Check total msg length.
   if (strlen(uartData) >= maxUARTMsgLength - 1) {
-    Serial.print(F("Error: uartData overflow - ")); Serial.print(strlen(uartData));
+    Serial.print(F("***** Error: uartData overflow - ")); Serial.print(strlen(uartData));
     Serial.print(" / "); Serial.println(uartData); Serial.flush();
   }
 
@@ -423,17 +424,28 @@ void setup_wisol(
   }
 }
 
+static void addCmd(WisolCmd list[], WisolCmd cmd) {
+  //  Append the UART message to the command list.
+  //  Stop if we have overflowed the list.
+  int i = getCmdIndex(list);
+  list[i++] = cmd;
+  list[i++] = endOfList;
+}
+
 static int getCmdIndex(WisolCmd list[]) {
   //  Given a list of commands, return the index of the next empty element.
+  //  Check index against cmd size.  It must fit 2 more elements:
+  //  The new cmd and the endOfList cmd.
   int i;
   for (i = 0;  //  Search all elements in list.
     list[i].sendData != NULL &&   //  Skip no-empty elements.
-    i < maxWisolCmdListSize;  //  Don't exceed the list size.
+    i < maxWisolCmdListSize - 1;  //  Don't exceed the list size.
     i++) {}
-  if (i >= maxWisolCmdListSize) {
+  if (i >= maxWisolCmdListSize - 1) {
     //  List is full.
-    debug(F("Error: Cmd list overflow"));
-    i = maxWisolCmdListSize - 1;
+    Serial.print(F("***** Error: Cmd list overflow - ")); Serial.println(i); Serial.flush();
+    i = maxWisolCmdListSize - 2;
+    if (i < 0) i = 0;
   }
   return i;
 }

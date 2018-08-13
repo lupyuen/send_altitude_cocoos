@@ -31,7 +31,7 @@ void bme280_setup(void) {
        debug(F("BME280 without humidity"));
        break;
      default:
-       debug(F("BME280 Error"));
+       debug(F("***** BME280 Error"));
   }
 }
 

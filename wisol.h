@@ -10,16 +10,15 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define wisolMsgPoolSize 5  //  Allow up to 5 outgoing sensor messages to be queued.
-#define maxWisolCmdListSize 6  //  Allow up to 6 UART commands to be sent in a single Wisol message.
+#define wisolMsgPoolSize 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
+#define maxWisolCmdListSize 5  //  Allow up to 5 UART commands to be sent in a single Wisol message.
 #define maxSigfoxDeviceSize 8  //  Max number of chars in Sigfox device name.
 #define maxSigfoxPACSize 16  //  Max number of chars in Sigfox PAC code.
 #define beginSensorName "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
 
-//  According to regulation, messages should be sent only every 10 minutes.
-const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;
-const unsigned int MAX_BYTES_PER_MESSAGE = 12;  //  Only 12 bytes per message.
-const unsigned long COMMAND_TIMEOUT = 60000;  //  Wait up to 60 seconds for response from SIGFOX module.  Includes downlink response.
+const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;  //  According to regulation, messages should be sent only every 10 minutes.
+const unsigned int MAX_BYTES_PER_MESSAGE = 12;  //  Sigfox supports up to 12 bytes per message.
+const unsigned long COMMAND_TIMEOUT = 60000;  //  Wait up to 60 seconds for response from Sigfox module.  Includes downlink response.
 
 //  Define the countries that are supported.
 enum Country {

@@ -67,6 +67,14 @@ ln -s ../../../os_defines.h .
 cd ../../..
 ```
 
+To allow Arduino IDE and PlatformIO to share the same cocoOS library:
+
+```bash
+ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.1/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.1
+```
+
+Arduino IDE does not compile if send_altitude_cocoos/src contains any files. Remove the links before compiling in Arduino IDE.
+ 
 -----
 ## Downlink Server Support
 

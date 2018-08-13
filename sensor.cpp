@@ -68,6 +68,7 @@ void sensor_task(void) {
     //  Do we have new data?
     if (msg.count > 0) {
       //  If we have new data, send the message. Note: When posting a message, its contents are cloned into the message queue.
+      //  TODO: Use msg_post_async()
       debug(msg.name, F(" >> Send msg")); ////
       msg_post(context->display_task_id, msg);
     }
