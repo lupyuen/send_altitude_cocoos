@@ -79,12 +79,12 @@ send data in the HTTP response. It must contain the 8 bytes data that will be se
 asking for acknowledgment. The data is JSON formatted, and must be structured as the following :
 
 ```json
-  { "YOUR_DEVICE_ID" : { "downlinkData" : "deadbeefcafebabe"} }    
+  { "YOUR_DEVICE_ID" : { "downlinkData" : "deadbeefcafebabe" } }    
 ```
 With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecimal format, up to 8 digits. The downlink data must be 8 bytes in hexadecimal format.  For example:
 
 ```json
-  { "002C2EA1" : { "downlinkData" : "0102030405060708"} }
+  { "002C2EA1" : { "downlinkData" : "0102030405060708" } }
 ```
 
 -----
