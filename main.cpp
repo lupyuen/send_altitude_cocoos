@@ -129,10 +129,8 @@ static void sensor_setup(uint8_t display_task_id) {
     0, 0, 0);  //  Will not receive message queue data.
   task_create(sensor_task, humidContext, 120,  //  Priority 120
     0, 0, 0);  //  Will not receive message queue data.
-    /*
   task_create(sensor_task, altContext, 130,  //  Priority 130
     0, 0, 0);  //  Will not receive message queue data.
-    */
 #ifdef GYRO_SENSOR
   task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.
