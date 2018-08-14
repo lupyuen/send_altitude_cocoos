@@ -8,9 +8,6 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define TEST_DOWNLINK false  //  Test Uplink only
-// #define TEST_DOWNLINK true  //  Test Uplink and downlink
-
 #define wisolMsgPoolSize 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
 #define maxWisolCmdListSize 5  //  Allow up to 5 UART commands to be sent in a single Wisol message.
 #define maxSigfoxDeviceSize 8  //  Max number of chars in Sigfox device name.

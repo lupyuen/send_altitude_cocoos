@@ -1,6 +1,9 @@
 #ifndef AGGREGATE_H_
 #define AGGREGATE_H_
 
+// #define TEST_DOWNLINK false  //  Test Uplink only
+#define TEST_DOWNLINK true  //  Test Uplink and downlink
+
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
