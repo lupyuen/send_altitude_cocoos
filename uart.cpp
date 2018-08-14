@@ -11,10 +11,10 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
                             uint8_t *markerPos, uint8_t markerCount);
 
 //  Use a macro for logging.
-#define log1(x) { echoPort->println(x); }
-#define log2(x, y) { echoPort->print(x); echoPort->println(y); }
-#define log3(x, y, z) { echoPort->print(x); echoPort->print(y); echoPort->println(z); }
-#define log4(x, y, z, a) { echoPort->print(x); echoPort->print(y); echoPort->print(z); echoPort->println(a); }
+#define log1(x) { echoPort->println(x); echoPort->flush(); }
+#define log2(x, y) { echoPort->print(x); echoPort->println(y); echoPort->flush(); }
+#define log3(x, y, z) { echoPort->print(x); echoPort->print(y); echoPort->println(z); echoPort->flush(); }
+#define log4(x, y, z, a) { echoPort->print(x); echoPort->print(y); echoPort->print(z); echoPort->println(a); echoPort->flush(); }
 
 //  Macro for testing the timer accuracy.
 #define TEST_TIMER(ms) \

@@ -4,6 +4,12 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
+//  Uncomment to use real sensor data instead of simulated data.
+#define SENSOR_DATA
+
+//  Uncomment to use simulated sensor data instead of real data.
+//  #define SIMULATED_DATA
+
 #define maxUARTMsgLength 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define maxUARTResponseLength 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
@@ -20,4 +26,7 @@
 #include <Arduino.h>
 
 #endif  //  ARDUINO
+
+//  TODO: Define other platforms e.g. STM32
+
 #endif  //  PLATFORM_H_

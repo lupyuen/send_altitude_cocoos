@@ -2,13 +2,14 @@
 #include "platform.h"
 #include "cocoos_cpp.h"
 #include "display.h"
+#include "sensor.h"
 #include "uart.h"
 #include "wisol.h"
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-static void createWisolMsg(WisolMsg *msg, const char *name);
+static void createSensorMsg(SensorMsg *msg, const char *name);
 static void addCmd(WisolCmd list[], WisolCmd cmd);
 static int getCmdIndex(WisolCmd list[]);
 static void getCmdBegin(WisolContext *context, WisolCmd list[]);  //  Fetch list of startup commands for Wisol.
@@ -24,15 +25,16 @@ static void convertCmdToUART(
   Evt_t successEvent, 
   Evt_t failureEvent);
 
+static Sem_t sendSemaphore;
 static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
 static WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 static const char testPayload[] = "0102030405060708090a0b0c";  //  TODO
 
-static WisolMsg msg;  //  Incoming sensor data message.
-static WisolMsg beginMsg;  //  First message that will be sent to self upon startup.
-static WisolMsg sensorMsg;  //  Sensor message that will be sent to self.
+static SensorMsg msg;  //  Incoming sensor data message.
+static SensorMsg beginMsg;  //  First message that will be sent to self upon startup.
+static SensorMsg sensorMsg;  //  Sensor message that will be sent to self.
 static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
 void wisol_task(void) {
@@ -46,8 +48,8 @@ void wisol_task(void) {
   WisolCmd *cmd;
 
   //  Init the first message that will be sent to self upon startup.
-  createWisolMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
-  createWisolMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
+  createSensorMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+  createSensorMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
   sensorMsg.data[0] = 36.9;
   sensorMsg.count = 1;
 
@@ -66,12 +68,14 @@ void wisol_task(void) {
       context->firstTime = false;
       //  Don't post a message to its own task - it may deadlock for sync sending.
       //  We create a "begin" message and process it.
-      createWisolMsg(&msg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+      createSensorMsg(&msg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
     } else {
       //  If not the first iteration, wait for an incoming message containing sensor data.
       msg_receive(os_get_running_tid(), &msg);
     }
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
+
+    ////  TODO: Move out
     context->msg = &msg;  //  Remember the message until it's sent via UART.
     context->cmdList = cmdList;
     context->cmdIndex = 0;
@@ -81,16 +85,22 @@ void wisol_task(void) {
     if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
       //  If sensor name is "000", this is the "begin" message.
       getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
-
     } else {
 
-      //  TODO: Check whether we should transmit.
+      //  TODO: Aggregate the sensor data.
 
-      // bool enableDownlink = false;  //  Uplink only
-      bool enableDownlink = true;  //  Uplink and downlink
-      getCmdSend(context, cmdList, testPayload, enableDownlink);
+      //  TODO: Throttle the sending.
 
+      //  TODO: Encode the sensor data into a Sigfox message.
+
+      //  Send the encoded Sigfox message.
+      getCmdSend(context, cmdList, testPayload, TEST_DOWNLINK);
     }
+    ////  TODO: End of Move out
+
+    //  TODO: Use a semaphore to limit sending to only 1 message at a time.
+    sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
+    context = (WisolContext *) task_get_data();  //  Must get context after sem_wait();
 
     for (;;) {  //  Send each command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
@@ -135,8 +145,11 @@ void wisol_task(void) {
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
 
+    sem_signal(sendSemaphore);  //  Release the semaphore.
+    context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
+
     //  TODO: Send test sensor message after 10 seconds (10,000 milliseconds).
-    msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
+    //  msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
 
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
@@ -407,6 +420,11 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0) {
   //  Init the Wisol context.
+
+  const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
+  const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
+  sendSemaphore = sem_counting_create( maxCount, initValue );
+
   context->uartContext = uartContext;
   context->uartTaskID = uartTaskID;
   context->country = country0;
@@ -453,7 +471,7 @@ static int getCmdIndex(WisolCmd list[]) {
   return i;
 }
 
-static void createWisolMsg(WisolMsg *msg, const char *name) {
+static void createSensorMsg(SensorMsg *msg, const char *name) {
   //  Populate the msg fields as an empty message.
   msg->count = 0;  //  No data.
   strncpy(msg->name, name, maxSensorNameSize);

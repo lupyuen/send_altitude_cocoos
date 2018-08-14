@@ -14,7 +14,7 @@ void setup_sensor_context(
   SensorContext *context,
   Sensor *sensor,
   uint16_t pollInterval,
-  uint8_t displayTaskID
+  uint8_t taskID
   ) {
   //  Set up the sensor context and call the sensor to initialise itself.
   //  Allocate a unique sensor ID and create the event.
@@ -28,7 +28,7 @@ void setup_sensor_context(
 
   //  Set the context.
   context->sensor = sensor;
-  context->display_task_id = displayTaskID;
+  context->receive_task_id = taskID;
 
   //  Call the sensor to do initialisation.
   sensor->control.init_sensor_func();
@@ -56,7 +56,7 @@ void sensor_task(void) {
     context = (SensorContext *) task_get_data();
 
     //  Prepare a display message for copying the sensor data.
-    DisplayMsg msg;
+    SensorMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
     //// memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
     strncpy(msg.name, context->sensor->info.name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
@@ -67,10 +67,14 @@ void sensor_task(void) {
 
     //  Do we have new data?
     if (msg.count > 0) {
-      //  If we have new data, send the message. Note: When posting a message, its contents are cloned into the message queue.
-      //  TODO: Use msg_post_async()
-      debug(msg.name, F(" >> Send msg")); ////
-      msg_post(context->display_task_id, msg);
+      //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
+      //  Note: msg_post() will block if the receiver's queue is full.
+      //  debug(msg.name, F(" >> Send msg")); ////
+      Serial.print(msg.name); Serial.print(F(" >> Send msg ")); 
+      if (msg.count > 0) { Serial.println(msg.data[0]); }
+      else { Serial.println("(empty)"); }
+      Serial.flush();
+      msg_post(context->receive_task_id, msg);
     }
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.

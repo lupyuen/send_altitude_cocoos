@@ -1,12 +1,6 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
-//  Uncomment to use real sensor data instead of simulated data.
-#define SENSOR_DATA
-
-//  Uncomment to use simulated sensor data instead of real data.
-//  #define SIMULATED_DATA
-
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
@@ -14,6 +8,14 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 
 #define maxSensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define maxSensorNameSize 3  //  Max number of letters/digits in sensor name.
+
+//  Messages sent by Sensor Task containing sensor data will be in this format.
+struct SensorMsg {
+  Msg_t super;  //  Required for all cocoOS messages.
+  char name[maxSensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
+  float data[maxSensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  uint8_t count;  //  Number of float sensor data values returned by the sensor.
+};
 
 //  Interface for getting sensor data, by polling and by events.
 struct SensorInfo {
@@ -69,7 +71,7 @@ struct Sensor {
 //  Each sensor task will have a Task Data in this format to remember the context of the sensor.
 struct SensorContext {
   Sensor *sensor;  //  The sensor for the context.
-  uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
+  uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.

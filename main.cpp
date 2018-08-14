@@ -12,7 +12,9 @@
 #include "temp_sensor.h"   //  Temperature sensor (BME280)
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
+#ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
+#endif
 
 //  These are the functions that we will implement in this file.
 static uint8_t network_setup(uint8_t display_task_id);  //  Start the network task to send and receive network messages.
@@ -27,7 +29,7 @@ static char uartResponse[maxUARTResponseLength + 1];  //  Buffer for writing UAR
 static UARTContext uartContext;
 static WisolContext wisolContext;
 static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
-static WisolMsg wisolMsgPool[wisolMsgPoolSize];  //  Pool of UART messages for the UART queue.
+static SensorMsg wisolMsgPool[wisolMsgPoolSize];  //  Pool of UART messages for the UART queue.
 #ifdef SENSOR_DISPLAY
 static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
@@ -55,7 +57,7 @@ int main(void) {
   sensor_setup(display_task_id);
 #else
   //  Now we send sensor data to the Network Task for transmission.
-  //// TODO: sensor_setup(network_task_id);
+  sensor_setup(network_task_id);
 #endif  //  SENSOR_DISPLAY
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
@@ -101,7 +103,7 @@ static uint8_t network_setup(uint8_t display_task_id) {
     20,             //  Priority 20 = lower priority than UART task
     (Msg_t *) wisolMsgPool,  //  Pool to be used for storing the queue of UART messages.
     wisolMsgPoolSize,        //  Size of queue pool.
-    sizeof(WisolMsg));   //  Size of queue message.
+    sizeof(SensorMsg));   //  Size of queue message.
     
   return networkTaskID;
 }
@@ -112,11 +114,13 @@ static void sensor_setup(uint8_t display_task_id) {
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
-  const int pollInterval = 500;  //  Poll the sensor every 500 milliseconds.
+  const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, display_task_id);
   SensorContext *humidContext = setup_humid_sensor(pollInterval, display_task_id);
   SensorContext *altContext = setup_alt_sensor(pollInterval, display_task_id);
+#ifdef GYRO_SENSOR
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, display_task_id);
+#endif  //  GYRO_SENSOR
 
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
   //  "0, 0, 0" means that the tasks may not receive any message queue data.
@@ -125,10 +129,14 @@ static void sensor_setup(uint8_t display_task_id) {
     0, 0, 0);  //  Will not receive message queue data.
   task_create(sensor_task, humidContext, 120,  //  Priority 120
     0, 0, 0);  //  Will not receive message queue data.
+    /*
   task_create(sensor_task, altContext, 130,  //  Priority 130
     0, 0, 0);  //  Will not receive message queue data.
+    */
+#ifdef GYRO_SENSOR
   task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.
+#endif  //  GYRO_SENSOR
 }
 #endif  //  SENSOR_DATA
 

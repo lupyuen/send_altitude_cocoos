@@ -8,6 +8,9 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
+#define TEST_DOWNLINK false  //  Test Uplink only
+// #define TEST_DOWNLINK true  //  Test Uplink and downlink
+
 #define wisolMsgPoolSize 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
 #define maxWisolCmdListSize 5  //  Allow up to 5 UART commands to be sent in a single Wisol message.
 #define maxSigfoxDeviceSize 8  //  Max number of chars in Sigfox device name.
@@ -32,14 +35,7 @@ enum Country {
   COUNTRY_TW = 'T'+('W' << 8),  //  Taiwan: RCZ4
 };
 
-//  Wisol Task accepts messages containing sensor data, in this format.
-struct WisolMsg {
-  Msg_t super;  //  Required for all cocoOS messages.
-  char name[maxSensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
-  float data[maxSensorDataSize];  //  Array of float sensor data values returned by the sensor.
-  uint8_t count;  //  Number of float sensor data values returned by the sensor.
-};
-
+struct SensorMsg;  //  Forward declaration.
 struct WisolContext;  //  Forward declaration.
 
 //  Defines a Wisol AT command string, to be sent via UART Task. Sequence is
@@ -64,7 +60,7 @@ struct WisolContext {
   char pac[maxSigfoxPACSize];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
   bool firstTime;  //  Set by setup_wisol() to true if this is the first run.  
   bool status;  //  Return status.  True if command was successful.
-  WisolMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
+  SensorMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
 
   WisolCmd *cmdList;  //  List of Wisol AT commands being sent.
   int cmdIndex;  //  Index of cmdList being sent.
