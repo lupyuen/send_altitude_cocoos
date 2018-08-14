@@ -4,6 +4,7 @@
 #include "display.h"
 #include "sensor.h"
 #include "uart.h"
+#include "aggregate.h"
 #include "wisol.h"
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
@@ -25,12 +26,12 @@ static void convertCmdToUART(
   Evt_t successEvent, 
   Evt_t failureEvent);
 
+WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
+
 static Sem_t sendSemaphore;
 static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
-static WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
-static const char testPayload[] = "0102030405060708090a0b0c";  //  TODO
 
 static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg beginMsg;  //  First message that will be sent to self upon startup.
@@ -46,6 +47,7 @@ void wisol_task(void) {
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   WisolContext *context;
   WisolCmd *cmd;
+  bool shouldSend;
 
   //  Init the first message that will be sent to self upon startup.
   createSensorMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
@@ -75,28 +77,9 @@ void wisol_task(void) {
     }
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
 
-    ////  TODO: Move out
-    context->msg = &msg;  //  Remember the message until it's sent via UART.
-    context->cmdList = cmdList;
-    context->cmdIndex = 0;
-
-    //  Convert received sensor data to a list of Wisol commands.
-    cmdList[0] = endOfList;  //  Empty the command list.
-    if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
-      //  If sensor name is "000", this is the "begin" message.
-      getCmdBegin(context, cmdList);  //  Fetch list of startup commands for Wisol.
-    } else {
-
-      //  TODO: Aggregate the sensor data.
-
-      //  TODO: Throttle the sending.
-
-      //  TODO: Encode the sensor data into a Sigfox message.
-
-      //  Send the encoded Sigfox message.
-      getCmdSend(context, cmdList, testPayload, TEST_DOWNLINK);
-    }
-    ////  TODO: End of Move out
+    //  Aggregate the sensor data.  Determine whether we should send to network now.
+    shouldSend = aggregate_sensor_data(context, &msg);
+    if (!shouldSend) continue;  //  Loop and wait for next message.
 
     //  TODO: Use a semaphore to limit sending to only 1 message at a time.
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
@@ -284,7 +267,7 @@ bool checkPower(WisolContext *context, const char *response) {
   return true;  //  Success
 }
 
-static void getCmdBegin(WisolContext *context, WisolCmd list[]) {
+void getCmdBegin(WisolContext *context, WisolCmd list[]) {
   //  Return the list of UART commands to start up the Wisol module.
   debug(F(" - wisol.getCmdBegin")); ////
   // Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
@@ -325,7 +308,7 @@ static void getCmdPower(WisolContext *context, WisolCmd list[]) {
   addCmd(list, endOfList);
 }
 
-static void getCmdSend(
+void getCmdSend(
   WisolContext *context, 
   WisolCmd list[], 
   const char *payload,
@@ -432,6 +415,9 @@ void setup_wisol(
   context->device[0] = 0;  //  Clear the device ID.
   context->pac[0] = 0;  //  Clear the PAC code.
   context->firstTime = true;
+  context->cmdList = cmdList;
+  context->cmdIndex = 0;
+  context->cmdList[0] = endOfList;  //  Empty the command list.
 
   switch(context->country) {
     case COUNTRY_JP: context->zone = 3; break; //  Set Japan frequency (RCZ3).

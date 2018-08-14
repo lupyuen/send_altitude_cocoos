@@ -66,6 +66,8 @@ struct WisolContext {
   int cmdIndex;  //  Index of cmdList being sent.
 };
 
+extern WisolCmd endOfList; //  Command to indicate end of command list.
+
 void setup_wisol(
   WisolContext *context, 
   UARTContext *uartContext, 
@@ -73,6 +75,12 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0);
 void wisol_task(void);
+void getCmdBegin(WisolContext *context, WisolCmd list[]);
+void getCmdSend(
+  WisolContext *context, 
+  WisolCmd list[], 
+  const char *payload,
+  bool enableDownlink);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

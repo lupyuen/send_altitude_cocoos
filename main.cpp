@@ -9,6 +9,7 @@
 #include "uart.h"  //  TODO: Remove
 #include "wisol.h"
 #include "sensor.h"
+#include "aggregate.h"
 #include "temp_sensor.h"   //  Temperature sensor (BME280)
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
@@ -41,6 +42,9 @@ int main(void) {
   //  Init the system and OS for cocoOS.
   system_setup();
   os_init();
+
+  //  Erase the aggregated sensor data.
+  setup_aggregate();
 
   //  Start the display task that displays sensor data.
   uint8_t display_task_id = 0;
