@@ -149,13 +149,6 @@ void debug(const __FlashStringHelper *s1) {
   Serial.print(s1);
   // if (s2) Serial.print(s2);
   Serial.println("");
-
-  ////
-  Serial.print("tx/rx: ");
-  Serial.print(SERIAL_TX_BUFFER_SIZE);
-  Serial.println(SERIAL_RX_BUFFER_SIZE);
-  ////
-
   Serial.flush();  //  Let serial printing finish.
 }
 

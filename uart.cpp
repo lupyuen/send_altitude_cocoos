@@ -40,7 +40,7 @@ static String data;
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
-SoftwareSerial *serialPort = NULL;  //  Serial port for the SIGFOX module.
+SoftwareSerial *serialPort = NULL;  //  Serial port for send/receive.
 Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
 unsigned long lastSend;  //  Timestamp of last send.
@@ -118,7 +118,9 @@ void uart_task(void) {
       }
       //  If not "\r" marker, append the received char to the response.
       int len = strlen(context->response);
-      if (len < maxUARTMsgLength) {
+      if (len >= maxUARTResponseLength) {
+        Serial.print(F("***** Error: UART response overflow - ")); Serial.println(len);
+      } else {
         context->response[len] = (char) receiveChar;
         context->response[len + 1] = 0;
       }  ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
@@ -150,9 +152,14 @@ void uart_task(void) {
   task_close();  //  End of the task. Should not come here.
 }
 
-void setup_uart(UARTContext *context, uint8_t rx, uint8_t tx, bool echo) {
-  //  Init the module with the specified transmit and receive pins.
-  //  Default to no echo.
+void setup_uart(
+  UARTContext *context, 
+  char *response, 
+  uint8_t rx, 
+  uint8_t tx, 
+  bool echo) {
+  //  Init the object with the response buffer and the specified transmit and receive pins.
+  context->response = response;
   serialPort = new SoftwareSerial(rx, tx);
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;

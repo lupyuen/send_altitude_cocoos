@@ -23,6 +23,7 @@ static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
 
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+static char uartResponse[maxUARTResponseLength + 1];  //  Buffer for writing UART response.
 static UARTContext uartContext;
 static WisolContext wisolContext;
 static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
@@ -74,7 +75,8 @@ static uint8_t network_setup(uint8_t display_task_id) {
   const uint8_t WISOL_TX = 4;  //  Transmit port for Wisol module.
   const uint8_t WISOL_RX = 5;  //  Receive port for Wisol module.
   setup_uart(
-    &uartContext, 
+    &uartContext,
+    uartResponse,
     WISOL_RX, 
     WISOL_TX, 
     true);
