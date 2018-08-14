@@ -1,6 +1,6 @@
-Arduino sketch to read BME280 temperature, humidity and altitude sensors (plus a simulated gyro sensor) and process the data concurrently.  Multitasking of the sensors is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
+Arduino sketch to read BME280 I2C temperature, humidity and altitude sensors and send the aggregated sensor data to the Sigfox IoT network (via the Wisol Sigfox module connected on UART).  Supports Sigfox downlink too. Multitasking of the sensors is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
 
-Read the tutorial: https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
+Read the tutorial: (to be updated with network details) https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
 
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
@@ -142,6 +142,15 @@ requests but they are not guaranteed.
 [`main.cpp`](main.cpp): Main program. The Arduino application starts here in function `main()`
 
 [`send_altitude_cocoos.ino`](send_altitude_cocoos.ino): Arduino sketch with no code. Arduino IDE requires this file to be present.
+
+-----
+### Network Code
+
+[`wisol.cpp`](wisol.cpp), [`wisol.h`](wisol.h): Network Task to receive and aggregate sensor data from Sensor Task and send to the Sigfox network.
+
+[`uart.cpp`](uart.cpp), [`uart.h`](uart.h): UART Task to send and receive network messages to/from the Sigfox network via a Wisol Sigfox module connected to the serial port.
+
+[`aggregate.cpp`](aggregate.cpp), [`aggregate.h`](aggregate.h): Aggregate sensor data from multiple Sensor Tasks and determine if the aggregated sensor data should be sent to the network now.
 
 -----
 ### Sensor Code
