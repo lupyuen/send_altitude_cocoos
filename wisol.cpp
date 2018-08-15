@@ -274,7 +274,11 @@ bool getID(WisolContext *context, const char *response) {
 }
 
 bool getPAC(WisolContext *context, const char *response) {
-  //  Save the PAC code to context.
+  //  Save the PAC code to context.  Note that the PAC is only valid
+  //  for the first registration in the Sigfox portal.  After
+  //  registering the device, the PAC is changed in the Sigfox portal
+  //  but not in the Wisol AT Command.  You must get the updated
+  //  PAC from the Sigfox portal if you wish to transfer the device.
   strncpy(context->pac, response, MAX_DEVICE_CODE_SIZE);
   context->pac[MAX_DEVICE_CODE_SIZE] = 0;  //  Terminate the PAC code in case of overflow.
   debug(F(" - wisol.getPAC: "), context->pac);

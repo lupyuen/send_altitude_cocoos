@@ -2,7 +2,7 @@
 #define AGGREGATE_H_
 
 #define ENABLE_DOWNLINK false  //  Uplink data only
-// #define ENABLE_DOWNLINK true  //  Uplink data and request for downlink
+//  #define ENABLE_DOWNLINK true  //  Uplink data and request for downlink
 
 //  Send a sensor message every 20,000 milliseconds = 20 seconds.
 #define SEND_INTERVAL ((unsigned long) 20 * 1000)
