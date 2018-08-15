@@ -38,7 +38,7 @@ Then link `os_defines.h` like this:
 ```cmd
 cd lib\cocoOS_5.0.1\src
 del os_defines.h
-mklink ..\..\..\os_defines.h os_defines.h
+mklink os_defines.h ..\..\..\os_defines.h
 cd ..\..\..
 ```
 
