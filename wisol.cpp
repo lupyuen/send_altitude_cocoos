@@ -286,17 +286,16 @@ void getCmdBegin(WisolContext *context, WisolCmd list[]) {
 static void getCmdPower(WisolContext *context, WisolCmd list[]) {
   //  Set the output power for the zone.
   //  Get the command based on the zone.
-  //  log2(F(" - Wisol.setOutputPower: zone "), String(zone));
+  //  log2(F(" - Wisol.setOutputPower: zone "), String(context->zone));
   debug(F(" - wisol.getCmdPower")); ////
-  int i = getCmdIndex(list);  //  Get next available index.
   switch(context->zone) {
-    case 1:  //  RCZ1
-    case 3:  //  RCZ3
+    case RCZ1:
+    case RCZ3:
       //  Send CMD_OUTPUT_POWER_MAX
       addCmd(list, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
       break;
-    case 2:  //  RCZ2
-    case 4: {  //  RCZ4
+    case RCZ2:
+    case RCZ4: {
       //  Send CMD_PRESEND
       addCmd(list, { F(CMD_PRESEND), 1, checkPower, NULL, NULL });
       //  Send second power command: CMD_PRESEND2.  
@@ -418,17 +417,7 @@ void setup_wisol(
   context->cmdList = cmdList;
   context->cmdIndex = 0;
   context->cmdList[0] = endOfList;  //  Empty the command list.
-
-  switch(context->country) {
-    case COUNTRY_JP: context->zone = 3; break; //  Set Japan frequency (RCZ3).
-    case COUNTRY_US: context->zone = 2; break; //  Set US frequency (RCZ2).
-    case COUNTRY_FR:  //  France (RCZ1).
-    case COUNTRY_OM:  //  Oman (RCZ1).
-    case COUNTRY_SA:  //  South Africa (RCZ1).
-      context->zone = 1; break;
-    //  Rest of the world runs on RCZ4.
-    default: context->zone = 4;
-  }
+  context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.
 }
 
 static void addCmd(WisolCmd list[], WisolCmd cmd) {
