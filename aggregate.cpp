@@ -15,7 +15,7 @@ static SensorMsg sensorData[MAX_SENSOR_COUNT];
 //  Buffer for constructing the message payload to be sent, in hex digits, plus terminating null.
 #define PAYLOAD_SIZE (1 + MAX_MESSAGE_SIZE * 2)  //  Each byte takes 2 hex digits. Add 1 for terminating null.
 static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
-//  static const char testPayload[] = "0102030405060708090a0b0c";  //  TODO
+//  static const char testPayload[] = "0102030405060708090a0b0c";  //  For testing
 
 bool aggregate_sensor_data(
     WisolContext *context, 
@@ -31,6 +31,10 @@ bool aggregate_sensor_data(
         context->stepBeginFunc(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.
     }
+    Serial.print(msg->name); Serial.print(F(" >> Recv sensor data ")); 
+    if (msg->count > 0) { Serial.println(msg->data[0]); }
+    else { Serial.println("(empty)"); }
+    Serial.flush();
 
     //  Aggregate the sensor data.  Here we just save the last value for each sensor.
     SensorMsg *savedSensor = recallSensor(msg->name);
@@ -60,7 +64,7 @@ bool aggregate_sensor_data(
     }
 
     //  Compose the list of Wisol AT Commands for sending the message payload.
-    context->stepSendFunc(context, cmdList, cmdListSize, payload, TEST_DOWNLINK);
+    context->stepSendFunc(context, cmdList, cmdListSize, payload, ENABLE_DOWNLINK);
     return true;  //  Will be sent by the caller.
 }
 

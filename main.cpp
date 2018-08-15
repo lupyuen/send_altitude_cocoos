@@ -1,4 +1,5 @@
-//  Sample application demonstrating handling of multiple IoT sensors on Arduino with cocoOS.
+//  Sample application demonstrating multitasking of multiple IoT sensors and
+//  network transmission on Arduino with cocoOS.
 //  Based on https://github.com/lupyuen/cocoOSExample-arduino
 #include "platform.h"
 #include <stdio.h>
@@ -6,7 +7,7 @@
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "display.h"
-#include "uart.h"  //  TODO: Remove
+#include "uart.h"
 #include "wisol.h"
 #include "sensor.h"
 #include "aggregate.h"
@@ -18,7 +19,7 @@
 #endif
 
 //  These are the functions that we will implement in this file.
-static uint8_t network_setup(uint8_t display_task_id);  //  Start the network task to send and receive network messages.
+static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static void system_setup(void);  //  Initialise the system.
@@ -46,23 +47,17 @@ int main(void) {
   //  Erase the aggregated sensor data.
   setup_aggregate();
 
-  //  Start the display task that displays sensor data.
-  uint8_t display_task_id = 0;
 #ifdef SENSOR_DISPLAY
-  display_task_id = display_setup();
+  //  Start the display task that displays sensor data.
+  uint8_t task_id = display_setup();
 #endif  //  SENSOR_DISPLAY
 
   //  Start the network task to send and receive network messages.
-  uint8_t network_task_id = network_setup(display_task_id);
+  uint8_t task_id = network_setup();
   
-  //  Start the sensor tasks for each sensor to read sensor data.
-#ifdef SENSOR_DISPLAY
-  //  Previously, we send sensor data to the Display Task for display.
-  sensor_setup(display_task_id);
-#else
-  //  Now we send sensor data to the Network Task for transmission.
-  sensor_setup(network_task_id);
-#endif  //  SENSOR_DISPLAY
+  //  Start the sensor tasks for each sensor to read sensor data and send
+  //  to the Network Task or Display Task.
+  sensor_setup(task_id);
 
   //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
   //// debug(F("arduino_start_timer")); ////
@@ -74,7 +69,7 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-static uint8_t network_setup(uint8_t display_task_id) {
+static uint8_t network_setup(void) {
   //  Start the network task to send and receive network messages.
 
   //  Start the UART Task for transmitting UART data to the Wisol module.
@@ -112,18 +107,20 @@ static uint8_t network_setup(uint8_t display_task_id) {
   return networkTaskID;
 }
 
-#ifdef SENSOR_DATA
-static void sensor_setup(uint8_t display_task_id) {
+#ifdef SENSOR_DATA  //  Use real not simulated sensors.
+static void sensor_setup(uint8_t task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
+  //  Sensor data will be sent to the message queue at the given task ID,
+  //  which is the Network Task or Display Task.
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
-  SensorContext *tempContext = setup_temp_sensor(pollInterval, display_task_id);
-  SensorContext *humidContext = setup_humid_sensor(pollInterval, display_task_id);
-  SensorContext *altContext = setup_alt_sensor(pollInterval, display_task_id);
+  SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
+  SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
+  SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
 #ifdef GYRO_SENSOR
-  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, display_task_id);
+  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
 #endif  //  GYRO_SENSOR
 
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
@@ -131,6 +128,7 @@ static void sensor_setup(uint8_t display_task_id) {
   //// debug(F("task_create")); ////
   task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
     0, 0, 0);  //  Will not receive message queue data.
+  return; ////
   task_create(sensor_task, humidContext, 120,  //  Priority 120
     0, 0, 0);  //  Will not receive message queue data.
   task_create(sensor_task, altContext, 130,  //  Priority 130
@@ -141,20 +139,6 @@ static void sensor_setup(uint8_t display_task_id) {
 #endif  //  GYRO_SENSOR
 }
 #endif  //  SENSOR_DATA
-
-#ifdef SENSOR_DISPLAY
-static uint8_t display_setup(void) {
-  //  Start the display task that displays sensor data.  Return the task ID.
-  uint8_t display_task_id = task_create(
-    display_task,   //  Task will run this function.
-    get_display(),  //  task_get_data() will be set to the display object.
-    1000,            //  Priority 1000 = lowest priority
-    (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
-    displayMsgPoolSize,        //  Size of queue pool.
-    sizeof(DisplayMsg));       //  Size of queue message.
-  return display_task_id;
-}
-#endif  //  SENSOR_DISPLAY
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
@@ -169,6 +153,20 @@ static void system_setup(void) {
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
+
+#ifdef SENSOR_DISPLAY
+static uint8_t display_setup(void) {
+  //  Start the display task that displays sensor data.  Return the task ID.
+  uint8_t display_task_id = task_create(
+    display_task,   //  Task will run this function.
+    get_display(),  //  task_get_data() will be set to the display object.
+    1000,            //  Priority 1000 = lowest priority
+    (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
+    displayMsgPoolSize,        //  Size of queue pool.
+    sizeof(DisplayMsg));       //  Size of queue message.
+  return display_task_id;
+}
+#endif  //  SENSOR_DISPLAY
 
 static void arduino_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().

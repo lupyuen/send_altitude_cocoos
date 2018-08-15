@@ -67,8 +67,10 @@ void wisol_task(void) {
     if (!shouldSend) continue;  //  Should not send now. Loop and wait for next message.
 
     //  Use a semaphore to limit sending to only 1 message at a time.
+    debug(F("net >> Wait for net")); ////
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_wait();
+    debug(F("net >> Got net")); ////
 
     //  Init the context.
     context->status = true;  //  Assume no error.
@@ -124,6 +126,7 @@ void wisol_task(void) {
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
 
+    debug(F("net >> Release net")); ////
     sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
 

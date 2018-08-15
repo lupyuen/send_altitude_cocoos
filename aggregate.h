@@ -1,8 +1,8 @@
 #ifndef AGGREGATE_H_
 #define AGGREGATE_H_
 
-// #define TEST_DOWNLINK false  //  Test Uplink only
-#define TEST_DOWNLINK true  //  Test Uplink and downlink
+#define ENABLE_DOWNLINK false  //  Uplink data only
+// #define ENABLE_DOWNLINK true  //  Uplink data and request for downlink
 
 //  Send a sensor message every 10,000 milliseconds = 10 seconds.
 #define SEND_INTERVAL ((unsigned long) 10 * 1000)
