@@ -68,7 +68,7 @@ void wisol_task(void) {
 
     //  Use a semaphore to limit sending to only 1 message at a time.
     debug(F("net >> Wait for net")); ////
-    sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
+    ////sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_wait();
     debug(F("net >> Got net")); ////
 
@@ -128,7 +128,7 @@ void wisol_task(void) {
     context->lastSend = millis();  //  Update the last send time.
 
     debug(F("net >> Release net")); ////
-    sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
+    ////sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
 
     //  Process the downlink message, if any. This is located outside the semaphore lock for performance.

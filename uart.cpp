@@ -24,9 +24,10 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
     Serial.flush(); \
     context->testTimer = millis();
 
+//  Delays in milliseconds.
 static const uint16_t delayAfterStart = 200;
 static const uint16_t delayAfterSend = 10;
-static const uint16_t delayAfterReceive = 10;
+static const uint16_t delayReceive = 10;
 
 //  Drop all data passed to this port.  Used to suppress echo output.
 class NullPort: public Print {
@@ -94,23 +95,29 @@ void uart_task(void) {
     }
     context->sentTime = millis();  //  Start the timer for detecting receive timeout.
 
-    int i1, i2;
-    i1 = 0; i2 = 0;
+    context->i1 = 0; context->i2 = 0; ////
     for (;;) {  //  Read the response.  Loop until timeout or we see the end of response marker.
-      //  If receive step has timed out, quit.
-      const unsigned long currentTime = millis();
-      if (currentTime - context->sentTime > context->msg->timeout) {
+      context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
+      unsigned long currentTime, elapsedTime, remainingTime;
+      currentTime = millis();
+      elapsedTime = currentTime - context->sentTime;
+      remainingTime = context->msg->timeout - elapsedTime;
+      if (remainingTime < 0) {
+        //  If receive step has timed out, quit.
         logBuffer(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
         break;
       }
-      //  No data is available in the serial port sendData to receive now.  We retry later.
-      if (serialPort->available() <= 0) { i1++; continue; }  ////  TODO task_wait
-
+      if (serialPort->available() <= 0) { 
+        //  No data is available in the serial port sendData to receive now.  We retry later.
+        //  Wait a while before checking receive.
+        if (remainingTime > delayReceive) { context->i1++; task_wait(delayReceive); }
+        continue;  //  Check again.
+      }
       //  Attempt to read the data.
       int receiveChar = serialPort->read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
-      if (receiveChar == -1) { i2++; continue; }  ////  TODO task_wait
+      if (receiveChar == -1) { context->i2++; continue; }  ////  TODO task_wait
 
       if (receiveChar == context->msg->markerChar) {
         //  We see the "\r" marker.
@@ -135,7 +142,7 @@ void uart_task(void) {
     //  If we did not see the expected number of '\r' markers, record the error.
     if (context->actualMarkerCount < context->msg->expectedMarkerCount) { context->status = false; }
     logSendReceive(context);  //  Log the status and actual bytes sent and received.
-    Serial.print("-----i1 / i2: "); Serial.print(i1); Serial.print(" / "); Serial.println(i2); Serial.flush(); ////
+    Serial.print("-----i1 / i2: "); Serial.print(context->i1); Serial.print(" / "); Serial.println(context->i2); Serial.flush(); ////
 
     if (context->status == true) {
       //  If no error, trigger the success event to caller.
