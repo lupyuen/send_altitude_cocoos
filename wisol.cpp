@@ -125,6 +125,7 @@ void wisol_task(void) {
     msg.name[0] = 0;  //  Erase the "begin" sensor name.
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
+    context->lastSend = millis();  //  Update the last send time.
 
     debug(F("net >> Release net")); ////
     sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
@@ -453,6 +454,7 @@ void setup_wisol(
   context->device[0] = 0;  //  Clear the device ID.
   context->pac[0] = 0;  //  Clear the PAC code.
   context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.
+  context->lastSend = millis() + (2 * SEND_INTERVAL);  //  Init the last send time to a high number so that sensor data will wait for Begin Step to complete.
 }
 
 static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd) {

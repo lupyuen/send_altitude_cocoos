@@ -128,9 +128,9 @@ static void sensor_setup(uint8_t task_id) {
   //// debug(F("task_create")); ////
   task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
     0, 0, 0);  //  Will not receive message queue data.
-  return; ////
   task_create(sensor_task, humidContext, 120,  //  Priority 120
     0, 0, 0);  //  Will not receive message queue data.
+  return; ////
   task_create(sensor_task, altContext, 130,  //  Priority 130
     0, 0, 0);  //  Will not receive message queue data.
 #ifdef GYRO_SENSOR

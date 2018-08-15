@@ -31,7 +31,7 @@ bool aggregate_sensor_data(
         context->stepBeginFunc(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.
     }
-    Serial.print(msg->name); Serial.print(F(" >> Recv sensor data ")); 
+    Serial.print(msg->name); Serial.print(F(" << Recv sensor data ")); 
     if (msg->count > 0) { Serial.println(msg->data[0]); }
     else { Serial.println("(empty)"); }
     Serial.flush();
@@ -42,9 +42,9 @@ bool aggregate_sensor_data(
     copySensorData(savedSensor, msg);  //  Copy the data from the received message into the saved data.
 
     //  Throttle the sending.  TODO: Show warning if messages are sent faster than SEND_DELAY.
-    static unsigned long lastSend = millis();
     unsigned long now = millis();
-    if (now - lastSend < SEND_INTERVAL) { return false; }  //  Not ready to send.
+    if (now - context->lastSend < SEND_INTERVAL) { return false; }  //  Not ready to send.
+    context->lastSend = now + SEND_INTERVAL;  //  Prevent other requests from trying to send.
 
     //  Create a new Sigfox message. Add a running sequence number to the message.
     payload[0] = 0;  //  Empty the message payload.

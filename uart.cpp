@@ -65,6 +65,7 @@ void uart_task(void) {
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
+    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
     //  log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.
@@ -177,7 +178,7 @@ static void rememberMarker(UARTContext *context) {
 static void logSendReceive(UARTContext *context) {
   //  Log the status and actual bytes sent and received.
   //  log2(F(">> "), echoSend); if (echoReceive.length() > 0) { log2(F("<< "), echoReceive); }
-  logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
+  //  logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
   logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
 
   // Serial.print(F("<< status: ")); Serial.println(context->status);

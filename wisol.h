@@ -48,6 +48,7 @@ struct WisolContext {
   bool status;  //  Return status.  True if command was successful.
   SensorMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
   const char *downlinkData;  //  If downlink was requested, set the downlink hex string e.g. 0102030405060708.
+  unsigned long lastSend;  //  Timestamp of last sent message in milliseconds.  Used for throttling.
 
   WisolCmd *cmdList;  //  List of Wisol AT commands being sent.
   int cmdIndex;  //  Index of cmdList being sent.
