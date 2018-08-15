@@ -5,8 +5,8 @@
 #define MAX_DEVICE_ID_SIZE 8  //  Max number of chars in Sigfox device ID.
 #define MAX_DEVICE_CODE_SIZE 16  //  Max number of chars in Sigfox PAC code.
 #define MAX_MESSAGE_SIZE 12  //  Sigfox supports up to 12 bytes per message.
-#define SEND_DELAY ((unsigned long) (10 * 60 * 1000))  //  According to regulation, messages should be sent only every 10 minutes.
-#define COMMAND_TIMEOUT ((unsigned long) (60 * 1000))  //  Wait up to 60 seconds for response from Sigfox module.  Includes downlink response.
+#define SEND_DELAY ((unsigned long) 10 * 60 * 1000)  //  According to regulation, messages should be sent only every 10 minutes.
+#define COMMAND_TIMEOUT ((unsigned long) 60 * 1000)  //  Wait up to 60 seconds for response from Sigfox module.  Includes downlink response.
 
 //  Define the countries (ISO ALPHA-2 country code) and frequencies that are supported.
 //  Based on https://www.sigfox.com/en/coverage, https://www.st.com/content/ccc/resource/technical/document/user_manual/group0/8d/9a/ea/d7/62/06/43/ce/DM00361540/files/DM00361540.pdf/jcr:content/translations/en.DM00361540.pdf
@@ -46,6 +46,7 @@ enum Country {  //  Bits 0-6: First letter. Bits 7-13: Second letter.
   COUNTRY_MT = RCZ1 + 'M'+('T' << 7),  //  Malta: RCZ1
   COUNTRY_MQ = RCZ1 + 'M'+('Q' << 7),  //  Martinique: RCZ1
   COUNTRY_MX = RCZ2 + 'M'+('X' << 7),  //  Mexico: RCZ2
+  COUNTRY_NL = RCZ1 + 'N'+('L' << 7),  //  Netherlands: RCZ1
   COUNTRY_NC = RCZ1 + 'N'+('C' << 7),  //  New Caledonia: RCZ1
   COUNTRY_NZ = RCZ4 + 'N'+('Z' << 7),  //  New Zealand: RCZ4
   COUNTRY_OM = RCZ1 + 'O'+('M' << 7),  //  Oman: RCZ1
@@ -61,7 +62,6 @@ enum Country {  //  Bits 0-6: First letter. Bits 7-13: Second letter.
   COUNTRY_CH = RCZ1 + 'C'+('H' << 7),  //  Switzerland: RCZ1
   COUNTRY_TW = RCZ4 + 'T'+('W' << 7),  //  Taiwan: RCZ4
   COUNTRY_TH = RCZ4 + 'T'+('H' << 7),  //  Thailand: RCZ4
-  COUNTRY_NL = RCZ1 + 'N'+('L' << 7),  //  Netherlands: RCZ1
   COUNTRY_TN = RCZ1 + 'T'+('N' << 7),  //  Tunisia: RCZ1
   COUNTRY_GB = RCZ1 + 'G'+('B' << 7),  //  United Kingdom: RCZ1
   COUNTRY_AE = RCZ1 + 'A'+('E' << 7),  //  United Arab Emirates: RCZ1

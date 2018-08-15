@@ -234,7 +234,7 @@ tmp >> poll_sensor
 tmp >> Send msg 28.78
 tmp >> Release semaphore
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄5 >> Wait interval
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -245,7 +245,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,0␀
  - uart.sendData: response: 1,0
- - wisol.checkPower: Continue CMD_PRESEND2
+ - wisol.checkChannel: Continue CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,0
  - uart.sendData: AT$RC
 >> AT$RC
@@ -264,7 +264,7 @@ hmd >> Release semaphore
  - wisol.getDownlink Result: ERR_S#X_ERR_SEND_FRAME_kAIT_TIMEOUT
 ***** Error: wisol_task Failed, response: ERR_S#X_ERR_SEND_FRAME_kAIT_TIMEOUT
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 hmd >> Wait for semaphore
 ␀b␂�������������␁␄% >> Got semaphore
@@ -276,7 +276,7 @@ alt >> Release semaphore
 ␀> AT$GI?
 << 1,6␀
  - uart.sendData: response: 1,6
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,6
  - uart.sendData: AT
 ␀> AT
@@ -294,7 +294,7 @@ RX=FE DC �@ 98 76 54 32 10
  - wisol.getDownlink Result: FEDC�@9876543210
  - wisol_task OK, response: FEDC�@9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄0 >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 29.59
@@ -305,7 +305,7 @@ alt >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -323,7 +323,7 @@ RX=FE DC �A 98 76 54 32 10
  - wisol.getDownlink Result: FEDC�A9876543210
  - wisol_task OK, response: FEDC�A9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -334,7 +334,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -356,7 +356,7 @@ RX=FE DC BA 98 �6 54 32 10
  - wisol.getDownlink Result: O�␎RX=FEDCBA98�6543210
 ***** Error: wisol_task Failed, response: O�␎RX=FEDCBA98�6543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 30.63
@@ -367,7 +367,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -385,7 +385,7 @@ RX=FE DC BA 9␜ 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9␜76543210
  - wisol_task OK, response: FEDCBA9␜76543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -396,7 +396,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -414,7 +414,7 @@ RX=FE␐DC BA 98 76 54 32␐10
  - wisol.getDownlink Result: FE␐DCBA98765432␐10
  - wisol_task OK, response: FE␐DCBA98765432␐10
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄N >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 31.75
@@ -425,7 +425,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -443,7 +443,7 @@ RX=FE DC BA␐98 76 54 32 10
  - wisol.getDownlink Result: FEDCBA␐9876543210
  - wisol_task OK, response: FEDCBA␐9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -454,7 +454,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -472,7 +472,7 @@ RX=FE DC aA 98 76 54 32 10
  - wisol.getDownlink Result: FEDCaA9876543210
  - wisol_task OK, response: FEDCaA9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 32.55
@@ -483,7 +483,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -501,7 +501,7 @@ RX=FE �C BA 98 76 54 32 �0
  - wisol.getDownlink Result: FE�CBA98765432�0
  - wisol_task OK, response: FE�CBA98765432�0
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -512,7 +512,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -530,7 +530,7 @@ RX=�E DC BA 98 76 54 ␙2 10
  - wisol.getDownlink Result: �EDCBA987654␙210
  - wisol_task OK, response: �EDCBA987654␙210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.22
@@ -541,7 +541,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -556,7 +556,7 @@ hmd >> Wait for semaphore
  - wisol.getDownlink Result: OK␅RX=FEDCBA987�543210
  - wisol_task OK, response: OK␅RX=FEDCBA987�543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -567,7 +567,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -585,7 +585,7 @@ RX=FE DC BA 9� 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9�76543210
  - wisol_task OK, response: FEDCBA9�76543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄␝ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.66
@@ -596,7 +596,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -614,7 +614,7 @@ RX=FE DC aA 98 76 54 32 10
  - wisol.getDownlink Result: FEDCaA9876543210
  - wisol_task OK, response: FEDCaA9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -625,7 +625,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1�4␀
  - uart.sendData: response: 1�4
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1�4
  - uart.sendData: AT
 ␀> AT
@@ -643,7 +643,7 @@ RX=FE DC BA␐98 76 54 32 10
  - wisol.getDownlink Result: FEDCBA␐9876543210
  - wisol_task OK, response: FEDCBA␐9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.98
@@ -654,7 +654,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -672,7 +672,7 @@ RX=FE DC BA 9␜ 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9␜76543210
  - wisol_task OK, response: FEDCBA9␜76543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -683,7 +683,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -701,7 +701,7 @@ RX�FE DC BA 98 76 54�32 10
  - wisol.getDownlink Result: OKRX�FEDCBA987654�3210
  - wisol_task OK, response: OKRX�FEDCBA987654�3210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.29
@@ -712,7 +712,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -730,7 +730,7 @@ RX=FE DC BA �8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�876543210
  - wisol_task OK, response: FEDCBA�876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -741,7 +741,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -759,7 +759,7 @@ RX=FE DC B` 98 76 54 32 10
  - wisol.getDownlink Result: FEDCB`9876543210
  - wisol_task OK, response: FEDCB`9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄␕ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.58
@@ -770,7 +770,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -789,7 +789,7 @@ hmd >> Wait for semaphore
  - wisol.getDownlink Result: ERR_SFX_ERR_IEND_FRAME_WAIT_TIfEOUT
 ***** Error: wisol_task Failed, response: ERR_SFX_ERR_IEND_FRAME_WAIT_TIfEOUT
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -800,7 +800,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,6␀
  - uart.sendData: response: 1,6
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,6
  - uart.sendData: AT
 ␀> AT
@@ -818,7 +818,7 @@ RX=FE �A BA 98 76 54 32 80
  - wisol.getDownlink Result: FE�ABA9876543280
  - wisol_task OK, response: FE�ABA9876543280
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄] >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.93
@@ -829,7 +829,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -851,7 +851,7 @@ RX=FE DC AA 98 76 54 32 10�
  - wisol.getDownlink Result: FEDCAA9876543210�
 ***** Error: wisol_task Failed, response: FEDCAA9876543210�
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -862,7 +862,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -877,7 +877,7 @@ hmd >> Release semaphore
  - wisol.getDownlink Result: OK␅RX=FEDCBA9876␐543210
  - wisol_task OK, response: OK␅RX=FEDCBA9876␐543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.14
@@ -888,7 +888,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -906,7 +906,7 @@ RX=FE DC BA�<8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�<876543210
  - wisol_task OK, response: FEDCBA�<876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -917,7 +917,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -935,7 +935,7 @@ RX=FE D! BA 98 76 54 32 1␘
  - wisol.getDownlink Result: FED!BA987654321␘
  - wisol_task OK, response: FED!BA987654321␘
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄| >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.26
@@ -946,7 +946,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -964,7 +964,7 @@ RX=FE DC B` 98 76 54 32 10
  - wisol.getDownlink Result: FEDCB`9876543210
  - wisol_task OK, response: FEDCB`9876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -975,7 +975,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -997,7 +997,7 @@ RX=FE DC BA 98 7� 54 32 10
  - wisol.getDownlink Result: OK�RX=FEDCBA987�543210
 ***** Error: wisol_task Failed, response: OK�RX=FEDCBA987�543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.37
@@ -1008,7 +1008,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -1026,7 +1026,7 @@ Rl=FE DC BA 98 76 :4 32 10
  - wisol.getDownlink Result: OKRl=FEDCBA9876:43210
  - wisol_task OK, response: OKRl=FEDCBA9876:43210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -1037,7 +1037,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -1055,7 +1055,7 @@ RX=FE DC BA �8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�876543210
  - wisol_task OK, response: FEDCBA�876543210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄␁ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.48
@@ -1066,7 +1066,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -1084,7 +1084,7 @@ RX␞FE DC BA 98 76 54␐32 10
  - wisol.getDownlink Result: OKRX␞FEDCBA987654␐3210
  - wisol_task OK, response: OKRX␞FEDCBA987654␐3210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -1095,7 +1095,7 @@ hmd >> Release semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT
@@ -1113,7 +1113,7 @@ RX=�E DC BA 98 76 54 92 10
  - wisol.getDownlink Result: �EDCBA9876549210
  - wisol_task OK, response: �EDCBA9876549210
  - wisol.getCmdSend
- - wisol.getCmdPower
+ - wisol.getCmdPowerChannel
 ␀b␂�������������␁␄␡ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.56
@@ -1124,7 +1124,7 @@ hmd >> Wait for semaphore
 ␀> AT$GI?
 << 1,5␀
  - uart.sendData: response: 1,5
- - wisol.checkPower: Change CMD_PRESEND2
+ - wisol.checkChannel: Change CMD_RESET_CHANNEL
  - wisol_task OK, response: 1,5
  - uart.sendData: AT
 ␀> AT

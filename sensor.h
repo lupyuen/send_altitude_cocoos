@@ -6,14 +6,14 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define maxSensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
-#define maxSensorNameSize 3  //  Max number of letters/digits in sensor name.
+#define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
 
 //  Messages sent by Sensor Task containing sensor data will be in this format.
 struct SensorMsg {
   Msg_t super;  //  Required for all cocoOS messages.
-  char name[maxSensorNameSize + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
-  float data[maxSensorDataSize];  //  Array of float sensor data values returned by the sensor.
+  char name[MAX_SENSOR_NAME_SIZE + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
+  float data[MAX_SENSOR_DATA_SIZE];  //  Array of float sensor data values returned by the sensor.
   uint8_t count;  //  Number of float sensor data values returned by the sensor.
 };
 

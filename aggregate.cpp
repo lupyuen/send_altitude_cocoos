@@ -17,20 +17,20 @@ void setup_aggregate(void) {
     }
 }
 
-bool aggregate_sensor_data(WisolContext *context, SensorMsg *msg) {
+bool aggregate_sensor_data(
+    WisolContext *context, 
+    SensorMsg *msg, 
+    WisolCmd cmdList[],
+    int cmdListSize) {
     //  Aggregate the received sensor data.  Check whether we should send
     //  the data, based on the throttle settings.  Return true if
     //  we should send the message.  The message commands are
-    //  populated in the context.
-
-    context->msg = msg;  //  Remember the message until it's sent via UART.
-    context->cmdIndex = 0;
-    context->cmdList[0] = endOfList;  //  Empty the command list.
+    //  populated in cmdList, up to cmdListSize elements (including the terminating command).
 
     //  Convert received sensor data to a list of Wisol commands.
-    if (strncmp(context->msg->name, BEGIN_SENSOR_NAME, maxSensorNameSize) == 0) {
+    if (strncmp(context->msg->name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) == 0) {
         //  If sensor name is "000", this is the "begin" message.
-        getCmdBegin(context, context->cmdList);  //  Fetch list of startup commands for the transceiver.
+        getCmdBegin(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.
     }
 
@@ -41,6 +41,6 @@ bool aggregate_sensor_data(WisolContext *context, SensorMsg *msg) {
     //  TODO: Encode the sensor data into a Sigfox message.
 
     //  Send the encoded Sigfox message.
-    getCmdSend(context, context->cmdList, testPayload, TEST_DOWNLINK);
+    getCmdSend(context, cmdList, cmdListSize, testPayload, TEST_DOWNLINK);
     return true;
 }

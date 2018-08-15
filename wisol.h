@@ -36,9 +36,9 @@ struct WisolContext {
 
   char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
   char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
-  bool firstTime;  //  Set by setup_wisol() to true if this is the first run.  
   bool status;  //  Return status.  True if command was successful.
   SensorMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
+  const char *downlinkData;  //  If downlink was requested, set the downlink hex string e.g. 0102030405060708.
 
   WisolCmd *cmdList;  //  List of Wisol AT commands being sent.
   int cmdIndex;  //  Index of cmdList being sent.
@@ -53,10 +53,14 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0);
 void wisol_task(void);
-void getCmdBegin(WisolContext *context, WisolCmd list[]);
+void getCmdBegin(
+  WisolContext *context, 
+  WisolCmd list[],
+  int listSize);
 void getCmdSend(
   WisolContext *context, 
-  WisolCmd list[], 
+  WisolCmd list[],
+  int listSize, 
   const char *payload,
   bool enableDownlink);
 

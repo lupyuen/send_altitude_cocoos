@@ -58,12 +58,12 @@ void sensor_task(void) {
     //  Prepare a display message for copying the sensor data.
     SensorMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    //// memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
-    strncpy(msg.name, context->sensor->info.name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
-    msg.name[maxSensorNameSize] = 0;  //  Terminate the name in case of overflow.
+    //// memset(msg.name, 0, MAX_SENSOR_NAME_SIZE + 1);  //  Zero the name array.
+    strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
+    msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
     //  Poll for the sensor data and copy into the display message.
-    msg.count = context->sensor->info.poll_sensor_func(msg.data, maxSensorDataSize);
+    msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
 
     //  Do we have new data?
     if (msg.count > 0) {
@@ -96,7 +96,7 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
   uint8_t i;
   //  Copy the floats safely: Don't exceed the array size provided by caller.
   //  Also don't exceed the number of available sensor data items.
-  for (i = 0; i < size && i < sensorDataSize && i < maxSensorDataSize; i++) {
+  for (i = 0; i < size && i < sensorDataSize && i < MAX_SENSOR_DATA_SIZE; i++) {
     data[i] = sensorDataArray[i];
   }
   return i;  //  Return the number of floats copied.
