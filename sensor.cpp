@@ -66,10 +66,15 @@ void sensor_task(void) {
     //  Poll for the sensor data and copy into the display message.
     msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
 
+    //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
+    debug(context->sensor->info.name, F(" >> Release semaphore")); ////
+    sem_signal(i2cSemaphore);
+
     //  Do we have new data?
     if (msg.count > 0) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
       //  Note: msg_post() will block if the receiver's queue is full.
+      //  That's why we send the message outside the semaphore lock.
       //  debug(msg.name, F(" >> Send msg")); ////
       debug_print(msg.name); debug_print(F(" >> Send msg ")); 
       if (msg.count > 0) { debug_println(msg.data[0]); }
@@ -77,10 +82,6 @@ void sensor_task(void) {
       debug_flush();
       msg_post(context->receive_task_id, msg);
     }
-
-    //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
-    debug(context->sensor->info.name, F(" >> Release semaphore")); ////
-    sem_signal(i2cSemaphore);
 
     //  Wait a short while before polling the sensor again.
     debug(context->sensor->info.name, F(" >> Wait interval")); ////
