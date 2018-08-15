@@ -62,9 +62,13 @@ bool aggregate_sensor_data(
         int scaledData = data * 10;  //  Scale up by 10 to send 1 decimal place. So 27.1 becomes 271
         addPayloadInt3(payload, PAYLOAD_SIZE, sensorName, scaledData);  //  Add to payload.
     }
+    debug_print(F("agg >> Send ")); ////
+    for (int i = 1; i < strlen(payload) && i < PAYLOAD_SIZE; i = i + 2) {
+        debug_print(payload[i]);
+    }
+    debug_println(""); debug_flush();
 
     //  Compose the list of Wisol AT Commands for sending the message payload.
-    debug(F(">> Send "), payload); ////
     context->stepSendFunc(context, cmdList, cmdListSize, payload, ENABLE_DOWNLINK);
     return true;  //  Will be sent by the caller.
 }

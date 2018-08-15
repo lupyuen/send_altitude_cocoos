@@ -18,9 +18,9 @@
 
 #else  //  !DISABLE_DEBUG_LOG: Else if debug logging is enabled...
 
-#define debug_print Serial.print
-#define debug_println Serial.println
-#define debug_flush Serial.flush
+#define debug_print(x) Serial.print(x)
+#define debug_println(x) Serial.println(x)
+#define debug_flush() Serial.flush()
 
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
