@@ -2,38 +2,19 @@
 #define WISOL_H_
 
 #include "platform.h"
+#include "sigfox.h"
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
-#include "uart.h"  //  For UARTContext
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define wisolMsgPoolSize 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
-#define maxWisolCmdListSize 5  //  Allow up to 5 UART commands to be sent in a single Wisol message.
-#define maxSigfoxDeviceSize 8  //  Max number of chars in Sigfox device name.
-#define maxSigfoxPACSize 16  //  Max number of chars in Sigfox PAC code.
-#define beginSensorName "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
-
-const unsigned long SEND_DELAY = (unsigned long) 10 * 60 * 1000;  //  According to regulation, messages should be sent only every 10 minutes.
-const unsigned int MAX_BYTES_PER_MESSAGE = 12;  //  Sigfox supports up to 12 bytes per message.
-const unsigned long COMMAND_TIMEOUT = 60000;  //  Wait up to 60 seconds for response from Sigfox module.  Includes downlink response.
-
-//  Define the countries that are supported.
-enum Country {
-  COUNTRY_AU = 'A'+('U' << 8),  //  Australia: RCZ4
-  COUNTRY_BR = 'B'+('R' << 8),  //  Brazil: RCZ4
-  COUNTRY_FR = 'F'+('R' << 8),  //  France: RCZ1
-  COUNTRY_JP = 'J'+('P' << 8),  //  Japan: RCZ3
-  COUNTRY_OM = 'O'+('M' << 8),  //  Oman: RCZ1
-  COUNTRY_NZ = 'N'+('Z' << 8),  //  New Zealand: RCZ4
-  COUNTRY_SA = 'S'+('A' << 8),  //  South Africa: RCZ1
-  COUNTRY_SG = 'S'+('G' << 8),  //  Singapore: RCZ4
-  COUNTRY_US = 'U'+('S' << 8),  //  USA: RCZ2
-  COUNTRY_TW = 'T'+('W' << 8),  //  Taiwan: RCZ4
-};
+#define WISOL_MSG_POOL_SIZE 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
+#define MAX_WISOL_CMD_LIST_SIZE 5  //  Allow up to 4 UART commands to be sent in a single Wisol message.
+#define BEGIN_SENSOR_NAME "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
 
 struct SensorMsg;  //  Forward declaration.
 struct WisolContext;  //  Forward declaration.
+struct UARTContext;  //  Forward declaration.
 
 //  Defines a Wisol AT command string, to be sent via UART Task. Sequence is
 //    sendData + payload + sendData2
@@ -53,8 +34,8 @@ struct WisolContext {
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
   bool useEmulator;  //  Set to true if using SNEK Emulator.
 
-  char device[maxSigfoxDeviceSize];  //  Sigfox device ID read from device e.g. 002C2EA1
-  char pac[maxSigfoxPACSize];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
+  char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
+  char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
   bool firstTime;  //  Set by setup_wisol() to true if this is the first run.  
   bool status;  //  Return status.  True if command was successful.
   SensorMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.

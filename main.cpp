@@ -26,11 +26,11 @@ static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
 
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-static char uartResponse[maxUARTResponseLength + 1];  //  Buffer for writing UART response.
+static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Buffer for writing UART response.
 static UARTContext uartContext;
 static WisolContext wisolContext;
-static UARTMsg uartMsgPool[uartMsgPoolSize];  //  Pool of UART messages for the UART queue.
-static SensorMsg wisolMsgPool[wisolMsgPoolSize];  //  Pool of UART messages for the UART queue.
+static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
+static SensorMsg wisolMsgPool[WISOL_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
 #ifdef SENSOR_DISPLAY
 static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
@@ -91,7 +91,7 @@ static uint8_t network_setup(uint8_t display_task_id) {
     &uartContext,  //  task_get_data() will be set to the display object.
     10,            //  Priority 10 = highest priority
     (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    uartMsgPoolSize,        //  Size of queue pool.
+    UART_MSG_POOL_SIZE,        //  Size of queue pool.
     sizeof(UARTMsg));   //  Size of queue message.
 
   //  Start the Wisol Task for receiving sensor data and transmitting to UART Task.
@@ -106,7 +106,7 @@ static uint8_t network_setup(uint8_t display_task_id) {
     &wisolContext,  //  task_get_data() will be set to the display object.
     20,             //  Priority 20 = lower priority than UART task
     (Msg_t *) wisolMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    wisolMsgPoolSize,        //  Size of queue pool.
+    WISOL_MSG_POOL_SIZE,        //  Size of queue pool.
     sizeof(SensorMsg));   //  Size of queue message.
     
   return networkTaskID;

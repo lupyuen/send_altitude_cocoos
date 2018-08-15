@@ -8,7 +8,7 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
-#define uartMsgPoolSize 2  //  Should not allow concurrent UART messages.  Hangs if <2.
+#define UART_MSG_POOL_SIZE 2  //  Should not allow concurrent UART messages.  Hangs if <2.
 
 //  UART Task accepts messages of this format.
 //  TODO fix sendData
@@ -27,7 +27,7 @@ struct UARTContext {
   bool status;  //  Return status.  True if successfully sent.
   size_t sendIndex;  //  Index of next char to be sent.
   unsigned long sentTime;  //  Timestamp at which we completed sending.
-  ////char response[maxUARTResponseLength + 1];  //  Received response.
+  ////char response[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Received response.
   char *response;  //  Pointer to the buffer for writing received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.

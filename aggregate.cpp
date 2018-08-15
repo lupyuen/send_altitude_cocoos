@@ -28,7 +28,7 @@ bool aggregate_sensor_data(WisolContext *context, SensorMsg *msg) {
     context->cmdList[0] = endOfList;  //  Empty the command list.
 
     //  Convert received sensor data to a list of Wisol commands.
-    if (strncmp(context->msg->name, beginSensorName, maxSensorNameSize) == 0) {
+    if (strncmp(context->msg->name, BEGIN_SENSOR_NAME, maxSensorNameSize) == 0) {
         //  If sensor name is "000", this is the "begin" message.
         getCmdBegin(context, context->cmdList);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.

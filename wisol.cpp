@@ -31,7 +31,7 @@ WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end
 static Sem_t sendSemaphore;
 static Evt_t successEvent;
 static Evt_t failureEvent;
-static WisolCmd cmdList[maxWisolCmdListSize];  //  Static buffer for storing command list.
+static WisolCmd cmdList[MAX_WISOL_CMD_LIST_SIZE];  //  Static buffer for storing command list.
 
 static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg beginMsg;  //  First message that will be sent to self upon startup.
@@ -50,7 +50,7 @@ void wisol_task(void) {
   bool shouldSend;
 
   //  Init the first message that will be sent to self upon startup.
-  createSensorMsg(&beginMsg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+  createSensorMsg(&beginMsg, BEGIN_SENSOR_NAME);  //  Sensor name "000" denotes "begin" message.
   createSensorMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
   sensorMsg.data[0] = 36.9;
   sensorMsg.count = 1;
@@ -70,7 +70,7 @@ void wisol_task(void) {
       context->firstTime = false;
       //  Don't post a message to its own task - it may deadlock for sync sending.
       //  We create a "begin" message and process it.
-      createSensorMsg(&msg, beginSensorName);  //  Sensor name "000" denotes "begin" message.
+      createSensorMsg(&msg, BEGIN_SENSOR_NAME);  //  Sensor name "000" denotes "begin" message.
     } else {
       //  If not the first iteration, wait for an incoming message containing sensor data.
       msg_receive(os_get_running_tid(), &msg);
@@ -87,7 +87,7 @@ void wisol_task(void) {
 
     for (;;) {  //  Send each command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
-      if (context->cmdIndex >= maxWisolCmdListSize) { break; }  //  Check bounds.
+      if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
@@ -163,16 +163,16 @@ void wisol_task(void) {
 
 bool getID(WisolContext *context, const char *response) {
   //  Save the device ID to context.
-  strncpy(context->device, response, maxSigfoxDeviceSize);
-  context->device[maxSigfoxDeviceSize] = 0;  //  Terminate the device ID in case of overflow.
+  strncpy(context->device, response, MAX_DEVICE_ID_SIZE);
+  context->device[MAX_DEVICE_ID_SIZE] = 0;  //  Terminate the device ID in case of overflow.
   debug(F(" - wisol.getID: "), context->device);
   return true;
 }
 
 bool getPAC(WisolContext *context, const char *response) {
   //  Save the PAC code to context.
-  strncpy(context->pac, response, maxSigfoxPACSize);
-  context->pac[maxSigfoxPACSize] = 0;  //  Terminate the PAC code in case of overflow.
+  strncpy(context->pac, response, MAX_DEVICE_CODE_SIZE);
+  context->pac[MAX_DEVICE_CODE_SIZE] = 0;  //  Terminate the PAC code in case of overflow.
   debug(F(" - wisol.getPAC: "), context->pac);
   return true;
 }
@@ -212,13 +212,13 @@ bool getDownlink(WisolContext *context, const char *response0) {
     foundPtr[0] = 0;  //  Terminate <<BEFORE>>
     const char *after = foundPtr + strlen(downlinkPrefix);
     //  Shift <<AFTER>> next to <<BEFORE>>.
-    strncat(response, after, maxUARTMsgLength - strlen(response));
-    response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
+    strncat(response, after, MAX_UART_SEND_MSG_SIZE - strlen(response));
+    response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   }
   //  Remove all spaces.
   int src = 0, dst = 0;
   for (;;) {
-    if (src >= maxUARTMsgLength) break;
+    if (src >= MAX_UART_SEND_MSG_SIZE) break;
     //  Don't copy spaces and newlines in the source.
     if (response[src] == ' ' || response[src] == '\n') { 
       src++; 
@@ -230,7 +230,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
     if (response[dst] == 0) break;
     dst++; src++;  //  Shift to next char.
   }
-  response[maxUARTMsgLength] = 0;  //  Terminate the response in case of overflow.
+  response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   debug(F(" - wisol.getDownlink Result: "), context->uartContext->response);
   return true;
 }
@@ -251,7 +251,7 @@ bool checkPower(WisolContext *context, const char *response) {
     debug(F(" - wisol.checkPower: Change CMD_PRESEND2"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
-    if (cmdIndex >= maxWisolCmdListSize) {      
+    if (cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) {      
       debug(F("***** wisol.checkPower Error: Cmd overflow"));  //  List is full.
       return false;  //  Failure
     }    
@@ -344,7 +344,7 @@ void getCmdSend(
 }
 
 static String cmdData;
-static char uartData[maxUARTMsgLength + 1];
+static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
 
 static void convertCmdToUART(
   WisolCmd *cmd,
@@ -363,28 +363,28 @@ static void convertCmdToUART(
     cmdData = cmd->sendData;
     const char *cmdDataStr = cmdData.c_str();
     // debug(F("strSendData="), strSendData);  ////
-    // strncpy(uartData, "AT$I=10\r", maxUARTMsgLength - strlen(uartData));  //  For testing
-    strncpy(uartData, cmdDataStr, maxUARTMsgLength - strlen(uartData));  //  Copy the command string.
-    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+    // strncpy(uartData, "AT$I=10\r", MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  For testing
+    strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
+    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
   if (cmd->payload != NULL) {
     //  Append payload if it exists.
-    strncat(uartData, cmd->payload, maxUARTMsgLength - strlen(uartData));
-    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+    strncat(uartData, cmd->payload, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
+    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
     cmdData = cmd->sendData2;
     const char *cmdDataStr = cmdData.c_str();
-    strncat(uartData, cmdDataStr, maxUARTMsgLength - strlen(uartData));
-    uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+    strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
+    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
   //  Terminate the command with "\r".
-  strncat(uartData, CMD_END, maxUARTMsgLength - strlen(uartData));
-  uartData[maxUARTMsgLength] = 0;  //  Terminate the UART data in case of overflow.
+  strncat(uartData, CMD_END, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
+  uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   //  debug(F("uartData="), uartData);  ////
   //  Check total msg length.
-  if (strlen(uartData) >= maxUARTMsgLength - 1) {
+  if (strlen(uartData) >= MAX_UART_SEND_MSG_SIZE - 1) {
     Serial.print(F("***** Error: uartData overflow - ")); Serial.print(strlen(uartData));
     Serial.print(" / "); Serial.println(uartData); Serial.flush();
   }
@@ -446,12 +446,12 @@ static int getCmdIndex(WisolCmd list[]) {
   int i;
   for (i = 0;  //  Search all elements in list.
     list[i].sendData != NULL &&   //  Skip no-empty elements.
-    i < maxWisolCmdListSize - 1;  //  Don't exceed the list size.
+    i < MAX_WISOL_CMD_LIST_SIZE - 1;  //  Don't exceed the list size.
     i++) {}
-  if (i >= maxWisolCmdListSize - 1) {
+  if (i >= MAX_WISOL_CMD_LIST_SIZE - 1) {
     //  List is full.
     Serial.print(F("***** Error: Cmd list overflow - ")); Serial.println(i); Serial.flush();
-    i = maxWisolCmdListSize - 2;
+    i = MAX_WISOL_CMD_LIST_SIZE - 2;
     if (i < 0) i = 0;
   }
   return i;

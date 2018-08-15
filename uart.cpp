@@ -82,7 +82,7 @@ void uart_task(void) {
     for (;;) {  //  Send the sendData char by char.
       //  If there is no data left to send, continue to the receive step.
       if (context->sendIndex >= strlen(context->msg->sendData)
-        || context->sendIndex >= maxUARTMsgLength) { break; }
+        || context->sendIndex >= MAX_UART_SEND_MSG_SIZE) { break; }
       //  Send the next char.
       sendChar = (uint8_t) context->msg->sendData[context->sendIndex];
       serialPort->write(sendChar);
@@ -118,7 +118,7 @@ void uart_task(void) {
       }
       //  If not "\r" marker, append the received char to the response.
       int len = strlen(context->response);
-      if (len >= maxUARTResponseLength) {
+      if (len >= MAX_UART_RESPONSE_MSG_SIZE) {
         Serial.print(F("***** Error: UART response overflow - ")); Serial.println(len);
       } else {
         context->response[len] = (char) receiveChar;
