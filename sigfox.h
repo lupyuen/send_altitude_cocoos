@@ -1,3 +1,4 @@
+//  Nework definitions for the Sigfox network.
 #ifndef SIGFOX_H_
 #define SIGFOX_H_
 
@@ -8,6 +9,7 @@
 #define COMMAND_TIMEOUT ((unsigned long) (60 * 1000))  //  Wait up to 60 seconds for response from Sigfox module.  Includes downlink response.
 
 //  Define the countries (ISO ALPHA-2 country code) and frequencies that are supported.
+//  Based on https://www.sigfox.com/en/coverage, https://www.st.com/content/ccc/resource/technical/document/user_manual/group0/8d/9a/ea/d7/62/06/43/ce/DM00361540/files/DM00361540.pdf/jcr:content/translations/en.DM00361540.pdf
 #define RCZ_MASK (3 << 14)  //  Bits 14-15: RCZ
 #define RCZ1 (0 << 14)
 #define RCZ2 (1 << 14)
