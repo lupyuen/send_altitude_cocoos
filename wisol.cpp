@@ -1,6 +1,6 @@
 //  Functions to send and receive messages to/from Sigfox network via 
 //  Wisol modules WSSFM10R1AT, WSSFM10R2AT, WSSFM10R3AT and WSSFM10R4AT
-//  for Sigfox RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
+//  for Sigfox zones RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
 #include "platform.h"
 #include "cocoos_cpp.h"
 #include "display.h"
@@ -13,7 +13,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-static void getCmdPowerChannel(WisolContext *context, WisolCmd list[], int listSize);
+static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize);
 bool getID(WisolContext *context, const char *response);
 bool getPAC(WisolContext *context, const char *response);
 bool checkChannel(WisolContext *context, const char *response);
@@ -77,7 +77,7 @@ void wisol_task(void) {
     context->cmdList = cmdList;  //  Run the command list.
     context->cmdIndex = 0;  //  Start at first command in command list.
 
-    for (;;) {  //  Send each command in the list.
+    for (;;) {  //  Send each Wisol AT command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
       if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
@@ -119,7 +119,7 @@ void wisol_task(void) {
       debug(F(" - wisol_task OK, response: "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
-
+    //  All Wisol AT commands sent for the step.
     msg.name[0] = 0;  //  Erase the "begin" sensor name.
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
@@ -127,27 +127,27 @@ void wisol_task(void) {
     sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
 
-    //  Process the downlink message, if any.
+    //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
     if (context->downlinkData) {
       processDownlinkMsg(context, context->status, context->downlinkData);
     }
-
-    //  TODO: Send test sensor message after 10 seconds (10,000 milliseconds).
-    //  msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
-
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
 
 #ifdef NOTUSED
-  //  Init the first message that will be sent to self upon startup.
-  createSensorMsg(&beginMsg, BEGIN_SENSOR_NAME);  //  Sensor name "000" denotes "begin" message.
+void sendTestSensorMsg() {
   createSensorMsg(&sensorMsg, "tmp");  //  Test message for temperature sensor.
   sensorMsg.data[0] = 36.9;
   sensorMsg.count = 1;
+  //  Send test sensor message after 10 seconds (10,000 milliseconds).
+  msg_post_in(os_get_running_tid(), sensorMsg, 10 * 1000); //  Send the message to our own task.
+}
 #endif
 
-//  Define the Wisol AT commands based on WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf
+///////////////////////////////////////////////////////////////////////////////
+//  Define the Wisol AT Commands based on WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf
+
 #define CMD_NONE "AT"  //  Empty placeholder command.
 #define CMD_OUTPUT_POWER_MAX "ATS302=15"  //  For RCZ1: Set output power to maximum power level.
 #define CMD_GET_CHANNEL "AT$GI?"  //  For RCZ2, 4: Get current and next TX macro channel usage.  Returns X,Y.
@@ -176,15 +176,18 @@ void wisol_task(void) {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-//  Wisol Command Steps: A Command Step maps to a list of Commands for executing the step.
-//  We only implement 2 steps for the Wisol module:
+//  Wisol Command Steps: A Command Step contains a list of Wisol AT Commands to
+//  be sent for executing the step.  We only implement 2 steps for the Wisol module:
 //  Begin Step -> Send Step
 //  (1) Begin Step: On startup, set the emulation mode and get the device ID and PAC.
 //  (2) Send Step: Send the payload, after setting the TX power and channel. Optional: Request for downlink
 
-void getCmdBegin(WisolContext *context, WisolCmd list[], int listSize) {
-  //  Return the list of UART commands for the Begin Step, to start up the Wisol module.
-  debug(F(" - wisol.getCmdBegin")); ////
+void getStepBegin(
+  WisolContext *context, 
+  WisolCmd list[], 
+  int listSize) {
+  //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
+  debug(F(" - wisol.getStepBegin")); ////
   // Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
   addCmd(list, listSize, {
     //  Set emulation mode.
@@ -197,21 +200,21 @@ void getCmdBegin(WisolContext *context, WisolCmd list[], int listSize) {
   addCmd(list, listSize, { F(CMD_GET_PAC), 1, getPAC, NULL, NULL });
 }
 
-void getCmdSend(
+void getStepSend(
   WisolContext *context, 
   WisolCmd list[],
   int listSize, 
   const char *payload,
   bool enableDownlink) {
-  //  Return the list of UART commands for the Send Step, to send the payload.
+  //  Return the list of Wisol AT commands for the Send Step, to send the payload.
   //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
   //  We prefix with AT$SF= and send to the transceiver.  If enableDownlink is true, we append the
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
-  debug(F(" - wisol.getCmdSend")); ////
+  debug(F(" - wisol.getStepSend")); ////
   //  Set the output power for the zone.
-  getCmdPowerChannel(context, list, listSize);
+  getStepPowerChannel(context, list, listSize);
 
   //  Compose the payload sending command.
   uint8_t markers = 1;  //  Wait for 1 line of response.
@@ -228,14 +231,14 @@ void getCmdSend(
   addCmd(list, listSize, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
 }
 
-static void getCmdPowerChannel(WisolContext *context, WisolCmd list[], int listSize) {
-  //  Return the commands to set the transceiver output power and channel for the zone.
+static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize) {
+  //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
   //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
-  debug(F(" - wisol.getCmdPowerChannel")); ////
+  debug(F(" - wisol.getStepPowerChannel")); ////
   switch(context->zone) {
     case RCZ1:
     case RCZ3:
-      //  Send CMD_OUTPUT_POWER_MAX
+      //  Set the transceiver output power.
       addCmd(list, listSize, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
       break;
     case RCZ2:
@@ -243,7 +246,9 @@ static void getCmdPowerChannel(WisolContext *context, WisolCmd list[], int listS
       //  Get the current and next macro channel usage. Returns X,Y:
       //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
       //  Y: number of micro channel available for next TX request in current macro channel.
+      //  Call checkChannel() to check the response.
       addCmd(list, listSize, { F(CMD_GET_CHANNEL), 1, checkChannel, NULL, NULL });
+
       //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
       //  Note: Don't use with a duty cycle less than 20 seconds.
       //  Note: checkChannel() will change this command to CMD_NONE if not required.
@@ -255,7 +260,7 @@ static void getCmdPowerChannel(WisolContext *context, WisolCmd list[], int listS
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Wisol Response Processing Functions: Called to process response when response 
-//  is received from Wisol module.
+//  is received from Wisol AT Command.
 
 bool getID(WisolContext *context, const char *response) {
   //  Save the device ID to context.
@@ -441,6 +446,8 @@ void setup_wisol(
   context->uartTaskID = uartTaskID;
   context->country = country0;
   context->useEmulator = useEmulator0;
+  context->stepBeginFunc = getStepBegin;
+  context->stepSendFunc = getStepSend;
   context->device[0] = 0;  //  Clear the device ID.
   context->pac[0] = 0;  //  Clear the PAC code.
   context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.

@@ -208,7 +208,7 @@ ata: response: OK
 << 002C----arduino_setup
 Create semaphore
 BME280 OK
- - wisol.getCmdBegin
+ - wisol.getStepBegin
  - uart.sendData: ATS410=0
 tmp >> Wait for semaphore
 hmd >> Wait for semaphore
@@ -233,8 +233,8 @@ alt >> Wait for semaphore
 tmp >> poll_sensor
 tmp >> Send msg 28.78
 tmp >> Release semaphore
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄5 >> Wait interval
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -263,8 +263,8 @@ hmd >> Release semaphore
 
  - wisol.getDownlink Result: ERR_S#X_ERR_SEND_FRAME_kAIT_TIMEOUT
 ***** Error: wisol_task Failed, response: ERR_S#X_ERR_SEND_FRAME_kAIT_TIMEOUT
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 hmd >> Wait for semaphore
 ␀b␂�������������␁␄% >> Got semaphore
@@ -293,8 +293,8 @@ RX=FE DC �@ 98 76 54 32 10
 RX=FE DC �@ 98 76 54 32 10
  - wisol.getDownlink Result: FEDC�@9876543210
  - wisol_task OK, response: FEDC�@9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄0 >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 29.59
@@ -322,8 +322,8 @@ RX=FE DC �A 98 76 54 32 10
 RX=FE DC �A 98 76 54 32 10
  - wisol.getDownlink Result: FEDC�A9876543210
  - wisol_task OK, response: FEDC�A9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -355,8 +355,8 @@ RX=FE DC BA 98 �6 54 32 10
 
  - wisol.getDownlink Result: O�␎RX=FEDCBA98�6543210
 ***** Error: wisol_task Failed, response: O�␎RX=FEDCBA98�6543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 30.63
@@ -384,8 +384,8 @@ RX=FE DC BA 9␜ 76 54 32 10
 RX=FE DC BA 9␜ 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9␜76543210
  - wisol_task OK, response: FEDCBA9␜76543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -413,8 +413,8 @@ RX=FE␐DC BA 98 76 54 32␐10
 RX=FE␐DC BA 98 76 54 32␐10
  - wisol.getDownlink Result: FE␐DCBA98765432␐10
  - wisol_task OK, response: FE␐DCBA98765432␐10
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄N >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 31.75
@@ -442,8 +442,8 @@ RX=FE DC BA␐98 76 54 32 10
 RX=FE DC BA␐98 76 54 32 10
  - wisol.getDownlink Result: FEDCBA␐9876543210
  - wisol_task OK, response: FEDCBA␐9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -471,8 +471,8 @@ RX=FE DC aA 98 76 54 32 10
 RX=FE DC aA 98 76 54 32 10
  - wisol.getDownlink Result: FEDCaA9876543210
  - wisol_task OK, response: FEDCaA9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 32.55
@@ -500,8 +500,8 @@ RX=FE �C BA 98 76 54 32 �0
 RX=FE �C BA 98 76 54 32 �0
  - wisol.getDownlink Result: FE�CBA98765432�0
  - wisol_task OK, response: FE�CBA98765432�0
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -529,8 +529,8 @@ RX=�E DC BA 98 76 54 ␙2 10
 RX=�E DC BA 98 76 54 ␙2 10
  - wisol.getDownlink Result: �EDCBA987654␙210
  - wisol_task OK, response: �EDCBA987654␙210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.22
@@ -555,8 +555,8 @@ hmd >> Wait for semaphore
  - wisol.getDownlink: OK␅RX=FE DC BA 98 7� 54 32 10
  - wisol.getDownlink Result: OK␅RX=FEDCBA987�543210
  - wisol_task OK, response: OK␅RX=FEDCBA987�543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -584,8 +584,8 @@ RX=FE DC BA 9� 76 54 32 10
 RX=FE DC BA 9� 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9�76543210
  - wisol_task OK, response: FEDCBA9�76543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄␝ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.66
@@ -613,8 +613,8 @@ RX=FE DC aA 98 76 54 32 10
 RX=FE DC aA 98 76 54 32 10
  - wisol.getDownlink Result: FEDCaA9876543210
  - wisol_task OK, response: FEDCaA9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -642,8 +642,8 @@ RX=FE DC BA␐98 76 54 32 10
 RX=FE DC BA␐98 76 54 32 10
  - wisol.getDownlink Result: FEDCBA␐9876543210
  - wisol_task OK, response: FEDCBA␐9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 33.98
@@ -671,8 +671,8 @@ RX=FE DC BA 9␜ 76 54 32 10
 RX=FE DC BA 9␜ 76 54 32 10
  - wisol.getDownlink Result: FEDCBA9␜76543210
  - wisol_task OK, response: FEDCBA9␜76543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -700,8 +700,8 @@ RX�FE DC BA 98 76 54�32 10
 RX�FE DC BA 98 76 54�32 10
  - wisol.getDownlink Result: OKRX�FEDCBA987654�3210
  - wisol_task OK, response: OKRX�FEDCBA987654�3210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.29
@@ -729,8 +729,8 @@ RX=FE DC BA �8 76 54 32 10
 RX=FE DC BA �8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�876543210
  - wisol_task OK, response: FEDCBA�876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -758,8 +758,8 @@ RX=FE DC B` 98 76 54 32 10
 RX=FE DC B` 98 76 54 32 10
  - wisol.getDownlink Result: FEDCB`9876543210
  - wisol_task OK, response: FEDCB`9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄␕ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.58
@@ -788,8 +788,8 @@ hmd >> Wait for semaphore
 
  - wisol.getDownlink Result: ERR_SFX_ERR_IEND_FRAME_WAIT_TIfEOUT
 ***** Error: wisol_task Failed, response: ERR_SFX_ERR_IEND_FRAME_WAIT_TIfEOUT
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -817,8 +817,8 @@ RX=FE �A BA 98 76 54 32 80
 RX=FE �A BA 98 76 54 32 80
  - wisol.getDownlink Result: FE�ABA9876543280
  - wisol_task OK, response: FE�ABA9876543280
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄] >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 34.93
@@ -850,8 +850,8 @@ RX=FE DC AA 98 76 54 32 10�
 
  - wisol.getDownlink Result: FEDCAA9876543210�
 ***** Error: wisol_task Failed, response: FEDCAA9876543210�
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -876,8 +876,8 @@ hmd >> Release semaphore
  - wisol.getDownlink: OK␅RX=FE DC BA 98 76␐54 32 10
  - wisol.getDownlink Result: OK␅RX=FEDCBA9876␐543210
  - wisol_task OK, response: OK␅RX=FEDCBA9876␐543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.14
@@ -905,8 +905,8 @@ RX=FE DC BA�<8 76 54 32 10
 RX=FE DC BA�<8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�<876543210
  - wisol_task OK, response: FEDCBA�<876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -934,8 +934,8 @@ RX=FE D! BA 98 76 54 32 1␘
 RX=FE D! BA 98 76 54 32 1␘
  - wisol.getDownlink Result: FED!BA987654321␘
  - wisol_task OK, response: FED!BA987654321␘
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄| >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.26
@@ -963,8 +963,8 @@ RX=FE DC B` 98 76 54 32 10
 RX=FE DC B` 98 76 54 32 10
  - wisol.getDownlink Result: FEDCB`9876543210
  - wisol_task OK, response: FEDCB`9876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -996,8 +996,8 @@ RX=FE DC BA 98 7� 54 32 10
 
  - wisol.getDownlink Result: OK�RX=FEDCBA987�543210
 ***** Error: wisol_task Failed, response: OK�RX=FEDCBA987�543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄� >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.37
@@ -1025,8 +1025,8 @@ Rl=FE DC BA 98 76 :4 32 10
 Rl=FE DC BA 98 76 :4 32 10
  - wisol.getDownlink Result: OKRl=FEDCBA9876:43210
  - wisol_task OK, response: OKRl=FEDCBA9876:43210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -1054,8 +1054,8 @@ RX=FE DC BA �8 76 54 32 10
 RX=FE DC BA �8 76 54 32 10
  - wisol.getDownlink Result: FEDCBA�876543210
  - wisol_task OK, response: FEDCBA�876543210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄␁ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.48
@@ -1083,8 +1083,8 @@ RX␞FE DC BA 98 76 54␐32 10
 RX␞FE DC BA 98 76 54␐32 10
  - wisol.getDownlink Result: OKRX␞FEDCBA987654␐3210
  - wisol_task OK, response: OKRX␞FEDCBA987654␐3210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 tmp >> Wait for semaphore
 ␄␙ >> Got semaphore
 hmd >> poll_sensor
@@ -1112,8 +1112,8 @@ RX=�E DC BA 98 76 54 92 10
 RX=�E DC BA 98 76 54 92 10
  - wisol.getDownlink Result: �EDCBA9876549210
  - wisol_task OK, response: �EDCBA9876549210
- - wisol.getCmdSend
- - wisol.getCmdPowerChannel
+ - wisol.getStepSend
+ - wisol.getStepPowerChannel
 ␀b␂�������������␁␄␡ >> Got semaphore
 tmp >> poll_sensor
 tmp >> Send msg 35.56

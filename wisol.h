@@ -8,9 +8,8 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-#define WISOL_MSG_POOL_SIZE 4  //  Allow up to 4 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors (4).
+#define WISOL_MSG_POOL_SIZE MAX_SENSOR_COUNT  //  Allow up to 3 sensor data messages to be queued for the Wisol Task. Should be same as number of sensors.
 #define MAX_WISOL_CMD_LIST_SIZE 5  //  Allow up to 4 UART commands to be sent in a single Wisol message.
-#define BEGIN_SENSOR_NAME "000"  //  If sensor name is this, then this is the "begin" message sent at startup.
 
 struct SensorMsg;  //  Forward declaration.
 struct WisolContext;  //  Forward declaration.
@@ -33,6 +32,16 @@ struct WisolContext {
   int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
   bool useEmulator;  //  Set to true if using SNEK Emulator.
+  void (*stepBeginFunc)(  //  Begin Step: Return the Wisol AT Commands to be executed at startup.
+    WisolContext *context, 
+    WisolCmd list[],
+    int listSize);
+  void (*stepSendFunc)(  //  Send Step: Return the Wisol AT Commands to be executed when sending a payload.
+    WisolContext *context, 
+    WisolCmd list[],
+    int listSize, 
+    const char *payload,
+    bool enableDownlink);
 
   char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
   char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
@@ -53,16 +62,6 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0);
 void wisol_task(void);
-void getCmdBegin(
-  WisolContext *context, 
-  WisolCmd list[],
-  int listSize);
-void getCmdSend(
-  WisolContext *context, 
-  WisolCmd list[],
-  int listSize, 
-  const char *payload,
-  bool enableDownlink);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

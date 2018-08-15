@@ -10,6 +10,7 @@
 //  Uncomment to use simulated sensor data instead of real data.
 //  #define SIMULATED_DATA
 
+#define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 

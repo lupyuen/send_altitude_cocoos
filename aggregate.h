@@ -4,6 +4,9 @@
 // #define TEST_DOWNLINK false  //  Test Uplink only
 #define TEST_DOWNLINK true  //  Test Uplink and downlink
 
+//  Send a sensor message every 10,000 milliseconds = 10 seconds.
+#define SEND_INTERVAL ((unsigned long) 10 * 1000)
+
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
