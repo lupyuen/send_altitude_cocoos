@@ -33,7 +33,7 @@ static WisolContext wisolContext;
 static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
 static SensorMsg wisolMsgPool[WISOL_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
 #ifdef SENSOR_DISPLAY
-static DisplayMsg displayMsgPool[displayMsgPoolSize];  //  Pool of display messages that make up the display message queue.
+static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
 
 int main(void) {
@@ -162,7 +162,7 @@ static uint8_t display_setup(void) {
     get_display(),  //  task_get_data() will be set to the display object.
     1000,            //  Priority 1000 = lowest priority
     (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
-    displayMsgPoolSize,        //  Size of queue pool.
+    DISPLAY_MSG_POOL_SIZE,        //  Size of queue pool.
     sizeof(DisplayMsg));       //  Size of queue message.
   return display_task_id;
 }

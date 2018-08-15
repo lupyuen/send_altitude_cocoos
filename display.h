@@ -9,6 +9,23 @@
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 
+#ifdef DISABLE_DEBUG_LOG  //  If debug logging is disabled...
+
+#define debug(p1, p2) {}
+#define debug_print(p1) {}
+#define debug_println(p1) {}
+#define debug_flush() {}
+
+#else  //  !DISABLE_DEBUG_LOG: Else if debug logging is enabled...
+
+#define debug_print Serial.print
+#define debug_println Serial.println
+#define debug_flush Serial.flush
+
+#ifdef __cplusplus
+extern "C" {  //  Allows functions below to be called by C and C++ code.
+#endif
+
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
 void debug(
@@ -18,6 +35,10 @@ void debug(
     = 0  //  Second parameter may be omitted.
   #endif
   );
+
+#ifdef __cplusplus
+}  //  End of extern C scope.
+#endif
 
 #ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
 #ifdef ARDUINO  //  Flash memory for Arduino only.
@@ -39,9 +60,12 @@ void debug(
 #endif  //  ARDUINO
 #endif  //  __cplusplus
 
-#ifdef SENSOR_DISPLAY
-#define sensorDisplaySize 4  //  Max number of sensors that can be displayed during a single refresh.
-#define displayMsgPoolSize 6  //  Allow only 6 display messages to be queued, which means fewer than 6 sensors allowed.
+#endif  //  DISABLE_DEBUG_LOG
+
+#ifdef SENSOR_DISPLAY  //  If display sensor data instead of sending to network...
+
+#define SENSOR_DISPLAY_SIZE MAX_SENSOR_COUNT  //  Max number of sensors that can be displayed during a single refresh.
+#define DISPLAY_MSG_POOL_SIZE 6  //  Allow only 6 display messages to be queued, which means fewer than 6 sensors allowed.
 #define DISPLAY_MSG 34  //  TODO: Signal the display to update.
 
 #ifdef __cplusplus

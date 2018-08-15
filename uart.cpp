@@ -4,8 +4,9 @@
 #include "cocoos_cpp.h"
 #include "uart.h"
 
-static String toHex(char c);
 static void rememberMarker(UARTContext *context);
+static String toHex(char c);
+static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
@@ -64,7 +65,7 @@ void uart_task(void) {
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
-    log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
+    //  log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.
     context->status = true;  //  Assume the return status will be successful.
@@ -183,7 +184,7 @@ static void logSendReceive(UARTContext *context) {
   // Serial.print(F("<< response: ")); Serial.println(context->response);
   // Serial.print(F("<< actualMarkerCount: ")); Serial.println(context->actualMarkerCount);
 
-  if (context->status == true) { log2(F(" - uart.sendData: response: "), context->response); }
+  if (context->status == true) { /* log2(F(" - uart.sendData: response: "), context->response); */ }
   else if (strlen(context->response) == 0) { log1(F("***** uart.sendData: Error: Response timeout")); }
   else { log2(F("***** uart.sendData: Error: Unknown response: "), context->response); }
   Serial.flush();
@@ -192,31 +193,34 @@ static void logSendReceive(UARTContext *context) {
 //  Convert nibble to hex digit.
 static const char nibbleToHex[] = "0123456789abcdef";
 
-static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
+static void logBuffer(const __FlashStringHelper *prefix, const char *data, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount) {
-  //  Log the send/receive sendData for debugging.  markerPos is an array of positions in sendData
-  //  where the '>' marker was seen and removed.
+  //  Log the send/receive data for debugging.  markerPos is an array of positions in data
+  //  where the '\n' marker was seen and removed.  If markerCount=0, don't show markers.
   echoPort->print(prefix);
   size_t m = 0, i = 0;
-  for (i = 0; i < strlen(sendData); i = i + 2) {
+  for (i = 0; i < strlen(data); i++) {
     if (m < markerCount && markerPos[m] == i) {
-      echoPort->print("[0x");
-      echoPort->write((uint8_t) nibbleToHex[markerChar / 16]);
-      echoPort->write((uint8_t) nibbleToHex[markerChar % 16]);
-      echoPort->print("]");
+      logChar(markerChar);
       m++;
     }
-    echoPort->write((uint8_t) sendData[i]);
-    echoPort->write((uint8_t) sendData[i + 1]);
+    char ch = data[i];
+    if (ch < ' ' || ch > '~') { logChar(ch); }  //  Log non-ASCII char in hex.
+    else { echoPort->write((uint8_t) ch); }
   }
   if (m < markerCount && markerPos[m] == i) {
-    echoPort->print("[0x");
-    echoPort->write((uint8_t) nibbleToHex[markerChar / 16]);
-    echoPort->write((uint8_t) nibbleToHex[markerChar % 16]);
-    echoPort->print("]");
+    logChar(markerChar);
     m++;
   }
   echoPort->write('\n');
+}
+
+static void logChar(char ch) {
+  //  Log the character in hex e.g. '\r' becomes "[0x0d]"
+  echoPort->print("[0x");
+  echoPort->write((uint8_t) nibbleToHex[ch / 16]);
+  echoPort->write((uint8_t) nibbleToHex[ch % 16]);
+  echoPort->print("]");
 }
 
 static String toHex(char c) {

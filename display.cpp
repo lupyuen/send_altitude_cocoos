@@ -9,7 +9,7 @@
 #ifdef SENSOR_DISPLAY
 //  Message buffer to be displayed at next refresh().
 //  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
-static DisplayMsg displayMessages[sensorDisplaySize];
+static DisplayMsg displayMessages[SENSOR_DISPLAY_SIZE];
 
 static char buf[64];  //  Buffer to display 1 msg.
 static char sensorBuf[32];  //  Buffer for sensor data for 1 msg.
@@ -39,7 +39,7 @@ void display_task(void) {
 
 static void refresh(void) {
   //  Refresh the display and show the sensor data.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     //  Compose each sensor msg and display it e.g. tmp: 12.3, 12.4
     DisplayMsg msg = displayMessages[i];    
     if (msg.count == 0) { continue; }
@@ -78,7 +78,7 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   //  Save the updated sensor data for display later.
   int index = -1;  //  Index to overwrite msg.
   int firstEmptyIndex = -1;  //  Index of the first empty msg.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     DisplayMsg msg = displayMessages[i];  //  Note: This clones the message.
     if (msg.count == 0 && firstEmptyIndex < 0) {
       //  Look for the first empty message.
@@ -93,7 +93,7 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   if (index < 0) { 
     index = firstEmptyIndex; 
     if (index < 0) {
-      debug(F("Out of rows"));  //  Need to increase sensorDisplaySize.
+      debug(F("Out of rows"));  //  Need to increase SENSOR_DISPLAY_SIZE.
       return;
     }
   }
@@ -111,7 +111,7 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
 
 void init_display(void) {
   //  Empty the display by setting the msg.count to 0.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     displayMessages[i].count = 0;
   }
 }

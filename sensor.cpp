@@ -1,4 +1,5 @@
 //  Common code for all sensors.
+#define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
 #include <stdio.h>
@@ -70,10 +71,10 @@ void sensor_task(void) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
       //  Note: msg_post() will block if the receiver's queue is full.
       //  debug(msg.name, F(" >> Send msg")); ////
-      Serial.print(msg.name); Serial.print(F(" >> Send msg ")); 
-      if (msg.count > 0) { Serial.println(msg.data[0]); }
-      else { Serial.println("(empty)"); }
-      Serial.flush();
+      debug_print(msg.name); debug_print(F(" >> Send msg ")); 
+      if (msg.count > 0) { debug_println(msg.data[0]); }
+      else { debug_println("(empty)"); }
+      debug_flush();
       msg_post(context->receive_task_id, msg);
     }
 
@@ -85,7 +86,7 @@ void sensor_task(void) {
     debug(context->sensor->info.name, F(" >> Wait interval")); ////
     task_wait(context->sensor->info.poll_interval);
   }
-  debug(F("task_close")); ////
+  debug(F("task_close"), NULL); ////
   task_close();  //  End of the task. Should never come here.
 }
 

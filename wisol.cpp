@@ -118,7 +118,7 @@ void wisol_task(void) {
       }
 
       //  Command was successful. Move to next command.
-      debug(F(" - wisol_task OK, response: "), response);
+      //  debug(F(" - wisol_task OK, response: "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
     //  All Wisol AT commands sent for the step.
@@ -190,8 +190,7 @@ void getStepBegin(
   WisolCmd list[], 
   int listSize) {
   //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
-  debug(F(" - wisol.getStepBegin")); ////
-  // Serial.print(F("getCmdIndex: ")); Serial.println(i); ////
+  //  debug(F(" - wisol.getStepBegin")); ////
   addCmd(list, listSize, {
     //  Set emulation mode.
     context->useEmulator  //  If emulator mode,
@@ -215,7 +214,7 @@ void getStepSend(
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
   //  Warning: This may take up to 1 min to run.
-  debug(F(" - wisol.getStepSend")); ////
+  //  debug(F(" - wisol.getStepSend")); ////
   //  Set the output power for the zone.
   getStepPowerChannel(context, list, listSize);
 
@@ -237,7 +236,7 @@ void getStepSend(
 static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize) {
   //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
   //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
-  debug(F(" - wisol.getStepPowerChannel")); ////
+  //  debug(F(" - wisol.getStepPowerChannel")); ////
   switch(context->zone) {
     case RCZ1:
     case RCZ3:
@@ -301,7 +300,7 @@ bool checkChannel(WisolContext *context, const char *response) {
   int y = response[2] - '0';
   if (x != 0 && y >= 3) {
     //  No need to reset channel. We change CMD_RESET_CHANNEL to CMD_NONE.
-    debug(F(" - wisol.checkChannel: Continue channel"));
+    //  debug(F(" - wisol.checkChannel: Continue channel"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) {      
@@ -315,7 +314,7 @@ bool checkChannel(WisolContext *context, const char *response) {
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
   } else {
     //  Continue to send CMD_RESET_CHANNEL
-    debug(F(" - wisol.checkChannel: Reset channel"));
+    //  debug(F(" - wisol.checkChannel: Reset channel"));
   }
   return true;  //  Success
 }
@@ -336,7 +335,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
 
   //  Get a writeable response pointer in the uartContext.
   char *response = context->uartContext->response;
-  debug(F(" - wisol.getDownlink: "), response);
+  // debug(F(" - wisol.getDownlink: "), response); ////
 
   //  Check the original response.
   //  If Successful response: OK\nRX=01 23 45 67 89 AB CD EF
@@ -378,7 +377,7 @@ bool getDownlink(WisolContext *context, const char *response0) {
   }
   response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   context->downlinkData = response;
-  debug(F(" - wisol.getDownlink Result: "), context->downlinkData);
+  //  debug(F(" - wisol.getDownlink Result: "), context->downlinkData); ////
   return true;
 }
 
