@@ -64,6 +64,7 @@ bool aggregate_sensor_data(
     }
 
     //  Compose the list of Wisol AT Commands for sending the message payload.
+    debug(F(">> Send "), payload); ////
     context->stepSendFunc(context, cmdList, cmdListSize, payload, ENABLE_DOWNLINK);
     return true;  //  Will be sent by the caller.
 }
