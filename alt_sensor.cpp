@@ -8,11 +8,11 @@
 #include "sensor.h"
 
 #ifdef SENSOR_DATA
-#include <EnvironmentCalculations.h>
-#include <BME280I2C.h>
-#include <Wire.h>
 #include "bme280.h"
 #include "alt_sensor.h"
+#ifdef ARDUINO
+#include <EnvironmentCalculations.h>
+#endif  //  ARDUINO
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);

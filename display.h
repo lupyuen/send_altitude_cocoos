@@ -22,9 +22,7 @@
 #define debug_println(x) Serial.println(x)
 #define debug_flush() Serial.flush()
 
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
@@ -36,9 +34,7 @@ void debug(
   #endif
   );
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C
 
 #ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
 #ifdef ARDUINO  //  Flash memory for Arduino only.
@@ -68,9 +64,7 @@ void debug(
 #define DISPLAY_MSG_POOL_SIZE 6  //  Allow only 6 display messages to be queued, which means fewer than 6 sensors allowed.
 #define DISPLAY_MSG 34  //  TODO: Signal the display to update.
 
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+BEGIN_EXTERN_C
 
 //  Interface for displaying sensor data.
 struct Display {
@@ -82,8 +76,7 @@ Display *get_display(void);  //  Return the global instance of the display inter
 void init_display(void);  //  Initialise the display interface.
 void display_task(void);  //  Display Task runs this function to display messages received.
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C
+
 #endif  //  SENSOR_DISPLAY
 #endif  //  DISPLAY_H_

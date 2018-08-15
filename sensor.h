@@ -1,6 +1,7 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+#include <stdlib.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.

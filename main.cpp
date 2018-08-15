@@ -21,10 +21,14 @@
 //  These are the functions that we will implement in this file.
 static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
-static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static void system_setup(void);  //  Initialise the system.
+#ifdef ARDUINO
 static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
+#endif ARDUINO
+#ifdef SENSOR_DISPLAY
+static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
+#endif  //  SENSOR_DISPLAY
 
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Buffer for writing UART response.
@@ -59,12 +63,15 @@ int main(void) {
   //  to the Network Task or Display Task.
   sensor_setup(task_id);
 
-  //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
-  //// debug(F("arduino_start_timer")); ////
-  arduino_start_timer(); ////
+#ifdef ARDUINO
+  arduino_start_timer();  //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
+#endif  //  ARDUINO
+
+#ifdef STM32  
+  stm32_start_timer();  //  TODO: Start the STM32 timer to generate ticks for cocoOS to switch tasks.
+#endif  //  STM32
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
-  //// debug(F("os_start")); ////
   os_start();  //  Never returns.  
 	return EXIT_SUCCESS;
 }
@@ -167,6 +174,7 @@ static uint8_t display_setup(void) {
 }
 #endif  //  SENSOR_DISPLAY
 
+#ifdef ARDUINO
 static void arduino_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
   init();
@@ -193,3 +201,4 @@ ISR(TIMER1_COMPA_vect) {
   ////  debug(F("os_tick")); ////
   os_tick();
 }
+#endif  //  ARDUINO

@@ -8,8 +8,6 @@
 #include "sensor.h"
 
 #ifdef SENSOR_DATA
-#include <Wire.h>
-#include <BME280I2C.h>
 #include "bme280.h"
 #include "humid_sensor.h"
 

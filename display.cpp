@@ -142,6 +142,7 @@ void debug(const char *s1, const char *s2) {
   Serial.flush();  //  Let serial printing finish.
 }
 
+#ifdef ARDUINO  //  Print flash strings on Arduino only.
 void debug(const __FlashStringHelper *s1) {
   //  Print 1 flash string.
   Serial.begin(SERIAL_BAUD);
@@ -171,3 +172,4 @@ void debug(const __FlashStringHelper *s1, const char *s2) {
   Serial.println("");
   Serial.flush();  //  Let serial printing finish.
 }
+#endif  //  ARDUINO

@@ -1,5 +1,6 @@
 //  Aggregate sensor data and decide whether to send to network now.
 #include "platform.h"
+#include <string.h>
 #include "display.h"
 #include "sensor.h"
 #include "wisol.h"
