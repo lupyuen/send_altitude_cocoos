@@ -398,6 +398,7 @@ static void convertCmdToUART(
   //  Convert the Wisol command into a UART message.
   uartMsg->sendData = uartData;
   uartData[0] = 0;  //  Clear the dest buffer.
+  uartMsg->timeout = COMMAND_TIMEOUT;
 
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
@@ -412,6 +413,7 @@ static void convertCmdToUART(
     //  Append payload if it exists.
     strncat(uartData, cmd->payload, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+    uartMsg->timeout = UPLINK_TIMEOUT;  //  Increase timeout for uplink.
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
@@ -419,6 +421,7 @@ static void convertCmdToUART(
     const char *cmdDataStr = cmdData.c_str();
     strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+    uartMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.
   }
   //  Terminate the command with "\r".
   strncat(uartData, CMD_END, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
@@ -430,7 +433,6 @@ static void convertCmdToUART(
     Serial.print(" / "); Serial.println(uartData); Serial.flush();
   }
 
-  uartMsg->timeout = COMMAND_TIMEOUT;
   uartMsg->markerChar = END_OF_RESPONSE;
   uartMsg->expectedMarkerCount = cmd->expectedMarkerCount;
   uartMsg->successEvent = successEvent0;

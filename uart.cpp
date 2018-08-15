@@ -94,6 +94,8 @@ void uart_task(void) {
     }
     context->sentTime = millis();  //  Start the timer for detecting receive timeout.
 
+    int i1, i2;
+    i1 = 0; i2 = 0;
     for (;;) {  //  Read the response.  Loop until timeout or we see the end of response marker.
       //  If receive step has timed out, quit.
       const unsigned long currentTime = millis();
@@ -102,13 +104,13 @@ void uart_task(void) {
         break;
       }
       //  No data is available in the serial port sendData to receive now.  We retry later.
-      if (serialPort->available() <= 0) { continue; }  ////  TODO task_wait
+      if (serialPort->available() <= 0) { i1++; continue; }  ////  TODO task_wait
 
       //  Attempt to read the data.
       int receiveChar = serialPort->read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
-      if (receiveChar == -1) { continue; }  ////  TODO task_wait
+      if (receiveChar == -1) { i2++; continue; }  ////  TODO task_wait
 
       if (receiveChar == context->msg->markerChar) {
         //  We see the "\r" marker.
@@ -126,13 +128,14 @@ void uart_task(void) {
         context->response[len] = (char) receiveChar;
         context->response[len + 1] = 0;
       }  ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
-    }
+    }  //  Loop until receive is complete or timeout.
     serialPort->end();  //  Finished the send/receive.  We close the UART port.
     context = (UARTContext *) task_get_data();  //  Must fetch again to be safe.
 
     //  If we did not see the expected number of '\r' markers, record the error.
     if (context->actualMarkerCount < context->msg->expectedMarkerCount) { context->status = false; }
     logSendReceive(context);  //  Log the status and actual bytes sent and received.
+    Serial.print("-----i1 / i2: "); Serial.print(i1); Serial.print(" / "); Serial.println(i2); Serial.flush(); ////
 
     if (context->status == true) {
       //  If no error, trigger the success event to caller.
