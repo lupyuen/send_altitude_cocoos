@@ -31,7 +31,7 @@ static String toHex(char c);
 //  Delays in milliseconds.
 static const uint16_t delayAfterStart = 200;
 static const uint16_t delayAfterSend = 10;
-static const uint16_t delayReceive = 10;
+static const uint16_t delayReceive = 1000;
 
 //  Drop all data passed to this port.  Used to suppress echo output.
 class NullPort: public Print {
