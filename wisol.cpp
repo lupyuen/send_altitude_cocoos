@@ -79,17 +79,17 @@ void wisol_task(void) {
     context->downlinkData = NULL;  //  No downlink received yet.  
     context->cmdList = cmdList;  //  Run the command list.
     context->cmdIndex = 0;  //  Start at first command in command list.
+    context->lastSend = millis() + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
 
     for (;;) {  //  Send each Wisol AT command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
-      context->lastSend = millis() + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
-
       if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
       //  Convert Wisol command to UART command and send it.
       convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
+      context->lastSend = millis() + uartMsg.timeout;  //  Estimated last send time.
       //   debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
@@ -140,7 +140,7 @@ void wisol_task(void) {
     ////
     debug_print("lastSend1: "); debug_println(context->lastSend); debug_flush();
     ////context->lastSend = millis();  //  Update the last send time.
-    debug_print("lastSend2: "); debug_println(context->lastSend); debug_flush();
+    debug_print("millis: "); debug_println(millis()); debug_flush();
     ////
 
     debug(F("net >> Release net")); ////
@@ -398,14 +398,13 @@ bool getDownlink(WisolContext *context, const char *response0) {
   }
   response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   context->downlinkData = response;
-  //  debug(F(" - wisol.getDownlink Result: "), context->downlinkData); ////
   return true;
 }
 
+static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
 #ifdef ARDUINO
 static String cmdData;
 #endif  //  ARDUINO
-static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
 
 static void convertCmdToUART(
   WisolCmd *cmd,
@@ -426,8 +425,6 @@ static void convertCmdToUART(
 #elif defined(STM32)
     const char *cmdDataStr = cmd->sendData;
 #endif
-    // debug(F("strSendData="), strSendData);  ////
-    // strncpy(uartData, "AT$I=10\r", MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  For testing
     strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }

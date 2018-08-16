@@ -49,7 +49,6 @@ static uint8_t markerPos[markerPosMax];
 SoftwareSerial *serialPort = NULL;  //  Serial port for send/receive.
 Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
-unsigned long lastSend;  //  Timestamp of last send.
 
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
