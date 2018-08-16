@@ -202,9 +202,12 @@ static void arduino_start_timer(void) {
   sei();          //  Enable global interrupts
 }
 
+unsigned long tickCount = 0;  //  Number of millisecond ticks.
+
 ISR(TIMER1_COMPA_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
   ////  debug(F("os_tick")); ////
+  tickCount++;
   os_tick();
 }
 #endif  //  ARDUINO

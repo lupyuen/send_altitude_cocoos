@@ -83,7 +83,7 @@ void wisol_task(void) {
 
     for (;;) {  //  Send each Wisol AT command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
-      context->lastSend = millis() + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
+      context->lastSend = millis() + MAX_TIMEOUT + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
 
       if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
@@ -91,13 +91,13 @@ void wisol_task(void) {
 
       //  Convert Wisol command to UART command and send it.
       convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
-      context->lastSend = millis() + MAX_TIMEOUT;  //  Update the last send time.
+      context->lastSend = millis() + MAX_TIMEOUT + MAX_TIMEOUT;  //  Update the last send time.
 
       //   debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
       context = (WisolContext *) task_get_data();  //  Must get context in case msg_post(blocks)
-      context->lastSend = millis() + MAX_TIMEOUT;  //  Update the last send time.
+      context->lastSend = millis() + MAX_TIMEOUT + MAX_TIMEOUT;  //  Update the last send time.
 
       ////
       //  If there is payload, dont wait for response.
@@ -108,7 +108,7 @@ void wisol_task(void) {
       //  Wait for success or failure.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
-      context->lastSend = millis() + MAX_TIMEOUT;  //  Update the last send time.
+      context->lastSend = millis() + MAX_TIMEOUT + MAX_TIMEOUT;  //  Update the last send time.
 
       const char *response = (context && context->uartContext)
         ? context->uartContext->response
@@ -141,7 +141,7 @@ void wisol_task(void) {
     msg.name[0] = 0;  //  Erase the "begin" sensor name.
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
-    ////context->lastSend = millis();  //  Update the last send time.
+    //// context->lastSend = millis();  //  Update the last send time.
 
     debug(F("net >> Release net")); ////
     sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
@@ -486,7 +486,7 @@ void setup_wisol(
   context->device[0] = 0;  //  Clear the device ID.
   context->pac[0] = 0;  //  Clear the PAC code.
   context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.
-  context->lastSend = millis() + (2 * SEND_INTERVAL);  //  Init the last send time to a high number so that sensor data will wait for Begin Step to complete.
+  context->lastSend = millis() + SEND_INTERVAL + SEND_INTERVAL;  //  Init the last send time to a high number so that sensor data will wait for Begin Step to complete.
 }
 
 static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd) {

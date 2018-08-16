@@ -29,10 +29,10 @@
 
 #ifdef ARDUINO  //  For Arduino only
 //  Reduce the Serial buffer size from 64 to 16 to reduce RAM usage.
-#define SERIAL_TX_BUFFER_SIZE 16
-#define SERIAL_RX_BUFFER_SIZE 16
+//  #define SERIAL_TX_BUFFER_SIZE 16
+//  #define SERIAL_RX_BUFFER_SIZE 16
 //  Reduce SoftwareSerial buffer size from 64 to max response length.
-#define _SS_MAX_RX_BUFF MAX_UART_RESPONSE_MSG_SIZE
+//  #define _SS_MAX_RX_BUFF MAX_UART_RESPONSE_MSG_SIZE
 //  Define the Serial class.
 #include <Arduino.h>
 #endif  //  ARDUINO
@@ -43,5 +43,10 @@
 #define F(x) x
 unsigned long millis();  //  TODO: Return timestamp in milliseconds.
 #endif  //  STM32
+
+BEGIN_EXTERN_C
+//// extern unsigned long tickCount;  //  Number of millisecond ticks.
+//// #define millis() (tickCount)
+END_EXTERN_C
 
 #endif  //  PLATFORM_H_
