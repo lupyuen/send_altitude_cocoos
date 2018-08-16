@@ -44,7 +44,7 @@ bool aggregate_sensor_data(
 
     //  Throttle the sending.  TODO: Show warning if messages are sent faster than SEND_DELAY.
     unsigned long now = millis();
-    if ((now - context->lastSend) < SEND_INTERVAL) { return false; }  //  Not ready to send.
+    if ((context->lastSend + SEND_INTERVAL) > now) { return false; }  //  Not ready to send.
     context->lastSend = now + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
 
     //  Create a new Sigfox message. Add a running sequence number to the message.

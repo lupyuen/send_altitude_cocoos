@@ -105,8 +105,7 @@ void uart_task(void) {
       unsigned long currentTime, elapsedTime, remainingTime;
       currentTime = millis();
       elapsedTime = currentTime - context->sentTime;
-      remainingTime = context->msg->timeout - elapsedTime;
-      if (remainingTime < 0) {
+      if (elapsedTime > context->msg->timeout) {
         //  If receive step has timed out, quit.
         logBuffer(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
         break;
@@ -114,7 +113,11 @@ void uart_task(void) {
       if (serialPort->available() <= 0) { 
         //  No data is available in the serial port sendData to receive now.  We retry later.
         //  Wait a while before checking receive.
-        if (remainingTime > delayReceive) { context->i1++; task_wait(delayReceive); }
+        remainingTime = context->msg->timeout - elapsedTime;
+        if (remainingTime > delayReceive) { 
+          context->i1++; 
+          task_wait(delayReceive); 
+        }
         continue;  //  Check again.
       }
       //  Attempt to read the data.
