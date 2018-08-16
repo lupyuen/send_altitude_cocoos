@@ -128,6 +128,7 @@ void wisol_task(void) {
     sem_signal(sendSemaphore);
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
 
+#if NOTUSED
     //  If there is a pending response, e.g. from send payload...
     if (context->pendingResponse) {
       //  Wait for success or failure then process the response.
@@ -140,12 +141,13 @@ void wisol_task(void) {
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
       context->pendingResponse = false;
       processResponse(context);  //  Process the response by calling the response function.
+      context->lastSend = millis();  //  Update the last send time.
     }
+#endif
     //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
     if (context->downlinkData) {
       processDownlinkMsg(context, context->status, context->downlinkData);
     }
-    context->lastSend = millis();  //  Update the last send time.
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
