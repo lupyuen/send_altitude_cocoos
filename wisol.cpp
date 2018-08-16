@@ -100,48 +100,47 @@ void wisol_task(void) {
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
       context = (WisolContext *) task_get_data();  //  Must get context in case msg_post(blocks)
 
-      ////
       //  If there is payload to send, dont wait for response.
+      //  Wait for the response after releasing the semaphore lock.
       if (cmd->payload != NULL) {
-        //  Wait for the response after releasing the semaphore lock.
-        context->pendingResponse = true;
-        //  Break out of the loop and release the semaphore lock. This allows other tasks to run.
-        break; 
-      }  
-      ////
+        context->pendingResponse = true;  //  Remember the pending response.
+        break; //  Break out of the loop and release the semaphore lock. 
+      }        //  This allows other tasks to run.
 
-      //  Wait for success or failure.
+      //  Wait for success or failure then process the response.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
-      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
-
-      //  Process the response by calling the response function.
-      processResponse(context);
+      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
+      processResponse(context);  //  Process the response by calling the response function.
       if (context->status == false) break;  //  Quit if the processing failed.
 
       //  Command was successful. Move to next command.
-      //  debug(F(" - wisol_task OK, response: "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
     //  All Wisol AT commands sent for the step.
 
+    //  Clean up the context and release the semaphore.
     msg.name[0] = 0;  //  Erase the "begin" sensor name.
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
 
-    ////
-    debug_print("lastSend1: "); debug_println(context->lastSend); debug_flush();
-    ////context->lastSend = millis();  //  Update the last send time.
-    debug_print("millis: "); debug_println(millis()); debug_flush();
-    ////
-
+    //  Release the semaphore and allow another payload to be sent after SEND_INTERVAL.
     debug(F("net >> Release net")); ////
-    sem_signal(sendSemaphore);  //  Release the semaphore and allow another payload to be sent.
+    sem_signal(sendSemaphore);
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
 
+    //  If there is a pending response, e.g. from send payload...
+    if (context->pendingResponse) {
+      //  Wait for success or failure then process the response.
+      debug(F("net >> Wait response")); ////
+      event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
+      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
+      processResponse(context);  //  Process the response by calling the response function.
+    }
     //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
     if (context->downlinkData) {
       processDownlinkMsg(context, context->status, context->downlinkData);
     }
+    context->lastSend = millis();  //  Update the last send time.
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
