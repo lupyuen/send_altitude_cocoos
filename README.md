@@ -137,6 +137,11 @@ Note: Only the first 4 downlinks per day are guaranteed.  You may send more down
 requests but they are not guaranteed.
 
 -----
+## Build for STM32 Blue Pill with PlatformIO
+
+To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the section `[env:bluepill_f103c8]`
+
+-----
 ## Source Files
 
 [`main.cpp`](main.cpp): Main program. The Arduino application starts here in function `main()`
