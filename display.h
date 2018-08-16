@@ -9,19 +9,48 @@
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 
-#ifdef DISABLE_DEBUG_LOG  //  If debug logging is disabled...
+#if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
 
 #define debug(p1, p2) {}
+#define debug_begin(p1) {}
 #define debug_print(p1) {}
 #define debug_println(p1) {}
 #define debug_flush() {}
 
-#else  //  !DISABLE_DEBUG_LOG: Else if debug logging is enabled...
+#elif defined(ARDUINO)  //  Use Serial object to print.
 
+#ifdef __cplusplus  //  Serial class for C++ only.
+#define debug_begin(x) Serial.begin(x)
 #define debug_print(x) Serial.print(x)
 #define debug_println(x) Serial.println(x)
 #define debug_flush() Serial.flush()
+#endif  //  __cplusplus
 
+#elif defined(STM32)  //  TODO: Define the debug log functions.
+#include <stdlib.h>
+
+BEGIN_EXTERN_C
+void debug_begin(uint16_t bps);
+void debug_print(const char *s);
+void debug_println(const char *s);
+void debug_flush(void);
+END_EXTERN_C
+
+#ifdef __cplusplus  //  Overload for C++
+void debug_print(int i);
+void debug_print(size_t l);
+void debug_print(char ch);
+void debug_print(float f);
+
+void debug_println(int i);
+void debug_println(size_t l);
+void debug_println(char ch);
+void debug_println(float f);
+#endif  //  __cplusplus
+
+#endif
+
+#ifndef DISABLE_DEBUG_LOG  //  If debug logging is enabled...
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 //  Print a message to the Arduino serial console.  The function is overloaded to support
@@ -33,12 +62,10 @@ void debug(
     = 0  //  Second parameter may be omitted.
   #endif
   );
-
 END_EXTERN_C
 
 #ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
 #ifdef ARDUINO  //  Flash memory for Arduino only.
-
 void debug(
   const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
 );
@@ -52,11 +79,9 @@ void debug(
   const __FlashStringHelper *s1,  //  String in flash memory e.g. F("the string")
   const char *s2  //  String in dynamic memory.
 );
-
 #endif  //  ARDUINO
 #endif  //  __cplusplus
-
-#endif  //  DISABLE_DEBUG_LOG
+#endif  //  !DISABLE_DEBUG_LOG
 
 #ifdef SENSOR_DISPLAY  //  If display sensor data instead of sending to network...
 

@@ -1,15 +1,19 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
 #include "platform.h"
+#ifdef ARDUINO
 #include <SoftwareSerial.h>
+#endif
 #include "cocoos_cpp.h"
 #include "uart.h"
 
 static void rememberMarker(UARTContext *context);
-static String toHex(char c);
 static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
+#ifdef ARDUINO                            
+static String toHex(char c);
+#endif  //  ARDUINO
 
 //  Use a macro for logging.
 #define log1(x) { echoPort->println(x); echoPort->flush(); }
@@ -234,6 +238,7 @@ static void logChar(char ch) {
   echoPort->print("]");
 }
 
+#ifdef ARDUINO
 static String toHex(char c) {
   //  Convert the char to a string of 2 hex digits.
   byte *b = (byte *) &c;
@@ -242,3 +247,4 @@ static String toHex(char c) {
   bytes.concat(String(b[0], 16));
   return bytes;
 }
+#endif  //  ARDUINO

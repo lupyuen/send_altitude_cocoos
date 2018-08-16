@@ -134,12 +134,14 @@ Display *get_display(void) {
 
 void debug(const char *s1, const char *s2) {
   //  Print 2 dynamics strings.
-  Serial.begin(SERIAL_BAUD);
+  debug_begin(SERIAL_BAUD);
+#ifdef ARDUINO
   while (!Serial) {}  //  Wait for Serial to be ready.
-  Serial.print(s1);
-  if (s2) Serial.print(s2);
-  Serial.println("");
-  Serial.flush();  //  Let serial printing finish.
+#endif  //  ARDUINO
+  debug_print(s1);
+  if (s2) debug_print(s2);
+  debug_println("");
+  debug_flush();  //  Let serial printing finish.
 }
 
 #ifdef ARDUINO  //  Print flash strings on Arduino only.

@@ -2,7 +2,8 @@
 //  Wisol modules WSSFM10R1AT, WSSFM10R2AT, WSSFM10R3AT and WSSFM10R4AT
 //  for Sigfox zones RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
 #include "platform.h"
-#include "cocoos_cpp.h"
+#include <string.h>
+#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "sensor.h"
 #include "uart.h"
@@ -386,7 +387,9 @@ bool getDownlink(WisolContext *context, const char *response0) {
   return true;
 }
 
+#ifdef ARDUINO
 static String cmdData;
+#endif  //  ARDUINO
 static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
 
 static void convertCmdToUART(
@@ -402,8 +405,12 @@ static void convertCmdToUART(
 
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
+#if defined(ARDUINO)    
     cmdData = cmd->sendData;
     const char *cmdDataStr = cmdData.c_str();
+#elif defined(STM32)
+    const char *cmdDataStr = cmd->sendData;
+#endif
     // debug(F("strSendData="), strSendData);  ////
     // strncpy(uartData, "AT$I=10\r", MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  For testing
     strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
@@ -417,8 +424,12 @@ static void convertCmdToUART(
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
+#if defined(ARDUINO)    
     cmdData = cmd->sendData2;
     const char *cmdDataStr = cmdData.c_str();
+#elif defined(STM32)
+    const char *cmdDataStr = cmd->sendData;
+#endif
     strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
     uartMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.
@@ -429,8 +440,8 @@ static void convertCmdToUART(
   //  debug(F("uartData="), uartData);  ////
   //  Check total msg length.
   if (strlen(uartData) >= MAX_UART_SEND_MSG_SIZE - 1) {
-    Serial.print(F("***** Error: uartData overflow - ")); Serial.print(strlen(uartData));
-    Serial.print(" / "); Serial.println(uartData); Serial.flush();
+    debug_print(F("***** Error: uartData overflow - ")); debug_print(strlen(uartData));
+    debug_print(" / "); debug_println(uartData); debug_flush();
   }
 
   uartMsg->markerChar = END_OF_RESPONSE;
@@ -482,7 +493,7 @@ static int getCmdIndex(WisolCmd list[], int listSize) {
     i++) {}
   if (i >= listSize - 1) {
     //  List is full.
-    Serial.print(F("***** Error: Cmd list overflow - ")); Serial.println(i); Serial.flush();
+    debug_print(F("***** Error: Cmd list overflow - ")); debug_println(i); debug_flush();
     i = listSize - 2;
     if (i < 0) i = 0;
   }

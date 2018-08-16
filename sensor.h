@@ -3,9 +3,7 @@
 
 #include <stdlib.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 #define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
@@ -98,7 +96,5 @@ uint8_t receive_sensor_data(
 //  Background task to receive and process sensor data.
 void sensor_task(void);
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C
 #endif  //  SENSOR_H_

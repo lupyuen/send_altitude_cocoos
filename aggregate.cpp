@@ -32,10 +32,10 @@ bool aggregate_sensor_data(
         context->stepBeginFunc(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.
     }
-    Serial.print(msg->name); Serial.print(F(" << Recv sensor data ")); 
-    if (msg->count > 0) { Serial.println(msg->data[0]); }
-    else { Serial.println("(empty)"); }
-    Serial.flush();
+    debug_print(msg->name); debug_print(F(" << Recv sensor data ")); 
+    if (msg->count > 0) { debug_println(msg->data[0]); }
+    else { debug_println("(empty)"); }
+    debug_flush();
 
     //  Aggregate the sensor data.  Here we just save the last value for each sensor.
     SensorMsg *savedSensor = recallSensor(msg->name);
@@ -83,9 +83,9 @@ static void addPayloadInt3(char *payloadBuffer, int payloadSize, const char *nam
         return;
     }
     if (data < 0 || data > 999) {  //  Show a warning if out of range.
-        Serial.print(F("***** Warning: Only last 3 digits of ")); 
-        Serial.print(name); Serial.print(F(" value ")); Serial.print(data);
-        Serial.println(" will be sent");
+        debug_print(F("***** Warning: Only last 3 digits of ")); 
+        debug_print(name); debug_print(F(" value ")); debug_print(data);
+        debug_println(" will be sent"); debug_flush();
     }
     for (int i = 2; i >= 0; i--) {  //  Add the 3 digits in reverse order (right to left).
         int d = data % 10;  //  Take the last digit.

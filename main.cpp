@@ -19,13 +19,16 @@
 #endif
 
 //  These are the functions that we will implement in this file.
-static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
-static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static void system_setup(void);  //  Initialise the system.
-#ifdef ARDUINO
+static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
+static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
+#if defined(ARDUINO)
 static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
-#endif ARDUINO
+#elif defined(STM32)
+void stm32_setup(void);  //  Initialise the STM32 platform.
+void stm32_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
+#endif
 #ifdef SENSOR_DISPLAY
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 #endif  //  SENSOR_DISPLAY
@@ -63,13 +66,11 @@ int main(void) {
   //  to the Network Task or Display Task.
   sensor_setup(task_id);
 
-#ifdef ARDUINO
+#if defined(ARDUINO)
   arduino_start_timer();  //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
-#endif  //  ARDUINO
-
-#ifdef STM32  
+#elif defined(STM32)
   stm32_start_timer();  //  TODO: Start the STM32 timer to generate ticks for cocoOS to switch tasks.
-#endif  //  STM32
+#endif
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   os_start();  //  Never returns.  
@@ -148,8 +149,13 @@ static void sensor_setup(uint8_t task_id) {
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
-  arduino_setup(); //// debug(F("init_display")); ////
-#ifdef SENSOR_DISPLAY  
+#if defined(ARDUINO)
+  arduino_setup(); 
+#elif defined(STM32)
+  stm32_setup();  //  TODO
+#endif
+
+#ifdef SENSOR_DISPLAY    //// debug(F("init_display")); ////
   init_display();
 #endif  //  SENSOR_DISPLAY
 

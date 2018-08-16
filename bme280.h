@@ -3,22 +3,25 @@
 //  https://github.com/finitespace/BME280
 #ifndef BME280_H_
 #define BME280_H_
-#ifdef SENSOR_DATA
-#include <BME280I2C.h>
 
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+#include "platform.h"
+#ifdef SENSOR_DATA
+
+#ifdef ARDUINO
+#include <BME280I2C.h>
+#endif  //  ARDUINO
+
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 //  Set up the BME280 module for reading.
 void bme280_setup(void);
 
+#ifdef ARDUINO
 //  Global instance of BME280 interface.
 extern BME280I2C bme;
+#endif  //  ARDUINO
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C
 
 #endif  //  SENSOR_DATA
 #endif  //  BME280_H_

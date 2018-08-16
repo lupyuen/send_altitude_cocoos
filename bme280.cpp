@@ -5,8 +5,10 @@
 #include "display.h"
 
 #ifdef SENSOR_DATA
-#include <Wire.h>
 #include "bme280.h"
+
+#ifdef ARDUINO
+#include <Wire.h>
 
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
@@ -35,4 +37,5 @@ void bme280_setup(void) {
   }
 }
 
+#endif  //  ARDUINO
 #endif  //  SENSOR_DATA

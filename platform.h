@@ -41,6 +41,7 @@
 //  No need for flash memory helpers on STM32.
 #define __FlashStringHelper char
 #define F(x) x
+unsigned long millis();  //  TODO: Return timestamp in milliseconds.
 #endif  //  STM32
 
 #endif  //  PLATFORM_H_
