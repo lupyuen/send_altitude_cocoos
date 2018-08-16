@@ -10,8 +10,9 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
 #define UART_MSG_POOL_SIZE 2  //  Should not allow concurrent UART messages.  Hangs if <2.
 
-//  UART Task accepts messages of this format.
-//  TODO fix sendData
+struct SensorMsg;  //  Forward declaration
+
+//  UART Task accepts messages of this format for sending data.
 struct UARTMsg {
   Msg_t super;  //  Required for all cocoOS messages.
   const char *sendData;  //  Pointer to the string to be sent.
@@ -20,6 +21,8 @@ struct UARTMsg {
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
   Evt_t successEvent;  //  Event to be triggered upon success.
   Evt_t failureEvent;  //  Event to be triggered upon failure.
+  SensorMsg *responseMsg;  //  If not NULL, then send this response message when the response is completed.
+  uint8_t responseTaskID;  //  Send to this task ID.
 };
 
 //  UART Task maintains this context in the task data.

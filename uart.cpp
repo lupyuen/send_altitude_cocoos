@@ -4,6 +4,7 @@
 #include <SoftwareSerial.h>
 #endif
 #include "cocoos_cpp.h"
+#include "sensor.h"
 #include "uart.h"
 
 static void rememberMarker(UARTContext *context);
@@ -150,7 +151,11 @@ void uart_task(void) {
     logSendReceive(context);  //  Log the status and actual bytes sent and received.
     Serial.print("-----i1 / i2: "); Serial.print(context->i1); Serial.print(" / "); Serial.println(context->i2); Serial.flush(); ////
 
-    if (context->status == true) {
+    if (context->msg->responseMsg != NULL) {
+      //  If caller has requested for response message, then send it instead of event.
+      msg_post(context->msg->responseTaskID, *(context->msg->responseMsg));
+      context = (UARTContext *) task_get_data();  //  Must fetch again in case msg_post() blocks.
+    } else if (context->status == true) {
       //  If no error, trigger the success event to caller.
       //  The caller can read the response from the context.response.
       event_signal(context->msg->successEvent);      

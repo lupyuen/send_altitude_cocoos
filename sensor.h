@@ -8,6 +8,7 @@ BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 #define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
 #define BEGIN_SENSOR_NAME "000"  //  If sensor name is this, then this is the Begin Step that runs at startup.
+#define RESPONSE_SENSOR_NAME "RES"  //  This is the response message sent by UART Task to Network Task.
 
 //  Messages sent by Sensor Task containing sensor data will be in this format.
 struct SensorMsg {

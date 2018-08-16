@@ -15,6 +15,7 @@
 #define CMD_END "\r"
 
 static void processResponse(WisolContext *context);
+static void processPendingResponse(WisolContext *context);
 static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize);
 bool getID(WisolContext *context, const char *response);
 bool getPAC(WisolContext *context, const char *response);
@@ -28,7 +29,9 @@ static void convertCmdToUART(
   WisolContext *context, 
   UARTMsg *uartMsg, 
   Evt_t successEvent0, 
-  Evt_t failureEvent0);
+  Evt_t failureEvent0,
+  SensorMsg *responseMsg,
+  uint8_t responseTaskID);
 
 WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 
@@ -37,6 +40,7 @@ static Evt_t successEvent;
 static Evt_t failureEvent;
 static WisolCmd cmdList[MAX_WISOL_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 static SensorMsg msg;  //  Incoming sensor data message.
+static SensorMsg responseMsg;  //  Pending response message from UART to Wisol.
 static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
 void wisol_task(void) {
@@ -56,14 +60,21 @@ void wisol_task(void) {
   successEvent = event_create();  //  Create event for UART Task to indicate success.
   failureEvent = event_create();  //  Another event to indicate failure.
   createSensorMsg(&msg, BEGIN_SENSOR_NAME);  //  We create a "begin" message and process only upon startup.
+  createSensorMsg(&responseMsg, RESPONSE_SENSOR_NAME);  //  UART Task sends this message for a pending response received.
 
   for (;;) { //  Run the sensor data receiving code forever. So the task never ends.
     //  If not the first iteration, wait for an incoming message containing sensor data.
     if (strncmp(msg.name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
       msg_receive(os_get_running_tid(), &msg);
     }
-    //  Aggregate the sensor data.  Determine whether we should send to network now.
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
+
+    //  If this is a UART response message, process the pending response.
+    if (strncmp(msg.name, RESPONSE_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
+      processPendingResponse(context);
+      continue;
+    }
+    //  Aggregate the sensor data.  Determine whether we should send to network now.
     cmdList[0] = endOfList;  //  Empty the command list.
     shouldSend = aggregate_sensor_data(context, &msg, cmdList, MAX_WISOL_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
     if (!shouldSend) continue;  //  Should not send now. Loop and wait for next message.
@@ -92,7 +103,7 @@ void wisol_task(void) {
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
       //  Convert Wisol command to UART command and send it.
-      convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
+      convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
       context->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
       context->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
 
@@ -100,13 +111,12 @@ void wisol_task(void) {
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
       context = (WisolContext *) task_get_data();  //  Must get context in case msg_post(blocks)
 
-      //  If there is payload to send, dont wait for response.
-      //  Wait for the response after releasing the semaphore lock.
-      if (cmd->payload != NULL) {
-        context->pendingResponse = true;  //  Remember the pending response.
-        break; //  Break out of the loop and release the semaphore lock. 
-      }        //  This allows other tasks to run.
-
+      //  For sending payload: Break out of the loop and release the semaphore lock. 
+      //  This allows other tasks to run.
+      if (uartMsg.responseMsg != NULL) {
+        context->pendingResponse = true;
+        break;
+       }
       //  Wait for success or failure then process the response.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
@@ -127,29 +137,24 @@ void wisol_task(void) {
     debug(F("net >> Release net")); ////
     sem_signal(sendSemaphore);
     context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
-
-#if NOTUSED
-    //  If there is a pending response, e.g. from send payload...
-    if (context->pendingResponse) {
-      //  Wait for success or failure then process the response.
-      debug(F("net >> Sleep")); ////
-      task_wait(5000);  //  Sleep a while for message to be sent.
-      context = (WisolContext *) task_get_data();  //  Must get context after task_wait().      
-
-      debug(F("net >> Wait response")); ////
-      event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
-      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
-      context->pendingResponse = false;
-      processResponse(context);  //  Process the response by calling the response function.
-      context->lastSend = millis();  //  Update the last send time.
-    }
-#endif
-    //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
-    if (context->downlinkData) {
-      processDownlinkMsg(context, context->status, context->downlinkData);
-    }
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
+}
+
+static void processPendingResponse(WisolContext *context) {
+  //  If there is a pending response, e.g. from send payload...
+  debug(F("net >> Pending response")); ////
+  if (!context->pendingResponse) {
+    debug(F("***** Error: No pending response"));
+    return;
+  }
+  context->pendingResponse = false;
+  processResponse(context);  //  Process the response by calling the response function.
+  context->lastSend = millis();  //  Update the last send time.
+  //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
+  if (context->downlinkData) {
+    processDownlinkMsg(context, context->status, context->downlinkData);
+  }
 }
 
 static void processResponse(WisolContext *context) {
@@ -439,11 +444,14 @@ static void convertCmdToUART(
   WisolContext *context, 
   UARTMsg *uartMsg, 
   Evt_t successEvent0, 
-  Evt_t failureEvent0) {
+  Evt_t failureEvent0,
+  SensorMsg *responseMsg,
+  uint8_t responseTaskID) {
   //  Convert the Wisol command into a UART message.
   uartMsg->sendData = uartData;
   uartData[0] = 0;  //  Clear the dest buffer.
   uartMsg->timeout = COMMAND_TIMEOUT;
+  uartMsg->responseMsg = NULL;
 
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
@@ -461,6 +469,9 @@ static void convertCmdToUART(
     strncat(uartData, cmd->payload, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
     uartMsg->timeout = UPLINK_TIMEOUT;  //  Increase timeout for uplink.
+    //  If there is payload to send, send the response message when sending is completed.
+    uartMsg->responseMsg = responseMsg;
+    uartMsg->responseTaskID = responseTaskID;
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
@@ -483,7 +494,6 @@ static void convertCmdToUART(
     debug_print(F("***** Error: uartData overflow - ")); debug_print(strlen(uartData));
     debug_print(" / "); debug_println(uartData); debug_flush();
   }
-
   uartMsg->markerChar = END_OF_RESPONSE;
   uartMsg->expectedMarkerCount = cmd->expectedMarkerCount;
   uartMsg->successEvent = successEvent0;
