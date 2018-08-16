@@ -131,9 +131,14 @@ void wisol_task(void) {
     //  If there is a pending response, e.g. from send payload...
     if (context->pendingResponse) {
       //  Wait for success or failure then process the response.
+      debug(F("net >> Sleep")); ////
+      task_wait(5000);  //  Sleep a while for message to be sent.
+      context = (WisolContext *) task_get_data();  //  Must get context after task_wait().      
+
       debug(F("net >> Wait response")); ////
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
+      context->pendingResponse = false;
       processResponse(context);  //  Process the response by calling the response function.
     }
     //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
