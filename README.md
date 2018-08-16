@@ -195,6 +195,142 @@ To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platfor
 -----
 ## Sample Log
 
+### Uplink Only
+
+```text
+> Executing task in folder send_altitude_cocoos: platformio device monitor <
+
+--- Miniterm on /dev/cu.usbmodem1411  9600,8,N,1 ---
+--- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
+>> AT$I=11[0x0d]
+K[0x0d]
+-----i1 / i2: 0 / 0
+>> AT$I=10[0x0d]
+<< 002a2EA1[0x0d]
+-----i1 / i2: 0 / 0
+ - wisol.getID: 002a2EA1
+>> AT$I=11[0x0d]
+----arduino_setup
+Create semaphore
+BME280 OK
+net >> Wait for net
+net >> Got net
+>> ATS410=0[0x0d]
+<< OK[0x0d]
+-----i1 / i2: 0 / 0
+>> AT$I=10[0x0d]
+<< 002C2EA1[0x0d]
+-----i1 / i2: 0 / 0
+ - wisol.getID: 002C2EA1
+>> AT$I=11[0x0d]
+<< 5BEB8Cc64E869BD1[0x0d]
+-----i1 / i2: 0 / 0
+ - wisol.getPAC: 5BEB8Cc64E869BD1
+net >> Release net
+tmp >> poll_sensor
+hmd >> poll_sensor
+alt >> poll_sensor
+alt << Recv sensor data 43.63
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+alt >> poll_sensor
+alt << Recv sensor data 44.17
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.81
+alt >> poll_sensor
+alt << Recv sensor data 44.06
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.81
+alt >> poll_sensor
+alt << Recv sensor data 43.49
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.82
+alt >> poll_sensor
+alt << Recv sensor data 44.06
+agg >> Send 000330588440
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,6[0x0d]
+-----i1 / i2: 0 / 0
+>> AT[0x0d]
+<< OK[0x0d]
+-----i1 / i2: 0 / 0
+net >> Release net
+>> AT$SF=303030333330353838343430[0x0d]
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.82
+alt >> poll_sensor
+alt << Recv sensor data 43.96
+<< OK[0x0d]
+-----i1 / i2: 4 / 0
+net >> Pending response
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+hmd >> poll_sensor
+hmd << Recv sensor data 58.84
+alt >> poll_sensor
+alt << Recv sensor data 44.54
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+hmd >> poll_sensor
+hmd << Recv sensor data 58.84
+alt >> poll_sensor
+alt << Recv sensor data 44.03
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+hmd >> poll_sensor
+hmd << Recv sensor data 58.85
+alt >> poll_sensor
+alt << Recv sensor data 43.28
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+hmd >> poll_sensor
+hmd << Recv sensor data 58.86
+alt >> poll_sensor
+alt << Recv sensor data 44.11
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+agg >> Send 001330588441
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,3[0x0d]
+-----i1 / i2: 0 / 0
+>> AT[0x0d]
+<< OK[0x0d]
+-----i1 / i2: 0 / 0
+net >> Release net
+�␂
+Q�SF=303031333330353838343431[0x0d]
+hmd >> poll_sensor
+hmd << Recv sensor data 58.84
+alt >> poll_sensor
+alt << Recv sensor data 43.60
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+<< OK[0x0d]
+-----i1 / i2: 4 / 0
+net >> Pending response
+hmd >> poll_sensor
+hmd << Recv sensor data 58.85
+alt >> poll_sensor
+alt << Recv sensor data 43.42
+
+```
+
+### Uplink and Downlink
+
 ```text
 
 > Executing task in folder send_altitude_cocoos: platformio device monitor <
