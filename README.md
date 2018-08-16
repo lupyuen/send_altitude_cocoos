@@ -196,6 +196,11 @@ To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platfor
 ## Sample Log
 
 ```text
+
+> Executing task in folder send_altitude_cocoos: platformio device monitor <
+
+--- Miniterm on /dev/cu.usbmodem1411  9600,8,N,1 ---
+--- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 ----arduino_setup
 Create semaphore
 BME280 OK
@@ -209,39 +214,39 @@ net >> Got net
 -----i1 / i2: 0 / 0
  - wisol.getID: 002C2EA1
 >> AT$I=11[0x0d]
-<< 5BEB8CG64E869BD1[0x0d]
+<< 5BEB8CF64E869BD1[0x0d]
 -----i1 / i2: 0 / 0
- - wisol.getPAC: 5BEB8CG64E869BD1
+ - wisol.getPAC: 5BEB8CF64E869BD1
 net >> Release net
 tmp >> poll_sensor
 hmd >> poll_sensor
 alt >> poll_sensor
-alt << Recv sensor data 33.68
+alt << Recv sensor data 43.16
 tmp >> poll_sensor
-tmp << Recv sensor data 31.87
+tmp << Recv sensor data 33.09
 hmd >> poll_sensor
-hmd << Recv sensor data 61.78
+hmd << Recv sensor data 58.80
 alt >> poll_sensor
-alt << Recv sensor data 33.43
+alt << Recv sensor data 43.16
 tmp >> poll_sensor
-tmp << Recv sensor data 31.87
+tmp << Recv sensor data 33.08
 hmd >> poll_sensor
-hmd << Recv sensor data 61.78
+hmd << Recv sensor data 58.78
 alt >> poll_sensor
-alt << Recv sensor data 33.60
+alt << Recv sensor data 43.74
 tmp >> poll_sensor
-tmp << Recv sensor data 31.86
+tmp << Recv sensor data 33.07
 hmd >> poll_sensor
-hmd << Recv sensor data 61.80
+hmd << Recv sensor data 58.78
 alt >> poll_sensor
-alt << Recv sensor data 33.53
+alt << Recv sensor data 43.99
 tmp >> poll_sensor
-tmp << Recv sensor data 31.86
+tmp << Recv sensor data 33.07
 hmd >> poll_sensor
-hmd << Recv sensor data 61.80
+hmd << Recv sensor data 58.78
 alt >> poll_sensor
-alt << Recv sensor data 33.28
-agg >> Send 000318618332
+alt << Recv sensor data 43.56
+agg >> Send 000330587435
 net >> Wait for net
 net >> Got net
 >> AT$GI?[0x0d]
@@ -250,12 +255,302 @@ net >> Got net
 >> AT[0x0d]
 << OK[0x0d]
 -----i1 / i2: 0 / 0
->> AT$SF=303030333138363138333332,1[0x0d]
-<< OK[0x0d][0x0a]RX=FE DC BA 98 76 54 32 10[0x0d]
------i1 / i2: 3679 / 0
 net >> Release net
- - processDownlinkMsg: FEDCBA9876543210
+>> AT$SF=303030333330353837343335,1[0x0d]
 tmp >> poll_sensor
+tmp << Recv sensor data 33.07
 hmd >> poll_sensor
+hmd << Recv sensor data 58.79
+alt >> poll_sensor
+alt << Recv sensor data 43.71
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.79
+alt >> poll_sensor
+alt << Recv sensor data 43.38
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.81
+alt >> poll_sensor
+alt << Recv sensor data 43.71
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.81
+alt >> poll_sensor
+alt << Recv sensor data 43.45
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+alt >> poll_sensor
+alt << Recv sensor data 42.55
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.77
+alt >> poll_sensor
+alt << Recv sensor data 43.96
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.76
+alt >> poll_sensor
+alt << Recv sensor data 43.06
+<< OK[0x0d][0x0a]RX=FE DC BA 98 73 54 32 10[0x0d]
+-----i1 / i2: 38 / 0
+net >> Pending response
+ - processDownlinkMsg: FEDCBA9873543210
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.76
+alt >> poll_sensor
+alt << Recv sensor data 43.45
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.74
+alt >> poll_sensor
+alt << Recv sensor data 43.31
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.75
+alt >> poll_sensor
+alt << Recv sensor data 43.31
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.74
+alt >> poll_sensor
+alt << Recv sensor data 43.74
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+agg >> Send 001330587437
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,5[0x0d]
+-----i1 / i2: 0 / 0
+>> AT[0x0d]
+<< OK[0x0d]
+-----i1 / i2: 0 / 0
+net >> Release net
+>␂
+Q�SF=303031333330353837343337,1[0x0d]
+hmd >> poll_sensor
+hmd << Recv sensor data 58.71
+alt >> poll_sensor
+alt << Recv sensor data 43.81
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.69
+alt >> poll_sensor
+alt << Recv sensor data 43.92
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.70
+alt >> poll_sensor
+alt << Recv sensor data 43.74
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.69
+alt >> poll_sensor
+alt << Recv sensor data 43.06
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.68
+alt >> poll_sensor
+alt << Recv sensor data 43.84
+tmp >> poll_sensor
+tmp << Recv sensor data 33.09
+hmd >> poll_sensor
+hmd << Recv sensor data 58.67
+alt >> poll_sensor
+alt << Recv sensor data 43.16
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.69
+alt >> poll_sensor
+alt << Recv sensor data 43.59
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.70
+alt >> poll_sensor
+alt << Recv sensor data 43.67
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.70
+alt >> poll_sensor
+alt << Recv sensor data 43.09
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.72
+alt >> poll_sensor
+alt << Recv sensor data 43.77
+tmp >> poll_sensor
+tmp << Recv sensor data 33.09
+hmd >> poll_sensor
+hmd << Recv sensor data 58.73
+alt >> poll_sensor
+alt << Recv sensor data 43.77
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.72
+alt >> poll_sensor
+alt << Recv sensor data 43.67
+tmp >> poll_sensor
+tmp << Recv sensor data 33.09
+<< (Timeout)
+<< OK[0x0d][0x0a]RX=FE DC BA 98 76 54 32 10[0x␄␀][0x0a]
+***** uart.sendData: Error: Unknown response: OK
+RX=FE DC BA 98 76 54 32 10�
+
+-----i1 / i2: 59 / 0
+net >> Pending response
+***** Error: wisol_task Failed, response: FEDCBA9876543210�
+ - processDownlinkMsg (Failed): FEDCBA9876543210�
+hmd >> poll_sensor
+hmd << Recv sensor data 58.70
+alt >> poll_sensor
+alt << Recv sensor data 43.77
+tmp >> poll_sensor
+tmp << Recv sensor data 33.09
+hmd >> poll_sensor
+hmd << Recv sensor data 58.70
+alt >> poll_sensor
+alt << Recv sensor data 44.17
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.69
+alt >> poll_sensor
+alt << Recv sensor data 44.17
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.69
+alt >> poll_sensor
+alt << Recv sensor data 43.92
+tmp >> poll_sensor
+tmp << Recv sensor data 33.09
+hmd >> poll_sensor
+hmd << Recv sensor data 58.72
+agg >> Send 002330587439
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,5[0x0d]
+-----i1 / i2: 0 / 0
+>> AT[0x0d]
+<< OK[0x0d]
+-----i1 / i2: 0 / 0
+net >> Release net
+>␂
+Q�SF=303032333330353837343339,1[0x0d]
+alt >> poll_sensor
+alt << Recv sensor data 43.74
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.72
+alt >> poll_sensor
+alt << Recv sensor data 43.67
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.74
+alt >> poll_sensor
+alt << Recv sensor data 42.88
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.75
+alt >> poll_sensor
+alt << Recv sensor data 43.81
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.75
+alt >> poll_sensor
+alt << Recv sensor data 43.96
+tmp >> poll_sensor
+tmp << Recv sensor data 33.06
+hmd >> poll_sensor
+hmd << Recv sensor data 58.75
+alt >> poll_sensor
+alt << Recv sensor data 44.21
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.77
+alt >> poll_sensor
+alt << Recv sensor data 44.21
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+alt >> poll_sensor
+alt << Recv sensor data 43.71
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+alt >> poll_sensor
+alt << Recv sensor data 44.11
+tmp >> poll_sensor
+tmp << Recv sensor data 33.04
+hmd >> poll_sensor
+hmd << Recv sensor data 58.80
+alt >> poll_sensor
+alt << Recv sensor data 44.29
+tmp >> poll_sensor
+tmp << Recv sensor data 33.05
+hmd >> poll_sensor
+hmd << Recv sensor data 58.79
+alt >> poll_sensor
+alt << Recv sensor data 43.96
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+alt >> poll_sensor
+alt << Recv sensor data 42.98
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.78
+<< (Timeout)
+<< ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT[0x0d][0x0a]
+***** uart.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+
+-----i1 / i2: 59 / 0
+net >> Pending response
+***** Error: wisol_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+ - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+alt >> poll_sensor
+alt << Recv sensor data 43.67
+tmp >> poll_sensor
+tmp << Recv sensor data 33.07
+hmd >> poll_sensor
+hmd << Recv sensor data 58.80
+alt >> poll_sensor
+alt << Recv sensor data 43.92
+tmp >> poll_sensor
+tmp << Recv sensor data 33.08
+hmd >> poll_sensor
+hmd << Recv sensor data 58.79
 
 ```
