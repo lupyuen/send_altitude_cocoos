@@ -73,14 +73,15 @@ void sensor_task(void) {
     //  Do we have new data?
     if (msg.count > 0) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
-      //  Note: msg_post() will block if the receiver's queue is full.
-      //  That's why we send the message outside the semaphore lock.
       //  debug(msg.name, F(" >> Send msg")); ////
       debug_print(msg.name); debug_print(F(" >> Send msg ")); 
       if (msg.count > 0) { debug_println(msg.data[0]); }
       else { debug_println("(empty)"); }
       debug_flush();
-      msg_post(context->receive_task_id, msg);
+      //  Note: msg_post() will block if the receiver's queue is full.
+      //  That's why we send the message outside the semaphore lock.
+      ////msg_post(context->receive_task_id, msg);
+      msg_post_async(context->receive_task_id, msg);////
     }
 
     //  Wait a short while before polling the sensor again.
