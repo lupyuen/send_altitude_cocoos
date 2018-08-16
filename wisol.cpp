@@ -68,9 +68,8 @@ void wisol_task(void) {
       msg_receive(os_get_running_tid(), &msg);
     }
     context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
-
     //  If this is a UART response message, process the pending response.
-    if (strncmp(msg.name, RESPONSE_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
+    if (strncmp(msg.name, RESPONSE_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) == 0) {
       processPendingResponse(context);
       continue;
     }
@@ -522,6 +521,7 @@ void setup_wisol(
   context->pac[0] = 0;  //  Clear the PAC code.
   context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.
   context->lastSend = millis() + SEND_INTERVAL + SEND_INTERVAL;  //  Init the last send time to a high number so that sensor data will wait for Begin Step to complete.
+  context->pendingResponse = false;
 }
 
 static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd) {
