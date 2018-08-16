@@ -14,6 +14,7 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
+static void processResponse(WisolContext *context);
 static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize);
 bool getID(WisolContext *context, const char *response);
 bool getPAC(WisolContext *context, const char *response);
@@ -67,7 +68,7 @@ void wisol_task(void) {
     shouldSend = aggregate_sensor_data(context, &msg, cmdList, MAX_WISOL_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
     if (!shouldSend) continue;  //  Should not send now. Loop and wait for next message.
 
-    //  Use a semaphore to limit sending to only 1 message at a time.
+    //  Use a semaphore to limit sending to only 1 message at a time, because our buffers are shared.
     debug(F("net >> Wait for net")); ////
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
     context = (WisolContext *) task_get_data();  //  Must get context after sem_wait();
@@ -75,6 +76,7 @@ void wisol_task(void) {
 
     //  Init the context.
     context->status = true;  //  Assume no error.
+    context->pendingResponse = false;  //  Assume no need to wait for response.
     context->msg = &msg;  //  Remember the message until it's sent via UART.  
     context->downlinkData = NULL;  //  No downlink received yet.  
     context->cmdList = cmdList;  //  Run the command list.
@@ -83,56 +85,45 @@ void wisol_task(void) {
 
     for (;;) {  //  Send each Wisol AT command in the list.
       context = (WisolContext *) task_get_data();  //  Must get context to be safe.
+      context->lastSend = millis();  //  Update the last send time.
+
       if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
       //  Convert Wisol command to UART command and send it.
       convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent);
-      context->lastSend = millis() + uartMsg.timeout;  //  Estimated last send time.
-      //   debug(F("uartMsg.sendData2="), uartMsg.sendData);  ////
+      context->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
+      context->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
+
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
       context = (WisolContext *) task_get_data();  //  Must get context in case msg_post(blocks)
 
       ////
-      //  If there is payload, dont wait for response.
+      //  If there is payload to send, dont wait for response.
       if (cmd->payload != NULL) {
-        ////break; 
-      }  ////
+        //  Wait for the response after releasing the semaphore lock.
+        context->pendingResponse = true;
+        //  Break out of the loop and release the semaphore lock. This allows other tasks to run.
+        break; 
+      }  
+      ////
 
       //  Wait for success or failure.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().
 
-      const char *response = (context && context->uartContext)
-        ? context->uartContext->response
-        : "";        
-      
-      //  Process the response, regardless of success/failure..
-      cmd = &context->cmdList[context->cmdIndex];
-      if (cmd->processFunc != NULL) {
-        bool processStatus = (cmd->processFunc)(context, response);
-        //  If response processing failed, stop.
-        if (processStatus != true) {
-          context->status = false;  //  Propagate status to Wisol context.
-          debug(F("***** Error: wisol_task Result processing failed, response: "), response);
-          break;  //  Quit processing.
-        }
-      }
-
-      //  In case of failure, stop.
-      if (context->uartContext->status != true) {
-        context->status = false;  //  Propagate status to Wisol context.
-        debug(F("***** Error: wisol_task Failed, response: "), response);
-        break;  //  Quit processing.
-      }
+      //  Process the response by calling the response function.
+      processResponse(context);
+      if (context->status == false) break;  //  Quit if the processing failed.
 
       //  Command was successful. Move to next command.
       //  debug(F(" - wisol_task OK, response: "), response);
       context->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
     //  All Wisol AT commands sent for the step.
+
     msg.name[0] = 0;  //  Erase the "begin" sensor name.
     context->msg = NULL;  //  Erase the message.
     context->cmdList = NULL;  //  Erase the command list.
@@ -153,6 +144,33 @@ void wisol_task(void) {
     }
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
+}
+
+static void processResponse(WisolContext *context) {
+  //  Process the response from the Wisol AT Command by calling the
+  //  process response function.  Set the status to false if the processing failed.
+
+  //  Get the response text.
+  const char *response = (context && context->uartContext)
+    ? context->uartContext->response
+    : "";          
+  //  Process the response text, regardless of success/failure.
+  //  Call the process response function if has been set.
+  if (context->pendingProcessFunc != NULL) {
+    bool processStatus = (context->pendingProcessFunc)(context, response);
+    //  If response processing failed, stop.
+    if (processStatus != true) {
+      context->status = false;  //  Propagate status to Wisol context.
+      debug(F("***** Error: wisol_task Result processing failed, response: "), response);
+      return;  //  Quit processing.
+    }
+  }
+  //  In case of failure, stop.
+  if (context->uartContext->status != true) {
+    context->status = false;  //  Propagate status to Wisol context.
+    debug(F("***** Error: wisol_task Failed, response: "), response);
+    return;  //  Quit processing.
+  }
 }
 
 #ifdef NOTUSED
@@ -201,6 +219,10 @@ void sendTestSensorMsg() {
 //  Begin Step -> Send Step
 //  (1) Begin Step: On startup, set the emulation mode and get the device ID and PAC.
 //  (2) Send Step: Send the payload, after setting the TX power and channel. Optional: Request for downlink
+
+//  Each Wisol AT Command added through addCmd() may include a Response Processing
+//  Function e.g. getID(), getPAC().  The function is called with the response text
+//  generated from the Wisol AT Command.
 
 void getStepBegin(
   WisolContext *context, 

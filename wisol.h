@@ -46,9 +46,11 @@ struct WisolContext {
   char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
   char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
   bool status;  //  Return status.  True if command was successful.
+  bool pendingResponse;  //  True if we are waiting for the send response to be processed.
+  bool (*pendingProcessFunc)(WisolContext *context, const char *response);  //  Function to process the pending response, NULL if none.
+  unsigned long lastSend;  //  Timestamp of last sent message in milliseconds.  Used for throttling.
   SensorMsg *msg;  //  Sensor data being sent. Set by wisol_task() upon receiving a message.
   const char *downlinkData;  //  If downlink was requested, set the downlink hex string e.g. 0102030405060708.
-  unsigned long lastSend;  //  Timestamp of last sent message in milliseconds.  Used for throttling.
 
   WisolCmd *cmdList;  //  List of Wisol AT commands being sent.
   int cmdIndex;  //  Index of cmdList being sent.
