@@ -30,7 +30,6 @@ struct UARTContext {
   bool status;  //  Return status.  True if successfully sent.
   size_t sendIndex;  //  Index of next char to be sent.
   unsigned long sentTime;  //  Timestamp at which we completed sending.
-  ////char response[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Received response.
   char *response;  //  Pointer to the buffer for writing received response.
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.
