@@ -1,6 +1,6 @@
 //  Implements a simulated Gyroscope Sensor with 3 sensor values (x, y, z).
 //  Demonstrates how we may return multiple float values as sensor data.
-#include <Arduino.h>
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +8,8 @@
 #include "display.h"
 #include "sensor.h"
 #include "gyro_sensor.h"
+
+#ifdef SENSOR_DATA
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
@@ -52,3 +54,5 @@ SensorContext *setup_gyro_sensor(
   setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
+
+#endif  //  SENSOR_DATA

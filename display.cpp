@@ -1,14 +1,15 @@
 //  Implements the Display Task that receives display messages and displays them.
-#include <Arduino.h>
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "display.h"
 
+#ifdef SENSOR_DISPLAY
 //  Message buffer to be displayed at next refresh().
 //  msg.name (sensor name) is unique in the array. If msg.count is 0, then msg is not used.
-static DisplayMsg displayMessages[sensorDisplaySize];
+static DisplayMsg displayMessages[SENSOR_DISPLAY_SIZE];
 
 static char buf[64];  //  Buffer to display 1 msg.
 static char sensorBuf[32];  //  Buffer for sensor data for 1 msg.
@@ -38,12 +39,12 @@ void display_task(void) {
 
 static void refresh(void) {
   //  Refresh the display and show the sensor data.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     //  Compose each sensor msg and display it e.g. tmp: 12.3, 12.4
     DisplayMsg msg = displayMessages[i];    
     if (msg.count == 0) { continue; }
     sensorBuf[0] = 0;  //  Empty the buffer.
-    for (int s = 0; s < msg.count && s < maxSensorDataSize; s++) {
+    for (int s = 0; s < msg.count && s < MAX_SENSOR_DATA_SIZE; s++) {
       //  Merge the sensor values into a comma-separated string e.g. 12.3, 12.4
       float d = msg.data[s];  //  Given d = 12.3
       int16_t d1 = (int16_t) d;  //  Compute d1 = 12, d2 = 3.
@@ -52,7 +53,8 @@ static void refresh(void) {
       //  Implement sprintf(buf, "%d.%d", d1, d2);  //  e.g. 12.3
       buf[0] = 0;
       itoa(d1, buf + strlen(buf), 10);
-      strncat(buf, ".", sizeof(buf));
+      strncat(buf, ".", sizeof(buf) - strlen(buf) - 1);
+      buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
       itoa(d2, buf + strlen(buf), 10);
       //  Separate values with tab.
       if (s > 0) { strcat(sensorBuf, ",\t\t"); }  //  e.g. 12.3, 12.4
@@ -60,9 +62,12 @@ static void refresh(void) {
     }
     //  Implement sprintf(buf, "%s:\t\t%s", msg.name, sensorBuf);  //  e.g. tmp: 12.3, 12.4
     buf[0] = 0;
-    strncat(buf, msg.name, sizeof(buf));
-    strncat(buf, ":\t\t", sizeof(buf));
-    strncat(buf, sensorBuf, sizeof(buf));
+    strncat(buf, msg.name, sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
+    strncat(buf, ":\t\t", sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
+    strncat(buf, sensorBuf, sizeof(buf) - strlen(buf) - 1);
+    buf[strlen(buf) - 1] = 0;  //  Terminate buf in case of overflow.
 
     displayMessages[i].count = 0;  //  Clear the sensor data.
     debug(buf);  //  Display the line.
@@ -73,12 +78,12 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   //  Save the updated sensor data for display later.
   int index = -1;  //  Index to overwrite msg.
   int firstEmptyIndex = -1;  //  Index of the first empty msg.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     DisplayMsg msg = displayMessages[i];  //  Note: This clones the message.
     if (msg.count == 0 && firstEmptyIndex < 0) {
       //  Look for the first empty message.
       firstEmptyIndex = i;
-    } else if (msg.count > 0 && strncmp(name, msg.name, maxSensorNameSize) == 0) {
+    } else if (msg.count > 0 && strncmp(name, msg.name, MAX_SENSOR_NAME_SIZE) == 0) {
       //  There is an existing msg with the same sensor name. Overwrite it.
       index = i;
       break;
@@ -88,24 +93,25 @@ static void updateData(uint8_t id, const char *name, const float *data, uint8_t 
   if (index < 0) { 
     index = firstEmptyIndex; 
     if (index < 0) {
-      debug(F("Out of rows"));  //  Need to increase sensorDisplaySize.
+      debug(F("Out of rows"));  //  Need to increase SENSOR_DISPLAY_SIZE.
       return;
     }
   }
   //  Overwrite the message at the index.
   //  static char buf[128]; sprintf(buf, " %d, %d", index, count); debug("overwrite", buf); ////
   DisplayMsg *msgPtr = &displayMessages[index];
-  memset(msgPtr->name, 0, maxSensorNameSize + 1);  //  Zero the name array.
-  strncpy(msgPtr->name, name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
+  //// memset(msgPtr->name, 0, MAX_SENSOR_NAME_SIZE + 1);  //  Zero the name array.
+  strncpy(msgPtr->name, name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
+  msgPtr->name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
   msgPtr->count = count;  //  Number of floats returned as sensor data.
-  for (int i = 0; i < msgPtr->count && i < maxSensorDataSize; i++) {
+  for (int i = 0; i < msgPtr->count && i < MAX_SENSOR_DATA_SIZE; i++) {
     msgPtr->data[i] = data[i];
   }
 }
 
 void init_display(void) {
   //  Empty the display by setting the msg.count to 0.
-  for (int i = 0; i < sensorDisplaySize; i++) {
+  for (int i = 0; i < SENSOR_DISPLAY_SIZE; i++) {
     displayMessages[i].count = 0;
   }
 }
@@ -121,19 +127,24 @@ Display *get_display(void) {
   return &display;
 }
 
+#endif  //  SENSOR_DISPLAY
+
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
 
 void debug(const char *s1, const char *s2) {
   //  Print 2 dynamics strings.
-  Serial.begin(SERIAL_BAUD);
+  debug_begin(SERIAL_BAUD);
+#ifdef ARDUINO
   while (!Serial) {}  //  Wait for Serial to be ready.
-  Serial.print(s1);
-  if (s2) Serial.print(s2);
-  Serial.println("");
-  Serial.flush();  //  Let serial printing finish.
+#endif  //  ARDUINO
+  debug_print(s1);
+  if (s2) debug_print(s2);
+  debug_println("");
+  debug_flush();  //  Let serial printing finish.
 }
 
+#ifdef ARDUINO  //  Print flash strings on Arduino only.
 void debug(const __FlashStringHelper *s1) {
   //  Print 1 flash string.
   Serial.begin(SERIAL_BAUD);
@@ -153,3 +164,14 @@ void debug(const char *s1, const __FlashStringHelper *s2) {
   Serial.println("");
   Serial.flush();  //  Let serial printing finish.
 }
+
+void debug(const __FlashStringHelper *s1, const char *s2) {
+  //  Print 1 flash string and 1 dynamic string.
+  Serial.begin(SERIAL_BAUD);
+  while (!Serial) {}  //  Wait for Serial to be ready.
+  Serial.print(s1);
+  if (s2) Serial.print(s2);
+  Serial.println("");
+  Serial.flush();  //  Let serial printing finish.
+}
+#endif  //  ARDUINO

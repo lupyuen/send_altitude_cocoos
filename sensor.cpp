@@ -1,10 +1,13 @@
 //  Common code for all sensors.
-#include <Arduino.h>
+#define DISABLE_DEBUG_LOG  //  Disable debug logging.
+#include "platform.h"
 #include <string.h>
 #include <stdio.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "sensor.h"
 #include "display.h"
+
+#ifdef SENSOR_DATA
 
 uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
@@ -12,7 +15,7 @@ void setup_sensor_context(
   SensorContext *context,
   Sensor *sensor,
   uint16_t pollInterval,
-  uint8_t displayTaskID
+  uint8_t taskID
   ) {
   //  Set up the sensor context and call the sensor to initialise itself.
   //  Allocate a unique sensor ID and create the event.
@@ -26,7 +29,7 @@ void setup_sensor_context(
 
   //  Set the context.
   context->sensor = sensor;
-  context->display_task_id = displayTaskID;
+  context->receive_task_id = taskID;
 
   //  Call the sensor to do initialisation.
   sensor->control.init_sensor_func();
@@ -54,30 +57,38 @@ void sensor_task(void) {
     context = (SensorContext *) task_get_data();
 
     //  Prepare a display message for copying the sensor data.
-    DisplayMsg msg;
+    SensorMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    memset(msg.name, 0, maxSensorNameSize + 1);  //  Zero the name array.
-    strncpy(msg.name, context->sensor->info.name, maxSensorNameSize);  //  Set the sensor name e.g. tmp
+    //// memset(msg.name, 0, MAX_SENSOR_NAME_SIZE + 1);  //  Zero the name array.
+    strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
+    msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
     //  Poll for the sensor data and copy into the display message.
-    msg.count = context->sensor->info.poll_sensor_func(msg.data, maxSensorDataSize);
-
-    //  Do we have new data?
-    if (msg.count > 0) {
-      //  If we have new data, send the message. Note: When posting a message, its contents are cloned into the message queue.
-      debug(msg.name, F(" >> Send msg")); ////
-      msg_post(context->display_task_id, msg);
-    }
+    msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
     debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
 
+    //  Do we have new data?
+    if (msg.count > 0) {
+      //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
+      //  debug(msg.name, F(" >> Send msg")); ////
+      debug_print(msg.name); debug_print(F(" >> Send msg ")); 
+      if (msg.count > 0) { debug_println(msg.data[0]); }
+      else { debug_println("(empty)"); }
+      debug_flush();
+      //  Note: msg_post() will block if the receiver's queue is full.
+      //  That's why we send the message outside the semaphore lock.
+      ////msg_post(context->receive_task_id, msg);
+      msg_post_async(context->receive_task_id, msg);////
+    }
+
     //  Wait a short while before polling the sensor again.
     debug(context->sensor->info.name, F(" >> Wait interval")); ////
     task_wait(context->sensor->info.poll_interval);
   }
-  debug(F("task_close")); ////
+  debug(F("task_close"), NULL); ////
   task_close();  //  End of the task. Should never come here.
 }
 
@@ -88,7 +99,7 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
   uint8_t i;
   //  Copy the floats safely: Don't exceed the array size provided by caller.
   //  Also don't exceed the number of available sensor data items.
-  for (i = 0; i < size && i < sensorDataSize && i < maxSensorDataSize; i++) {
+  for (i = 0; i < size && i < sensorDataSize && i < MAX_SENSOR_DATA_SIZE; i++) {
     data[i] = sensorDataArray[i];
   }
   return i;  //  Return the number of floats copied.
@@ -125,3 +136,5 @@ Sensor::Sensor(
   info(name, poll_sensor_func),
   control(init_sensor_func, next_channel_func, prev_channel_func) {
 }
+
+#endif  //  SENSOR_DATA

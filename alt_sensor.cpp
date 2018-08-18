@@ -1,16 +1,18 @@
 //  Implements the altitude sensor for BME280. Caller must use a semaphore to
 //  prevent concurrent access to BME280 module, which runs on a single I2C Bus.
-#include <Arduino.h>
-#include <EnvironmentCalculations.h>
-#include <BME280I2C.h>
-#include <Wire.h>
+#include "platform.h"
 #include <stdlib.h>
 #include <string.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "sensor.h"
+
+#ifdef SENSOR_DATA
 #include "bme280.h"
 #include "alt_sensor.h"
+#ifdef ARDUINO
+#include <EnvironmentCalculations.h>
+#endif  //  ARDUINO
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
@@ -62,3 +64,5 @@ SensorContext *setup_alt_sensor(
   setup_sensor_context(&sensorContext, &sensor, pollInterval, displayTaskID);
   return &sensorContext;
 }
+
+#endif  //  SENSOR_DATA

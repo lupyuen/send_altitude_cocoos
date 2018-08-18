@@ -1,10 +1,14 @@
 //  BME280 I2C interface for temperature, humidity and altitude sensors.
 //  Requires the BME280 library to be installed through Arduino Library Manager:
 //  https://github.com/finitespace/BME280
-#include <Arduino.h>
-#include <Wire.h>
+#include "platform.h"
 #include "display.h"
+
+#ifdef SENSOR_DATA
 #include "bme280.h"
+
+#ifdef ARDUINO
+#include <Wire.h>
 
 //  The global instance of the BME API.
 BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
@@ -29,6 +33,9 @@ void bme280_setup(void) {
        debug(F("BME280 without humidity"));
        break;
      default:
-       debug(F("BME280 Error"));
+       debug(F("***** BME280 Error"));
   }
 }
+
+#endif  //  ARDUINO
+#endif  //  SENSOR_DATA

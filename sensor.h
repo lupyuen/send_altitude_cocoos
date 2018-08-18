@@ -1,13 +1,22 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+#include <stdlib.h>
 #include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
-#define maxSensorDataSize 3  //  Max number of floats that can be returned as sensor data for a single sensor.
-#define maxSensorNameSize 3  //  Max number of letters/digits in sensor name.
+#define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
+#define BEGIN_SENSOR_NAME "000"  //  If sensor name is this, then this is the Begin Step that runs at startup.
+#define RESPONSE_SENSOR_NAME "RES"  //  This is the response message sent by UART Task to Network Task.
+
+//  Messages sent by Sensor Task containing sensor data will be in this format.
+struct SensorMsg {
+  Msg_t super;  //  Required for all cocoOS messages.
+  char name[MAX_SENSOR_NAME_SIZE + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
+  float data[MAX_SENSOR_DATA_SIZE];  //  Array of float sensor data values returned by the sensor.
+  uint8_t count;  //  Number of float sensor data values returned by the sensor.
+};
 
 //  Interface for getting sensor data, by polling and by events.
 struct SensorInfo {
@@ -63,7 +72,7 @@ struct Sensor {
 //  Each sensor task will have a Task Data in this format to remember the context of the sensor.
 struct SensorContext {
   Sensor *sensor;  //  The sensor for the context.
-  uint8_t display_task_id;  //  Task ID for the Display Task.  Used for sending display messages.
+  uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -88,7 +97,5 @@ uint8_t receive_sensor_data(
 //  Background task to receive and process sensor data.
 void sensor_task(void);
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C
 #endif  //  SENSOR_H_
