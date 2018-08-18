@@ -30,9 +30,9 @@ static String toHex(char c);
     context->testTimer = millis();
 
 //  Delays in milliseconds.
-static const uint16_t delayAfterStart = 200;
-static const uint16_t delayAfterSend = 10;
-static const uint16_t delayReceive = 1000;
+static const uint16_t delayAfterStart = 200;  //  Delay after UART port init.
+static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
+static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 
 //  Drop all data passed to this port.  Used to suppress echo output.
 class NullPort: public Print {
@@ -40,10 +40,9 @@ class NullPort: public Print {
 };
 
 static NullPort nullPort;
-//// static uint8_t markers = 0;
 static String data;
 
-//  Remember where in response the '>' markers were seen.
+//  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
@@ -59,7 +58,6 @@ void uart_task(void) {
   //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
   //  depending on success/failure sending the data.  Response is recorded in the
   //  "response" variable of the context, for the caller to retrieve.
-  //// Serial.begin(9600);  //  TODO
   UARTContext *context;  //  The context for the task.
   static UARTMsg msg;  //  The received message.
   uint8_t sendChar;  //  Character to be sent.
@@ -78,7 +76,7 @@ void uart_task(void) {
     context->sendIndex = 0;  //  Index of next char to be sent.
     context->sentTime = 0;  //  Timestamp at which we completed sending.
     context->response[0] = 0;  //  Empty the response buffer.
-    context->actualMarkerCount = 0;    
+    context->actualMarkerCount = 0;  //  How many markers we actually received.
 
     //  Initialise the UART port.
     serialPort->begin(MODEM_BITS_PER_SECOND);  //  Start the UART interface.
@@ -86,6 +84,7 @@ void uart_task(void) {
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
     serialPort->listen();  //  Start listening for responses from the UART port.
     
+    //  Send Loop
     for (;;) {  //  Send the sendData char by char.
       //  If there is no data left to send, continue to the receive step.
       if (context->sendIndex >= strlen(context->msg->sendData)
@@ -99,7 +98,7 @@ void uart_task(void) {
     }
     context->sentTime = millis();  //  Start the timer for detecting receive timeout.
 
-    context->i1 = 0; context->i2 = 0; ////
+    //  Receive Loop
     for (;;) {  //  Read the response.  Loop until timeout or we see the end of response marker.
       context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
       unsigned long currentTime, elapsedTime, remainingTime;
@@ -114,8 +113,7 @@ void uart_task(void) {
         //  No data is available in the serial port sendData to receive now.  We retry later.
         //  Wait a while before checking receive.
         remainingTime = context->msg->timeout - elapsedTime;
-        if (remainingTime > delayReceive) { 
-          context->i1++; 
+        if (remainingTime > delayReceive) {  //  Wait only if there is sufficient time remaining.
           task_wait(delayReceive); 
         }
         continue;  //  Check again.
@@ -124,7 +122,7 @@ void uart_task(void) {
       int receiveChar = serialPort->read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
-      if (receiveChar == -1) { context->i2++; continue; }  ////  TODO task_wait
+      if (receiveChar == -1) { continue; }  //  Should not come here.
 
       if (receiveChar == context->msg->markerChar) {
         //  We see the "\r" marker.
@@ -149,7 +147,6 @@ void uart_task(void) {
     //  If we did not see the expected number of '\r' markers, record the error.
     if (context->actualMarkerCount < context->msg->expectedMarkerCount) { context->status = false; }
     logSendReceive(context);  //  Log the status and actual bytes sent and received.
-    Serial.print("-----i1 / i2: "); Serial.print(context->i1); Serial.print(" / "); Serial.println(context->i2); Serial.flush(); ////
 
     if (context->msg->responseMsg != NULL) {
       //  If caller has requested for response message, then send it instead of event.
@@ -218,7 +215,7 @@ static const char nibbleToHex[] = "0123456789abcdef";
 static void logBuffer(const __FlashStringHelper *prefix, const char *data, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount) {
   //  Log the send/receive data for debugging.  markerPos is an array of positions in data
-  //  where the '\n' marker was seen and removed.  If markerCount=0, don't show markers.
+  //  where the '\r' marker was seen and removed.  If markerCount=0, don't show markers.
   echoPort->print(prefix);
   size_t m = 0, i = 0;
   for (i = 0; i < strlen(data); i++) {

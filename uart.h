@@ -34,7 +34,6 @@ struct UARTContext {
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.
   UARTMsg *msg;  //  Message being sent. Set by uart_task() upon receiving a message.
-  int i1, i2; ////
 };
 
 void setup_uart(

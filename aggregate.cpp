@@ -8,7 +8,12 @@
 
 static SensorMsg *recallSensor(const char *name);
 static void copySensorData(SensorMsg *dest, SensorMsg *src);
-static void addPayloadInt3(char *payloadBuffer, int payloadSize, const char *name, int data);
+static void addPayloadInt(
+    char *payloadBuffer, 
+    int payloadSize, 
+    const char *name, 
+    int data,
+    int numDigits);
 
 //  Remember the last sensor value of each sensor.
 static SensorMsg sensorData[MAX_SENSOR_COUNT];
@@ -50,9 +55,9 @@ bool aggregate_sensor_data(
     //  Create a new Sigfox message. Add a running sequence number to the message.
     payload[0] = 0;  //  Empty the message payload.
     static int sequenceNumber = 0;
-    addPayloadInt3(payload, PAYLOAD_SIZE, "seq", sequenceNumber++);
+    addPayloadInt(payload, PAYLOAD_SIZE, "seq", sequenceNumber++, 4);
 
-    //  Encode the sensor data into a Sigfox message.
+    //  Encode the sensor data into a Sigfox message, 4 digits each.
     static const char *sendSensors[] = { "tmp", "hmd", "alt", NULL };  //  Sensors to be sent.
     for (int i = 0; sendSensors[i] != NULL; i++) {
         //  Get each sensor data and add to the message payload.
@@ -61,39 +66,45 @@ bool aggregate_sensor_data(
         savedSensor = recallSensor(sensorName);  //  Find the sensor.
         if (savedSensor != NULL) { data = savedSensor->data[0]; }  //  Fetch the sensor data (first float only).
         int scaledData = data * 10;  //  Scale up by 10 to send 1 decimal place. So 27.1 becomes 271
-        addPayloadInt3(payload, PAYLOAD_SIZE, sensorName, scaledData);  //  Add to payload.
+        addPayloadInt(payload, PAYLOAD_SIZE, sensorName, scaledData, 4);  //  Add to payload.
     }
-    debug_print(F("agg >> Send ")); ////
-    for (int i = 1; i < strlen(payload) && i < PAYLOAD_SIZE; i = i + 2) {
-        debug_print(payload[i]);
+    //  If the payload has odd number of digits, pad with '0'.
+    int length = strlen(payload);
+    if (length % 2 != 0 && length < PAYLOAD_SIZE - 1) {
+        payload[length] = '0';
+        payload[length + 1] = 0;
     }
-    debug_println(""); debug_flush();
+    debug(F("agg >> Send "), payload); ////
 
     //  Compose the list of Wisol AT Commands for sending the message payload.
     context->stepSendFunc(context, cmdList, cmdListSize, payload, ENABLE_DOWNLINK);
     return true;  //  Will be sent by the caller.
 }
 
-static void addPayloadInt3(char *payloadBuffer, int payloadSize, const char *name, int data) {
-    //  Add the integer data to the message payload as 3 ASCII digits in hexadecimal.
-    //  So data=123 will be added as "313233".  Not efficient, but easy to read.
+static void addPayloadInt(
+    char *payloadBuffer, 
+    int payloadSize, 
+    const char *name, 
+    int data,
+    int numDigits) {
+    //  Add the integer data to the message payload as numDigits digits in hexadecimal.
+    //  So data=1234 and numDigits=4, it will be added as "1234".  Not efficient, but easy to read.
     int length = strlen(payloadBuffer);
-    if (length + 6 >= payloadSize) {  //  No space for 3 ASCII digits (6 hex chars).
+    if (length + numDigits >= payloadSize) {  //  No space for numDigits hex digits.
         debug(F("***** Error: No payload space for "), name);
         return;
     }
-    if (data < 0 || data > 999) {  //  Show a warning if out of range.
-        debug_print(F("***** Warning: Only last 3 digits of ")); 
-        debug_print(name); debug_print(F(" value ")); debug_print(data);
+    if (data < 0 || data >= pow(10, numDigits)) {  //  Show a warning if out of range.
+        debug_print(F("***** Warning: Only last ")); debug_print(numDigits); 
+        debug_print(F(" digits of ")); debug_print(name); debug_print(F(" value ")); debug_print(data);
         debug_println(" will be sent"); debug_flush();
     }
-    for (int i = 2; i >= 0; i--) {  //  Add the 3 digits in reverse order (right to left).
+    for (int i = numDigits - 1; i >= 0; i--) {  //  Add the digits in reverse order (right to left).
         int d = data % 10;  //  Take the last digit.
         data = data / 10;  //  Shift to the next digit.
-        payloadBuffer[length + (i * 2)] = '3';  //  Digits always start with hex 3 in ASCII.
-        payloadBuffer[length + (i * 2) + 1] = '0' + d;  //  Write the digit to payload: 1 becomes '1'.
-    }    
-    payloadBuffer[length + 6] = 0;  //  Terminate the payload after adding 6 hex chars.
+        payloadBuffer[length + i] = '0' + d;  //  Write the digit to payload: 1 becomes '1'.
+    }
+    payloadBuffer[length + numDigits] = 0;  //  Terminate the payload after adding numDigits hex chars.
 }
 
 static void copySensorData(SensorMsg *dest, SensorMsg *src) {
