@@ -180,6 +180,8 @@ static uint8_t display_setup(void) {
 }
 #endif  //  SENSOR_DISPLAY
 
+volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
+
 #ifdef ARDUINO
 static void arduino_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
@@ -201,8 +203,6 @@ static void arduino_start_timer(void) {
   TIMSK1 |= (1 << OCIE1A);  //  Enable timer compare interrupt
   sei();          //  Enable global interrupts
 }
-
-unsigned long tickCount = 0;  //  Number of millisecond ticks.
 
 ISR(TIMER1_COMPA_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
