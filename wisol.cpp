@@ -14,49 +14,49 @@
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-static void processResponse(WisolContext *context);
-static void processPendingResponse(WisolContext *context);
-static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize);
-bool getID(WisolContext *context, const char *response);
-bool getPAC(WisolContext *context, const char *response);
-bool checkChannel(WisolContext *context, const char *response);
-bool getDownlink(WisolContext *context, const char *response0);
+static void processResponse(NetworkContext *context);
+static void processPendingResponse(NetworkContext *context);
+static void getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize);
+bool getID(NetworkContext *context, const char *response);
+bool getPAC(NetworkContext *context, const char *response);
+bool checkChannel(NetworkContext *context, const char *response);
+bool getDownlink(NetworkContext *context, const char *response0);
 static void createSensorMsg(SensorMsg *msg, const char *name);
-static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd);
-static int getCmdIndex(WisolCmd list[], int listSize);
+static void addCmd(NetworkCmd list[], int listSize, NetworkCmd cmd);
+static int getCmdIndex(NetworkCmd list[], int listSize);
 static void convertCmdToUART(
-  WisolCmd *cmd,
-  WisolContext *context, 
+  NetworkCmd *cmd,
+  NetworkContext *context,
   UARTMsg *uartMsg, 
   Evt_t successEvent0, 
   Evt_t failureEvent0,
   SensorMsg *responseMsg,
   uint8_t responseTaskID);
 
-WisolCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
+NetworkCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 
 static Sem_t sendSemaphore;
 static Evt_t successEvent;
 static Evt_t failureEvent;
-static WisolCmd cmdList[MAX_WISOL_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
+static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg responseMsg;  //  Pending response message from UART to Wisol.
 static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
-void wisol_task(void) {
-  //  Loop forever, receiving sensor data messages and sending to Wisol task to transmit.
+void network_task(void) {
+  //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
 
   //  Note: Declare task variables here before the task but don't populate them here
   //  unless they are not supposed to change. 
   //  Because the coroutine will execute this code repeatedly and repopulate the values.
   MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
-  WisolContext *context;
-  WisolCmd *cmd;
+  NetworkContext *context;
+  NetworkCmd *cmd;
   bool shouldSend;
 
   //  Task Starts Here  ///////////////////////////////////
   task_open();  //  Start of the task. Must be matched with task_close().  
-  context = (WisolContext *) task_get_data();
+  context = (NetworkContext *) task_get_data();
   successEvent = event_create();  //  Create event for UART Task to indicate success.
   failureEvent = event_create();  //  Another event to indicate failure.
   createSensorMsg(&msg, BEGIN_SENSOR_NAME);  //  We create a "begin" message and process only upon startup.
@@ -67,7 +67,7 @@ void wisol_task(void) {
     if (strncmp(msg.name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
       msg_receive(os_get_running_tid(), &msg);
     }
-    context = (WisolContext *) task_get_data();  //  Must fetch again after msg_receive().
+    context = (NetworkContext *) task_get_data();  //  Must fetch again after msg_receive().
     //  If this is a UART response message, process the pending response.
     if (strncmp(msg.name, RESPONSE_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) == 0) {
       processPendingResponse(context);
@@ -75,13 +75,13 @@ void wisol_task(void) {
     }
     //  Aggregate the sensor data.  Determine whether we should send to network now.
     cmdList[0] = endOfList;  //  Empty the command list.
-    shouldSend = aggregate_sensor_data(context, &msg, cmdList, MAX_WISOL_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
+    shouldSend = aggregate_sensor_data(context, &msg, cmdList, MAX_NETWORK_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
     if (!shouldSend) continue;  //  Should not send now. Loop and wait for next message.
 
     //  Use a semaphore to limit sending to only 1 message at a time, because our buffers are shared.
     debug(F("net >> Wait for net")); ////
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
-    context = (WisolContext *) task_get_data();  //  Must get context after sem_wait();
+    context = (NetworkContext *) task_get_data();  //  Must get context after sem_wait();
     debug(F("net >> Got net")); ////
 
     //  Init the context.
@@ -94,10 +94,10 @@ void wisol_task(void) {
     context->lastSend = millis() + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
 
     for (;;) {  //  Send each Wisol AT command in the list.
-      context = (WisolContext *) task_get_data();  //  Must get context to be safe.
+      context = (NetworkContext *) task_get_data();  //  Must get context to be safe.
       context->lastSend = millis();  //  Update the last send time.
 
-      if (context->cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) { break; }  //  Check bounds.
+      if (context->cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) { break; }  //  Check bounds.
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
@@ -108,7 +108,7 @@ void wisol_task(void) {
 
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
-      context = (WisolContext *) task_get_data();  //  Must get context in case msg_post(blocks)
+      context = (NetworkContext *) task_get_data();  //  Must get context in case msg_post(blocks)
 
       //  For sending payload: Break out of the loop and release the semaphore lock. 
       //  This allows other tasks to run.
@@ -118,7 +118,7 @@ void wisol_task(void) {
        }
       //  Wait for success or failure then process the response.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
-      context = (WisolContext *) task_get_data();  //  Must get context after event_wait_multiple().      
+      context = (NetworkContext *) task_get_data();  //  Must get context after event_wait_multiple().
       processResponse(context);  //  Process the response by calling the response function.
       if (context->status == false) break;  //  Quit if the processing failed.
 
@@ -135,12 +135,12 @@ void wisol_task(void) {
     //  Release the semaphore and allow another payload to be sent after SEND_INTERVAL.
     debug(F("net >> Release net")); ////
     sem_signal(sendSemaphore);
-    context = (WisolContext *) task_get_data();  //  Must get context after sem_signal();
+    context = (NetworkContext *) task_get_data();  //  Must get context after sem_signal();
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
 
-static void processPendingResponse(WisolContext *context) {
+static void processPendingResponse(NetworkContext *context) {
   //  If there is a pending response, e.g. from send payload...
   debug(F("net >> Pending response")); ////
   if (!context->pendingResponse) {
@@ -156,7 +156,7 @@ static void processPendingResponse(WisolContext *context) {
   }
 }
 
-static void processResponse(WisolContext *context) {
+static void processResponse(NetworkContext *context) {
   //  Process the response from the Wisol AT Command by calling the
   //  process response function.  Set the status to false if the processing failed.
 
@@ -171,14 +171,14 @@ static void processResponse(WisolContext *context) {
     //  If response processing failed, stop.
     if (processStatus != true) {
       context->status = false;  //  Propagate status to Wisol context.
-      debug(F("***** Error: wisol_task Result processing failed, response: "), response);
+      debug(F("***** Error: network_task Result processing failed, response: "), response);
       return;  //  Quit processing.
     }
   }
   //  In case of failure, stop.
   if (context->uartContext->status != true) {
     context->status = false;  //  Propagate status to Wisol context.
-    debug(F("***** Error: wisol_task Failed, response: "), response);
+    debug(F("***** Error: network_task Failed, response: "), response);
     return;  //  Quit processing.
   }
 }
@@ -235,8 +235,8 @@ void sendTestSensorMsg() {
 //  generated from the Wisol AT Command.
 
 void getStepBegin(
-  WisolContext *context, 
-  WisolCmd list[], 
+  NetworkContext *context,
+  NetworkCmd list[],
   int listSize) {
   //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
   //  debug(F(" - wisol.getStepBegin")); ////
@@ -252,8 +252,8 @@ void getStepBegin(
 }
 
 void getStepSend(
-  WisolContext *context, 
-  WisolCmd list[],
+  NetworkContext *context,
+  NetworkCmd list[],
   int listSize, 
   const char *payload,
   bool enableDownlink) {
@@ -269,7 +269,7 @@ void getStepSend(
 
   //  Compose the payload sending command.
   uint8_t markers = 1;  //  Wait for 1 line of response.
-  bool (*processFunc)(WisolContext *context, const char *response) = NULL;  //  Function to process result.
+  bool (*processFunc)(NetworkContext *context, const char *response) = NULL;  //  Function to process result.
   const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
 
   // If no downlink: Send CMD_SEND_MESSAGE + payload
@@ -282,7 +282,7 @@ void getStepSend(
   addCmd(list, listSize, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
 }
 
-static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int listSize) {
+static void getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize) {
   //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
   //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
   //  debug(F(" - wisol.getStepPowerChannel")); ////
@@ -313,7 +313,7 @@ static void getStepPowerChannel(WisolContext *context, WisolCmd list[], int list
 //  Wisol Response Processing Functions: Called to process response when response 
 //  is received from Wisol AT Command.
 
-bool getID(WisolContext *context, const char *response) {
+bool getID(NetworkContext *context, const char *response) {
   //  Save the device ID to context.
   strncpy(context->device, response, MAX_DEVICE_ID_SIZE);
   context->device[MAX_DEVICE_ID_SIZE] = 0;  //  Terminate the device ID in case of overflow.
@@ -321,7 +321,7 @@ bool getID(WisolContext *context, const char *response) {
   return true;
 }
 
-bool getPAC(WisolContext *context, const char *response) {
+bool getPAC(NetworkContext *context, const char *response) {
   //  Save the PAC code to context.  Note that the PAC is only valid
   //  for the first registration in the Sigfox portal.  After
   //  registering the device, the PAC is changed in the Sigfox portal
@@ -333,7 +333,7 @@ bool getPAC(WisolContext *context, const char *response) {
   return true;
 }
 
-bool checkChannel(WisolContext *context, const char *response) {  
+bool checkChannel(NetworkContext *context, const char *response) {
   //  Parse the CMD_GET_CHANNEL response "X,Y" to determine if we need to send the CMD_RESET_CHANNEL command.
   //  If not needed, change the next command to CMD_NONE.
 
@@ -356,7 +356,7 @@ bool checkChannel(WisolContext *context, const char *response) {
     //  debug(F(" - wisol.checkChannel: Continue channel"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
-    if (cmdIndex >= MAX_WISOL_CMD_LIST_SIZE) {      
+    if (cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) {
       debug(F("***** wisol.checkChannel Error: Cmd overflow"));  //  List is full.
       return false;  //  Failure
     }    
@@ -381,7 +381,7 @@ With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecima
 The downlink data must be 8 bytes in hexadecimal format.  For example:
   {"002C2EA1" : { "downlinkData" : "0102030405060708"}} */
 
-bool getDownlink(WisolContext *context, const char *response0) {
+bool getDownlink(NetworkContext *context, const char *response0) {
   //  Extract the downlink message and write into the context response.
   //  context response will be returned as an 8-byte hex string, e.g. "0123456789ABCDEF"
   //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
@@ -439,8 +439,8 @@ static String cmdData;
 #endif  //  ARDUINO
 
 static void convertCmdToUART(
-  WisolCmd *cmd,
-  WisolContext *context, 
+  NetworkCmd *cmd,
+  NetworkContext *context,
   UARTMsg *uartMsg, 
   Evt_t successEvent0, 
   Evt_t failureEvent0,
@@ -500,7 +500,7 @@ static void convertCmdToUART(
 }
 
 void setup_wisol(
-  WisolContext *context, 
+  NetworkContext *context,
   UARTContext *uartContext, 
   int8_t uartTaskID, 
   Country country0, 
@@ -524,7 +524,7 @@ void setup_wisol(
   context->pendingResponse = false;
 }
 
-static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd) {
+static void addCmd(NetworkCmd list[], int listSize, NetworkCmd cmd) {
   //  Append the UART message to the command list.
   //  Stop if we have overflowed the list.
   int i = getCmdIndex(list, listSize);
@@ -532,7 +532,7 @@ static void addCmd(WisolCmd list[], int listSize, WisolCmd cmd) {
   list[i++] = endOfList;
 }
 
-static int getCmdIndex(WisolCmd list[], int listSize) {
+static int getCmdIndex(NetworkCmd list[], int listSize) {
   //  Given a list of commands, return the index of the next empty element.
   //  Check index against cmd size.  It must fit 2 more elements:
   //  The new cmd and the endOfList cmd.

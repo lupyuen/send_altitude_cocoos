@@ -461,7 +461,7 @@ alt << Recv sensor data 240.79
 ***** uart.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 
 net >> Pending response
-***** Error: wisol_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
  - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 tmp >> poll_sensor
 tmp << Recv sensor data 34.45
@@ -575,7 +575,7 @@ tmp << Recv sensor data 34.06
 ***** uart.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 
 net >> Pending response
-***** Error: wisol_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
  - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 hmd >> poll_sensor
 hmd << Recv sensor data 51.84
@@ -772,7 +772,7 @@ tmp << Recv sensor data 33.46
 ***** uart.sendData: Error: Unknown response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 
 net >> Pending response
-***** Error: wisol_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
  - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 hmd >> poll_sensor
 hmd << Recv sensor data 52.88

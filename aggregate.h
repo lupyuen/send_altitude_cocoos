@@ -11,15 +11,15 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-struct WisolContext;  //  Forward declaration
-struct WisolCmd;  //  Forward declaration
+struct NetworkContext;  //  Forward declaration
+struct NetworkCmd;  //  Forward declaration
 struct SensorMsg;  //  Forward declaration
 
 void setup_aggregate(void);
 bool aggregate_sensor_data(
-    WisolContext *context, 
+    NetworkContext *context,
     SensorMsg *msg, 
-    WisolCmd cmdList[],
+    NetworkCmd cmdList[],
     int cmdListSize);
 
 #ifdef __cplusplus

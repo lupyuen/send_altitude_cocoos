@@ -36,9 +36,9 @@ static uint8_t display_setup(void);  //  Start the display task that displays se
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
 static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Buffer for writing UART response.
 static UARTContext uartContext;
-static WisolContext wisolContext;
-static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
-static SensorMsg wisolMsgPool[WISOL_MSG_POOL_SIZE];  //  Pool of UART messages for the UART queue.
+static NetworkContext wisolContext;
+static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART Tasks message queue.
+static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];  //  Pool of sensor data messages for the Network Task message queue.
 #ifdef SENSOR_DISPLAY
 static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
@@ -94,10 +94,10 @@ static uint8_t network_setup(void) {
     &uartContext,  //  task_get_data() will be set to the display object.
     10,            //  Priority 10 = highest priority
     (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    UART_MSG_POOL_SIZE,        //  Size of queue pool.
-    sizeof(UARTMsg));   //  Size of queue message.
+    UART_MSG_POOL_SIZE,     //  Size of queue pool.
+    sizeof(UARTMsg));       //  Size of queue message.
 
-  //  Start the Wisol Task for receiving sensor data and transmitting to UART Task.
+  //  Start the Network Task for receiving sensor data and transmitting to UART Task.
   setup_wisol(
     &wisolContext,
     &uartContext,
@@ -105,12 +105,12 @@ static uint8_t network_setup(void) {
     COUNTRY_SG, 
     false);
   uint8_t networkTaskID = task_create(
-    wisol_task,     //  Task will run this function.
-    &wisolContext,  //  task_get_data() will be set to the display object.
-    20,             //  Priority 20 = lower priority than UART task
-    (Msg_t *) wisolMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    WISOL_MSG_POOL_SIZE,        //  Size of queue pool.
-    sizeof(SensorMsg));   //  Size of queue message.
+      network_task,   //  Task will run this function.
+      &wisolContext,  //  task_get_data() will be set to the display object.
+      20,             //  Priority 20 = lower priority than UART task
+      (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
+      NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
+      sizeof(SensorMsg));   //  Size of queue message.
     
   return networkTaskID;
 }
@@ -172,7 +172,7 @@ static uint8_t display_setup(void) {
   uint8_t display_task_id = task_create(
     display_task,   //  Task will run this function.
     get_display(),  //  task_get_data() will be set to the display object.
-    1000,            //  Priority 1000 = lowest priority
+    200,            //  Priority 200 = lowest priority
     (Msg_t *) displayMsgPool,  //  Pool to be used for storing the queue of display messages.
     DISPLAY_MSG_POOL_SIZE,        //  Size of queue pool.
     sizeof(DisplayMsg));       //  Size of queue message.

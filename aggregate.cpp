@@ -24,9 +24,9 @@ static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
 //  static const char testPayload[] = "0102030405060708090a0b0c";  //  For testing
 
 bool aggregate_sensor_data(
-    WisolContext *context, 
+    NetworkContext *context,
     SensorMsg *msg, 
-    WisolCmd cmdList[],
+    NetworkCmd cmdList[],
     int cmdListSize) {
     //  Aggregate the received sensor data.  Check whether we should send the data, based on 
     //  the throttle settings.  Return true if we should send the message.  The message commands are

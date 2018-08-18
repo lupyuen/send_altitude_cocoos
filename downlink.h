@@ -6,10 +6,10 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-struct WisolContext;  //  Forward declaration
+struct NetworkContext;  //  Forward declaration
 
 bool processDownlinkMsg(
-  WisolContext *context,  //  Task context.
+  NetworkContext *context,  //  Task context.
   bool status,  //  True if downlink was received.
   const char *data);   //  Downlink data (8 bytes in hex e.g. "0102030405060708") or error name.
 

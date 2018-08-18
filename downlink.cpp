@@ -4,7 +4,7 @@
 #include "downlink.h"
 
 bool processDownlinkMsg(
-  WisolContext *context,  //  Task context.
+  NetworkContext *context,  //  Task context.
   bool status,  //  True if downlink was received.
   const char *data) {  //  Downlink data (up to 8 bytes in hex e.g. "0102030405060708") or error name.
   if (status) { debug(F(" - processDownlinkMsg: "), data); }
