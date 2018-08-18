@@ -102,33 +102,26 @@ With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecima
 In AWS Lambda you can create a function to return the downlink like this (use API Gateway to expose as REST URL):
 
 ```javascript
-//  Demonstrates a simple Sigfox downlink HTTP endpoint using API Gateway. 
-//  With API Gateway you have full access to the request and response payload, 
-//  including headers and status code.
-
+//  Demonstrates a simple Sigfox Downlink HTTP endpoint using AWS Lambda and API Gateway. 
 exports.handler = (event, context, callback) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
-    
-    //  Get device ID from body.
-    //  event.body = "{\r\n\"device\" : \"2C2EA1\", \r\n\"data\" : \"0102030405060708090a0b0c\", ...}"
-    const body = event.body ? JSON.parse(event.body) : {};
-    
-    //  body = {device: "2C2EA1", data: "0102030405060708090a0b0c", ...}
-    const device = body.device || '002C2EA1';
+    console.log('Received event:', JSON.stringify(event, null, 2));    
+    //  Get device ID from the JSON string in the POST request, which looks like:
+    //  {"device": "2C2EA1", "data": "0102030405060708090a0b0c", ...}
+    const body = event.body ? JSON.parse(event.body) : {};    
+    const device = body.device || '002C2EA1';  //  Default device ID to 002C2EA1 if missing.
 
-    //  Downlink data to be returned.    
+    //  TODO: This is the 8-byte downlink data to be returned, in 16 hex digits.
     const data = 'fedcba9876543210';
-    const res = { 
-        [device]: { 
-            "downlinkData" : data
-        }
-    };
+  
+    //  Compose the JSON downlink response. [device] will be replaced by the device ID.
+    const res = { [device]: { 
+        "downlinkData" : data
+    } };
+    //  Return the JSON response to API Gateway.
     return callback(null, {
         statusCode: 200,
         body: JSON.stringify(res),
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
     });
 };
 ```
