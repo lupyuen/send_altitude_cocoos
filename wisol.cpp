@@ -152,7 +152,7 @@ static void processPendingResponse(NetworkContext *context) {
   context->lastSend = millis();  //  Update the last send time.
   //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
   if (context->downlinkData) {
-    processDownlinkMsg(context, context->status, context->downlinkData);
+    process_downlink_msg(context, context->status, context->downlinkData);
   }
 }
 

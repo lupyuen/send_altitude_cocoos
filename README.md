@@ -462,7 +462,7 @@ alt << Recv sensor data 240.79
 
 net >> Pending response
 ***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
- - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+ - process_downlink_msg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 tmp >> poll_sensor
 tmp << Recv sensor data 34.45
 hmd >> poll_sensor
@@ -576,7 +576,7 @@ tmp << Recv sensor data 34.06
 
 net >> Pending response
 ***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
- - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+ - process_downlink_msg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 hmd >> poll_sensor
 hmd << Recv sensor data 51.84
 alt >> poll_sensor
@@ -659,7 +659,7 @@ alt >> poll_sensor
 alt << Recv sensor data 240.77
 << OK[0x0d][0x0a]RX=FE DC BA 98 76 54 32 10[0x0d]
 net >> Pending response
- - processDownlinkMsg: FEDCBA9876543210
+ - process_downlink_msg: FEDCBA9876543210
 tmp >> poll_sensor
 tmp << Recv sensor data 33.79
 hmd >> poll_sensor
@@ -773,7 +773,7 @@ tmp << Recv sensor data 33.46
 
 net >> Pending response
 ***** Error: network_task Failed, response: ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
- - processDownlinkMsg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
+ - process_downlink_msg (Failed): ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
 hmd >> poll_sensor
 hmd << Recv sensor data 52.88
 alt >> poll_sensor
