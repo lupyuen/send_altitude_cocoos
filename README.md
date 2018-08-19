@@ -6,9 +6,11 @@ The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio C
 
 - `BME280`: Download the `BME280` library by Tyler Glenn from Arduino Library Manager
 
-- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html, 
-    unzip and move all files in `inc` and `src` to top level.
-    Zip up and add to Arduino IDE as library.
+- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html, <br>
+    Unzip and move all files in inc and src to top level. <br>
+    Replace os_defines.h by our custom cocoOS settings: <br>
+    https://github.com/lupyuen/send_altitude_cocoos/blob/master/os_defines.h <br>
+    Zip up and add to Arduino IDE or Arduino Web Editor as a library.
 
 Tested with Arduino Uno.
 
@@ -25,6 +27,8 @@ Open a Command Prompt with Admin permissions. Run the following:
 ```cmd
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
+mkdir lib
+mklink libraries lib
 mkdir src
 cd src
 FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
@@ -50,6 +54,8 @@ Open a Command Prompt. Run the following:
 ```bash
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
 cd send_altitude_cocoos
+mkdir lib
+ln -s lib libraries
 mkdir src
 cd src
 ln -s ../*.ino ../*.cpp ../*.h .

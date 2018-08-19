@@ -1,6 +1,7 @@
 send_altitude_cocoos
 src
 lib
+libraries
 .idea
 .pioenvs
 .piolibdeps
