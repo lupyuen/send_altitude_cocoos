@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h>
 #include "display.h"
 #include "sensor.h"
 #include "gyro_sensor.h"

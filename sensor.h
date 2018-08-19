@@ -2,7 +2,7 @@
 #define SENSOR_H_
 
 #include <stdlib.h>
-#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h>
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 #define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.

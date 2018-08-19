@@ -3,7 +3,7 @@
 
 #include "platform.h"
 #include "sigfox.h"
-#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h>
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif

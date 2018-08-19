@@ -6,7 +6,7 @@
 
 #include "platform.h"
 #include <stdint.h>
-#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h>
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 
 #if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...

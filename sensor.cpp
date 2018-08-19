@@ -3,7 +3,7 @@
 #include "platform.h"
 #include <string.h>
 #include <stdio.h>
-#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h>
 #include "sensor.h"
 #include "display.h"
 
