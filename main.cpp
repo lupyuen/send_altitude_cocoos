@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "uart.h"
 #include "wisol.h"

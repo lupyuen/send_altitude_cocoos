@@ -3,7 +3,7 @@
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #endif
-#include "cocoos_cpp.h"
+#include <cocoos.h>
 #include "sensor.h"
 #include "uart.h"
 

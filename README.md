@@ -6,7 +6,7 @@ The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio C
 
 - `BME280`: Download the `BME280` library by Tyler Glenn from Arduino Library Manager
 
-- `cocoOS_5.0.1`: Download from http://www.cocoos.net/download.html, 
+- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html, 
     unzip and move all files in `inc` and `src` to top level.
     Zip up and add to Arduino IDE as library.
 
@@ -31,12 +31,12 @@ FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 cd ..
 ```
 
-Using Windows Explorer, copy `cocoOS_5.0.1` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.1/src`.
+Using Windows Explorer, copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
 Then link `os_defines.h` like this:
 
 ```cmd
-cd lib\cocoOS_5.0.1\src
+cd lib\cocoOS_5.0.2\src
 del os_defines.h
 mklink os_defines.h ..\..\..\os_defines.h
 cd ..\..\..
@@ -56,12 +56,12 @@ ln -s ../*.ino ../*.cpp ../*.h .
 cd ..
 ```
 
-Using Mac Finder, copy `cocoOS_5.0.1` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.1/src`.
+Using Mac Finder, copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
 Then link `os_defines.h` like this:
 
 ```bash
-cd lib/cocoOS_5.0.1/src
+cd lib/cocoOS_5.0.2/src
 rm os_defines.h
 ln -s ../../../os_defines.h .
 cd ../../..
@@ -70,7 +70,7 @@ cd ../../..
 To allow Arduino IDE and PlatformIO to share the same cocoOS library:
 
 ```bash
-ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.1/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.1
+ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.2/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.2
 ```
 
 Arduino IDE does not compile if send_altitude_cocoos/src contains any files. Remove the links before compiling in Arduino IDE.

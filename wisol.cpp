@@ -3,7 +3,7 @@
 //  for Sigfox zones RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
 #include "platform.h"
 #include <string.h>
-#include "cocoos_cpp.h"  //  TODO: Workaround for cocoOS in C++
+#include <cocoos.h> //  TODO: Workaround for cocoOS in C++
 #include "display.h"
 #include "sensor.h"
 #include "uart.h"
