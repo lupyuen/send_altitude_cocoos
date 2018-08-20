@@ -204,6 +204,7 @@ To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platfor
 -----
 ## Sample Log
 
+-----------------------------------------------------------------------------------
 ### Uplink Only
 
 ```text
@@ -211,14 +212,6 @@ To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platfor
 
 --- Miniterm on /dev/cu.usbmodem1411  9600,8,N,1 ---
 --- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
->> AT$I=11[0x0d]
-K[0x0d]
------i1 / i2: 0 / 0
->> AT$I=10[0x0d]
-<< 002a2EA1[0x0d]
------i1 / i2: 0 / 0
- - wisol.getID: 002a2EA1
->> AT$I=11[0x0d]
 ----arduino_setup
 Create semaphore
 BME280 OK
@@ -226,118 +219,240 @@ net >> Wait for net
 net >> Got net
 >> ATS410=0[0x0d]
 << OK[0x0d]
------i1 / i2: 0 / 0
 >> AT$I=10[0x0d]
 << 002C2EA1[0x0d]
------i1 / i2: 0 / 0
  - wisol.getID: 002C2EA1
 >> AT$I=11[0x0d]
-<< 5BEB8Cc64E869BD1[0x0d]
------i1 / i2: 0 / 0
- - wisol.getPAC: 5BEB8Cc64E869BD1
+<< 5BEB8CG64E869BD1[0x0d]
+ - wisol.getPAC: 5BEB8CG64E869BD1
 net >> Release net
 tmp >> poll_sensor
 hmd >> poll_sensor
 alt >> poll_sensor
-alt << Recv sensor data 43.63
+alt << Recv sensor data 114.54
 tmp >> poll_sensor
-tmp << Recv sensor data 33.08
+tmp << Recv sensor data 34.15
 hmd >> poll_sensor
-hmd << Recv sensor data 58.78
+hmd << Recv sensor data 56.09
 alt >> poll_sensor
-alt << Recv sensor data 44.17
+alt << Recv sensor data 112.06
 tmp >> poll_sensor
-tmp << Recv sensor data 33.08
+tmp << Recv sensor data 34.13
 hmd >> poll_sensor
-hmd << Recv sensor data 58.81
+hmd << Recv sensor data 56.08
 alt >> poll_sensor
-alt << Recv sensor data 44.06
+alt << Recv sensor data 114.19
 tmp >> poll_sensor
-tmp << Recv sensor data 33.07
+tmp << Recv sensor data 34.13
 hmd >> poll_sensor
-hmd << Recv sensor data 58.81
+hmd << Recv sensor data 56.08
 alt >> poll_sensor
-alt << Recv sensor data 43.49
+alt << Recv sensor data 116.10
 tmp >> poll_sensor
-tmp << Recv sensor data 33.07
+tmp << Recv sensor data 34.13
 hmd >> poll_sensor
-hmd << Recv sensor data 58.82
+hmd << Recv sensor data 56.09
 alt >> poll_sensor
-alt << Recv sensor data 44.06
-agg >> Send 000330588440
+alt << Recv sensor data 115.15
+agg >> Send 0000034105601151
 net >> Wait for net
 net >> Got net
 >> AT$GI?[0x0d]
 << 1,6[0x0d]
------i1 / i2: 0 / 0
 >> AT[0x0d]
 << OK[0x0d]
------i1 / i2: 0 / 0
 net >> Release net
->> AT$SF=303030333330353838343430[0x0d]
+>> AT$SF=0000034105601151[0x0d]
 tmp >> poll_sensor
-tmp << Recv sensor data 33.06
+tmp << Recv sensor data 34.12
 hmd >> poll_sensor
-hmd << Recv sensor data 58.82
+hmd << Recv sensor data 56.09
 alt >> poll_sensor
-alt << Recv sensor data 43.96
+alt << Recv sensor data 113.02
 << OK[0x0d]
------i1 / i2: 4 / 0
 net >> Pending response
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
+tmp << Recv sensor data 34.11
 hmd >> poll_sensor
-hmd << Recv sensor data 58.84
+hmd << Recv sensor data 56.10
 alt >> poll_sensor
-alt << Recv sensor data 44.54
+alt << Recv sensor data 113.74
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
+tmp << Recv sensor data 34.10
 hmd >> poll_sensor
-hmd << Recv sensor data 58.84
+hmd << Recv sensor data 56.08
 alt >> poll_sensor
-alt << Recv sensor data 44.03
+alt << Recv sensor data 113.16
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
+tmp << Recv sensor data 34.11
 hmd >> poll_sensor
-hmd << Recv sensor data 58.85
+hmd << Recv sensor data 56.10
 alt >> poll_sensor
-alt << Recv sensor data 43.28
+alt << Recv sensor data 114.22
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
+tmp << Recv sensor data 34.11
 hmd >> poll_sensor
-hmd << Recv sensor data 58.86
+hmd << Recv sensor data 56.10
 alt >> poll_sensor
-alt << Recv sensor data 44.11
+alt << Recv sensor data 114.22
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
-agg >> Send 001330588441
+tmp << Recv sensor data 34.11
+agg >> Send 0001034105601142
 net >> Wait for net
 net >> Got net
 >> AT$GI?[0x0d]
 << 1,3[0x0d]
------i1 / i2: 0 / 0
 >> AT[0x0d]
 << OK[0x0d]
------i1 / i2: 0 / 0
 net >> Release net
-�␂
-Q�SF=303031333330353838343431[0x0d]
+>> AT$SF=0001034105601142[0x0d]
 hmd >> poll_sensor
-hmd << Recv sensor data 58.84
+hmd << Recv sensor data 56.08
 alt >> poll_sensor
-alt << Recv sensor data 43.60
+alt << Recv sensor data 113.28
 tmp >> poll_sensor
-tmp << Recv sensor data 33.04
+tmp << Recv sensor data 34.09
 << OK[0x0d]
------i1 / i2: 4 / 0
 net >> Pending response
 hmd >> poll_sensor
-hmd << Recv sensor data 58.85
+hmd << Recv sensor data 56.08
 alt >> poll_sensor
-alt << Recv sensor data 43.42
+alt << Recv sensor data 114.11
+tmp >> poll_sensor
+tmp << Recv sensor data 34.09
+hmd >> poll_sensor
+hmd << Recv sensor data 56.07
+alt >> poll_sensor
+alt << Recv sensor data 112.70
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.08
+alt >> poll_sensor
+alt << Recv sensor data 112.70
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.07
+alt >> poll_sensor
+alt << Recv sensor data 114.36
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.05
+agg >> Send 0002034005601143
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,0[0x0d]
+>> AT$RC[0x0d]
+<< OK[0x0d]
+net >> Release net
+>␂
+Q�SF=0002034005601143[0x0d]
+alt >> poll_sensor
+alt << Recv sensor data 114.84
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.07
+<< OK[0x0d]
+net >> Pending response
+alt >> poll_sensor
+alt << Recv sensor data 114.36
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 114.01
+tmp >> poll_sensor
+tmp << Recv sensor data 34.08
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 113.77
+tmp >> poll_sensor
+tmp << Recv sensor data 34.07
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 113.18
+tmp >> poll_sensor
+tmp << Recv sensor data 34.06
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 113.77
+agg >> Send 0003034005601137
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,3[0x0d]
+>> AT[0x0d]
+<< OK[0x0d]
+net >> Release net
+>> AT$SF=0003034005601137[0x0d]
+tmp >> poll_sensor
+tmp << Recv sensor data 34.07
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 113.77
+<< OK[0x0d]
+net >> Pending response
+tmp >> poll_sensor
+tmp << Recv sensor data 34.07
+hmd >> poll_sensor
+hmd << Recv sensor data 56.04
+alt >> poll_sensor
+alt << Recv sensor data 115.08
+tmp >> poll_sensor
+tmp << Recv sensor data 34.07
+hmd >> poll_sensor
+hmd << Recv sensor data 56.06
+alt >> poll_sensor
+alt << Recv sensor data 114.60
+tmp >> poll_sensor
+tmp << Recv sensor data 34.06
+hmd >> poll_sensor
+hmd << Recv sensor data 56.07
+alt >> poll_sensor
+alt << Recv sensor data 115.08
+tmp >> poll_sensor
+tmp << Recv sensor data 34.06
+hmd >> poll_sensor
+hmd << Recv sensor data 56.04
+alt >> poll_sensor
+alt << Recv sensor data 113.18
+tmp >> poll_sensor
+tmp << Recv sensor data 34.07
+agg >> Send 0004034005601131
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+<< 1,0[0x0d]
+>> AT$RC[0x0d]
+<< OK[0x0d]
+net >> Release net
+>> AT$SF=0004034005601131[0x0d]
+hmd >> poll_sensor
+hmd << Recv sensor data 56.03
+alt >> poll_sensor
+alt << Recv sensor data 113.65
+tmp >> poll_sensor
+tmp << Recv sensor data 34.06
+<< OK[0x0d]
+net >> Pending response
+hmd >> poll_sensor
+hmd << Recv sensor data 56.04
+alt >> poll_sensor
+alt << Recv sensor data 114.48
+
 
 ```
 
+-----------------------------------------------------------------------------------
 ### Uplink and Downlink
 
 ```text
