@@ -6,8 +6,6 @@
 
 #ifdef SENSOR_DATA
 #include "bme280.h"
-
-////#ifdef ARDUINO
 #include <Wire.h>
 
 //  The global instance of the BME API.
@@ -37,5 +35,4 @@ void bme280_setup(void) {
   }
 }
 
-////#endif  //  ARDUINO
 #endif  //  SENSOR_DATA

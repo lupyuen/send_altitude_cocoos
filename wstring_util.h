@@ -159,9 +159,6 @@ char *dtostrf(double value, unsigned char d1, unsigned char d2, char *buf) {
 
 #define strcpy_P strcpy
 #define strlen_P strlen
-typedef const char *PSTR;
-typedef const char *PGM_P;
-#include "LocalWString.cpp"
 
 class Print {
 public:

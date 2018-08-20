@@ -41,7 +41,6 @@
 
 #ifdef STM32  //  For STM32 only
 
-#define PSTR(x) x  //  Used by F(...)
 #define millis() (tickCount)  //  Return timestamp in milliseconds.
 
 #include <stdlib.h>  //  For size_t
@@ -50,6 +49,9 @@
 
 #ifdef __cplusplus  //  Serial class for C++ only.
 #include "wstring.h" //  For String class
+
+typedef const char *PSTR;
+typedef const char *PGM_P;
 
 class Print {  //  Reproduce the Arduino base class for Serial class.
 public:
