@@ -24,10 +24,10 @@ static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
 //  static const char testPayload[] = "0102030405060708090a0b0c";  //  For testing
 
 bool aggregate_sensor_data(
-    NetworkContext *context,
-    SensorMsg *msg, 
-    NetworkCmd cmdList[],
-    int cmdListSize) {
+    NetworkContext *context,  //  Context storage for the Network Task.
+    SensorMsg *msg,           //  Sensor Data Message just received. Contains sensor name and sensor values.
+    NetworkCmd cmdList[],     //  Upon return, will be populated by the list of AT Commands to be executed.
+    int cmdListSize) {        //  How many commands may be stored in cmdList.
     //  Aggregate the received sensor data.  Check whether we should send the data, based on 
     //  the throttle settings.  Return true if we should send the message.  The message commands are
     //  populated in cmdList, up to cmdListSize elements (including the terminating command).

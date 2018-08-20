@@ -182,8 +182,6 @@ To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platfor
 -----
 ### Other Code
 
-[`cocoos_cpp.h`](cocoos_cpp.h): Workaround for cross initialisation problem when using cocoOS from C++
-
 [`display.cpp`](display.cpp), [`display.h`](display.h): Display Task to display sensor data
 
 -----

@@ -45,11 +45,9 @@ static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
 void network_task(void) {
   //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
-
   //  Note: Declare task variables here before the task but don't populate them here
   //  unless they are not supposed to change. 
   //  Because the coroutine will execute this code repeatedly and repopulate the values.
-  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
   NetworkContext *context;
   NetworkCmd *cmd;
   bool shouldSend;
@@ -62,7 +60,7 @@ void network_task(void) {
   createSensorMsg(&msg, BEGIN_SENSOR_NAME);  //  We create a "begin" message and process only upon startup.
   createSensorMsg(&responseMsg, RESPONSE_SENSOR_NAME);  //  UART Task sends this message for a pending response received.
 
-  for (;;) { //  Run the sensor data receiving code forever. So the task never ends.
+  for (;;) {  //  Run the sensor data receiving code forever. So the task never ends.
     //  If not the first iteration, wait for an incoming message containing sensor data.
     if (strncmp(msg.name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
       msg_receive(os_get_running_tid(), &msg);
@@ -101,11 +99,12 @@ void network_task(void) {
       cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
-      //  Convert Wisol command to UART command and send it.
+      //  Convert Wisol command to UART command.
       convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
       context->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
       context->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
 
+      //  Send the UART command thru the UART Task.
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
       msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
       context = (NetworkContext *) task_get_data();  //  Must get context in case msg_post(blocks)

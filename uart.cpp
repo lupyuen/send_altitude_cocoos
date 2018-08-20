@@ -12,9 +12,6 @@ static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
-#ifdef ARDUINO                            
-static String toHex(char c);
-#endif  //  ARDUINO
 
 //  Use a macro for logging.
 #define log1(x) { echoPort->println(x); echoPort->flush(); }
@@ -61,7 +58,6 @@ void uart_task(void) {
   UARTContext *context;  //  The context for the task.
   static UARTMsg msg;  //  The received message.
   uint8_t sendChar;  //  Character to be sent.
-  MsgQ_t queue; Evt_t event;  //  TODO: Workaround for msg_receive() in C++.
 
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) { //  Run the UART sending code forever. So the task never ends.
@@ -242,7 +238,7 @@ static void logChar(char ch) {
   echoPort->print("]");
 }
 
-#ifdef ARDUINO
+#ifdef NOTUSED
 static String toHex(char c) {
   //  Convert the char to a string of 2 hex digits.
   byte *b = (byte *) &c;
@@ -251,4 +247,4 @@ static String toHex(char c) {
   bytes.concat(String(b[0], 16));
   return bytes;
 }
-#endif  //  ARDUINO
+#endif  //  NOTUSED
