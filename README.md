@@ -1,6 +1,6 @@
 Arduino sketch to read BME280 I2C temperature, humidity and altitude sensors and send the aggregated sensor data to the Sigfox IoT network (via the Wisol Sigfox module connected on UART).  Supports Sigfox downlink too. Multitasking of the sensors is handled by cocoOS, the portable task scheduling framework: http://www.cocoos.net
 
-Read the tutorial: (to be updated with network details) https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
+Read the tutorial: https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
 
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
