@@ -26,8 +26,8 @@ static uint8_t network_setup(void);  //  Start the network task to send and rece
 static void arduino_setup(void);  //  Initialise the Arduino timers.
 static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
 #elif defined(STM32)
-void stm32_setup(void);  //  Initialise the STM32 platform.
-void stm32_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
+static void stm32_setup(void);  //  Initialise the STM32 platform.
+static void stm32_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 #endif
 #ifdef SENSOR_DISPLAY
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
@@ -146,6 +146,12 @@ static void sensor_setup(uint8_t task_id) {
 #endif  //  GYRO_SENSOR
 }
 #endif  //  SENSOR_DATA
+
+static void stm32_setup() {
+}
+
+static void stm32_start_timer() {
+}
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.

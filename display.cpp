@@ -127,7 +127,7 @@ Display *get_display(void) {
 }
 
 #endif  //  SENSOR_DISPLAY
-
+static Print Serial;
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
 

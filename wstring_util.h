@@ -161,38 +161,13 @@ char *dtostrf(double value, unsigned char d1, unsigned char d2, char *buf) {
 #define strlen_P strlen
 typedef const char *PSTR;
 typedef const char *PGM_P;
-#include "LocalWString.cpp"
+//#include "LocalWString.cpp"
 
-class Print {
-public:
-  Print() {}
-  Print(unsigned rx, unsigned tx) {}
-  void begin(int i) {}
-  void print(const char *s) { printf(s); }
-  void print(const String &s) { printf(s.c_str()); }
-  void print(int i) { printf("%d", i); }
-  void print(float f) { printf("%f", f); }
-  void println(const char *s) { puts(s); }
-  void println(const String &s) { puts(s.c_str()); }
-  void println(int i) { printf("%d\n", i); }
-  void println(float f) { printf("%f\n", f); }
-  void flush() {}
-  void listen() {}
-  void write(uint8_t ch) { putchar(ch); }
-  int read() { return -1; }
-  bool available() { return false; }
-  void end() {}
-};
-Print Serial;
 
-class SoftwareSerial: public Print {
-public:
-  SoftwareSerial(unsigned rx, unsigned tx): Print(rx, tx) {}
-};
 
-unsigned long millis() {
-  return (unsigned long) clock();
-}
+//unsigned long millis() {
+//  return (unsigned long) clock();
+//}
 
 void delay(long i) {  //  Milliseconds.
   const unsigned long start = millis();

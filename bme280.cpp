@@ -20,10 +20,10 @@ void bme280_setup(void) {
   if (!firstTime) return;  //  Already set up, quit.
   firstTime = false;
   
-  Wire.begin();
+  //Wire.begin();
   while(!bme.begin()) {
     debug(F("BME280 not found"));
-    delay(1000);
+    //delay(1000);
   }
   switch(bme.chipModel()) {
      case BME280::ChipModel_BME280:

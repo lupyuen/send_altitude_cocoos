@@ -20,10 +20,10 @@
 #else //  If debug logging is enabled, use Serial object to print.
 
 #ifdef __cplusplus  //  Serial class for C++ only.
-#define debug_begin(x) Serial.begin(x)
-#define debug_print(x) Serial.print(x)
-#define debug_println(x) Serial.println(x)
-#define debug_flush() Serial.flush()
+#define debug_begin(x) 
+#define debug_print(x) 
+#define debug_println(x) 
+#define debug_flush() 
 #endif  //  __cplusplus
 
 #endif  //  DISABLE_DEBUG_LOG

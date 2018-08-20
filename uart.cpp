@@ -38,7 +38,7 @@ class NullPort: public Print {
 
 static NullPort nullPort;
 static String data;
-
+static Print Serial;
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];

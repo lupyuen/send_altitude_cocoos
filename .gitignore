@@ -10,3 +10,6 @@ libraries
 .vscode/launch.json
 .vscode/*.sql
 cmake-build-debug
+*.elf
+*.map
+output

@@ -73,17 +73,18 @@ public:
   bool available() { return false; }
   void end() {}
 };
-Print Serial;
+
+//Print Serial;
 
 class SoftwareSerial: public Print {
 public:
   SoftwareSerial(unsigned rx, unsigned tx): Print(rx, tx) {}
 };
 
-bool operator!(Print &p) {
-  //  Allow wait for the Serial interface to be ready:
-  //  while (!Serial) {}
-  return false;
+inline bool operator!(Print &p) {
+  //Allow wait for the Serial interface to be ready:
+  //while (!Serial) {}
+ return false;
 }
 
 #endif  //  __cplusplus
