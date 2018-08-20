@@ -10,9 +10,7 @@
 #ifdef SENSOR_DATA
 #include "bme280.h"
 #include "alt_sensor.h"
-#ifdef ARDUINO
 #include <EnvironmentCalculations.h>
-#endif  //  ARDUINO
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);

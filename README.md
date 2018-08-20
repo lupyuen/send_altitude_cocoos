@@ -41,7 +41,11 @@ FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
 cd ..
 ```
 
-Using Windows Explorer, copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
+Using Windows Explorer:
+
+1. Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
+
+2. Copy `BME280` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/BME280/src`.
 
 Then link `os_defines.h` like this:
 
@@ -68,7 +72,11 @@ ln -s ../*.ino ../*.cpp ../*.h .
 cd ..
 ```
 
-Using Mac Finder, copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
+Using Mac Finder: 
+
+1. Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
+
+2. Copy `BME280` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/BME280/src`.
 
 Then link `os_defines.h` like this:
 
