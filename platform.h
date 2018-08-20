@@ -81,7 +81,7 @@ public:
 bool operator!(Print &p) {
   //  Allow wait for the Serial interface to be ready:
   //  while (!Serial) {}
-  return true;
+  return false;
 }
 
 #endif  //  __cplusplus
