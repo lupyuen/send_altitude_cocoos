@@ -144,7 +144,17 @@ requests but they are not guaranteed.
 -----
 ## Build for STM32 Blue Pill with PlatformIO
 
-To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the section `[env:bluepill_f103c8]`
+To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the line (remove `;` in front):
+
+```ini
+env_default = bluepill_f103c8
+```
+
+And comment the line (insert `;` in front):
+
+```ini
+; env_default = uno
+```
 
 -----
 ## Source Files
