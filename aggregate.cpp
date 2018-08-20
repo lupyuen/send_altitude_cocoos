@@ -1,6 +1,7 @@
 //  Aggregate sensor data and decide whether to send to network now.
 #include "platform.h"
 #include <string.h>
+#include <math.h>  //  For pow()
 #include "display.h"
 #include "sensor.h"
 #include "wisol.h"

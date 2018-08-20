@@ -41,12 +41,12 @@
 //  No need for flash memory helpers on STM32.
 #define __FlashStringHelper char
 #define F(x) x
-unsigned long millis();  //  TODO: Return timestamp in milliseconds.
+//// unsigned long millis();  //  TODO: Return timestamp in milliseconds.
+#define millis() (tickCount)  //  Return timestamp in milliseconds.
 #endif  //  STM32
 
 BEGIN_EXTERN_C
-//// extern unsigned long tickCount;  //  Number of millisecond ticks.
-//// #define millis() (tickCount)
+extern volatile uint32_t tickCount;  //  Number of millisecond ticks.
 END_EXTERN_C
 
 #endif  //  PLATFORM_H_
