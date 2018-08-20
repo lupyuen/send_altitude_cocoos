@@ -9,7 +9,7 @@
 #include <cocoos.h>
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 
-#if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
+#ifdef DISABLE_DEBUG_LOG  //  If debug logging is disabled...
 
 #define debug(p1, p2) {}
 #define debug_begin(p1) {}
@@ -17,7 +17,7 @@
 #define debug_println(p1) {}
 #define debug_flush() {}
 
-#elif defined(ARDUINO)  //  Use Serial object to print.
+#else //  If debug logging is enabled, use Serial object to print.
 
 #ifdef __cplusplus  //  Serial class for C++ only.
 #define debug_begin(x) Serial.begin(x)
@@ -26,16 +26,7 @@
 #define debug_flush() Serial.flush()
 #endif  //  __cplusplus
 
-#elif defined(STM32)
-
-#ifdef __cplusplus  //  Serial class for C++ only.
-#define debug_begin(x) Serial.begin(x)
-#define debug_print(x) Serial.print(x)
-#define debug_println(x) Serial.println(x)
-#define debug_flush() Serial.flush()
-#endif  //  __cplusplus
-
-#endif
+#endif  //  DISABLE_DEBUG_LOG
 
 #ifndef DISABLE_DEBUG_LOG  //  If debug logging is enabled...
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
@@ -52,7 +43,7 @@ void debug(
 END_EXTERN_C
 
 #ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
-////#ifdef ARDUINO  //  Flash memory for Arduino only.
+
 void debug(
   const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
 );
@@ -66,7 +57,7 @@ void debug(
   const __FlashStringHelper *s1,  //  String in flash memory e.g. F("the string")
   const char *s2  //  String in dynamic memory.
 );
-////#endif  //  ARDUINO
+
 #endif  //  __cplusplus
 #endif  //  !DISABLE_DEBUG_LOG
 

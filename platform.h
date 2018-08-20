@@ -39,14 +39,14 @@
 
 #ifdef STM32  //  For STM32 only
 
-//// #define __FlashStringHelper char //  No need for flash memory helpers on STM32.
-//// #define F(x) x
 #define PSTR(x) x  //  Used by F(...)
 #define millis() (tickCount)  //  Return timestamp in milliseconds.
 
 #include <stdlib.h>  //  For size_t
 #include <stdint.h>  //  For uint32_t
 #include <stdio.h>   //  For printf()
+
+#ifdef __cplusplus  //  Serial class for C++ only.
 #include "wstring.h" //  For String class
 
 class Print {  //  Reproduce the Arduino base class for Serial class.
@@ -78,6 +78,13 @@ public:
   SoftwareSerial(unsigned rx, unsigned tx): Print(rx, tx) {}
 };
 
+bool operator!(Print &p) {
+  //  Allow wait for the Serial interface to be ready:
+  //  while (!Serial) {}
+  return true;
+}
+
+#endif  //  __cplusplus
 #endif  //  STM32
 
 BEGIN_EXTERN_C
