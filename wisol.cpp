@@ -433,9 +433,7 @@ bool getDownlink(NetworkContext *context, const char *response0) {
 }
 
 static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
-#ifdef ARDUINO
 static String cmdData;
-#endif  //  ARDUINO
 
 static void convertCmdToUART(
   NetworkCmd *cmd,
@@ -453,12 +451,8 @@ static void convertCmdToUART(
 
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
-#if defined(ARDUINO)    
     cmdData = cmd->sendData;
     const char *cmdDataStr = cmdData.c_str();
-#elif defined(STM32)
-    const char *cmdDataStr = cmd->sendData;
-#endif
     strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
@@ -473,12 +467,8 @@ static void convertCmdToUART(
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
-#if defined(ARDUINO)    
     cmdData = cmd->sendData2;
     const char *cmdDataStr = cmdData.c_str();
-#elif defined(STM32)
-    const char *cmdDataStr = cmd->sendData;
-#endif
     strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
     uartMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.

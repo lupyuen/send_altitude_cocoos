@@ -26,26 +26,13 @@
 #define debug_flush() Serial.flush()
 #endif  //  __cplusplus
 
-#elif defined(STM32)  //  TODO: Define the debug log functions.
-#include <stdlib.h>
+#elif defined(STM32)
 
-BEGIN_EXTERN_C
-void debug_begin(uint16_t bps);
-void debug_print(const char *s);
-void debug_println(const char *s);
-void debug_flush(void);
-END_EXTERN_C
-
-#ifdef __cplusplus  //  Overload for C++
-void debug_print(int i);
-void debug_print(size_t l);
-void debug_print(char ch);
-void debug_print(float f);
-
-void debug_println(int i);
-void debug_println(size_t l);
-void debug_println(char ch);
-void debug_println(float f);
+#ifdef __cplusplus  //  Serial class for C++ only.
+#define debug_begin(x) Serial.begin(x)
+#define debug_print(x) Serial.print(x)
+#define debug_println(x) Serial.println(x)
+#define debug_flush() Serial.flush()
 #endif  //  __cplusplus
 
 #endif
@@ -65,7 +52,7 @@ void debug(
 END_EXTERN_C
 
 #ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
-#ifdef ARDUINO  //  Flash memory for Arduino only.
+////#ifdef ARDUINO  //  Flash memory for Arduino only.
 void debug(
   const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
 );
@@ -79,7 +66,7 @@ void debug(
   const __FlashStringHelper *s1,  //  String in flash memory e.g. F("the string")
   const char *s2  //  String in dynamic memory.
 );
-#endif  //  ARDUINO
+////#endif  //  ARDUINO
 #endif  //  __cplusplus
 #endif  //  !DISABLE_DEBUG_LOG
 
