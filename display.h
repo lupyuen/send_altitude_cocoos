@@ -11,11 +11,13 @@
 
 #if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
 
-#define debug(p1, p2) {}
-#define debug_begin(p1) {}
-#define debug_print(p1) {}
-#define debug_println(p1) {}
-#define debug_flush() {}
+//#define debug(p1, p2) {}
+#define debug_begin(p1)
+#define debug_print(p1)
+#define debug_println(p1)
+#define debug_flush()
+#define debug(...)
+
 
 #elif defined(ARDUINO)  //  Use Serial object to print.
 

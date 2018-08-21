@@ -13,3 +13,5 @@ cmake-build-debug
 *.elf
 *.map
 output
+.project
+.cproject

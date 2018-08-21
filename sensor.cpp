@@ -1,5 +1,5 @@
 //  Common code for all sensors.
-#define DISABLE_DEBUG_LOG  //  Disable debug logging.
+//#define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
 // #include <stdio.h>

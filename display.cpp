@@ -127,10 +127,10 @@ Display *get_display(void) {
 }
 
 #endif  //  SENSOR_DISPLAY
-static Print Serial;
+
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
-
+#ifndef DISABLE_DEBUG_LOG
 void debug(const char *s1, const char *s2) {
   //  Print 2 dynamics strings.
   debug_begin(SERIAL_BAUD);
@@ -142,7 +142,7 @@ void debug(const char *s1, const char *s2) {
   debug_println("");
   debug_flush();  //  Let serial printing finish.
 }
-
+#endif
 #ifdef ARDUINO  //  Flash not supported for STM32.
 void debug(const __FlashStringHelper *s1) {
   //  Print 1 flash string.

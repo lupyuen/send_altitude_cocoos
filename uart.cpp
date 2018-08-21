@@ -1,15 +1,18 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
 #include "platform.h"
 #include <string.h>
+
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
 ////#include <wstring.h>  //  String class from porting library
 #include <swserial.h>  //  SoftwareSerial class from porting library
 #endif  //  ARDUINO
+
 #include <cocoos.h>
 #include "sensor.h"
 #include "uart.h"
+#include "pin.h"
 
 static void rememberMarker(UARTContext *context);
 static void logChar(char ch);
@@ -22,10 +25,12 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
 #define log2(x, y) { echoPort->print(x); echoPort->println(y); echoPort->flush(); }
 #define log3(x, y, z) { echoPort->print(x); echoPort->print(y); echoPort->println(z); echoPort->flush(); }
 #define log4(x, y, z, a) { echoPort->print(x); echoPort->print(y); echoPort->print(z); echoPort->println(a); echoPort->flush(); }
+
 //  Drop all data passed to this port.  Used to suppress echo output.
 class NullPort: public Print {
   virtual size_t write(uint8_t) { return 0; }
 };
+
 static NullPort nullPort;
 Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
 Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
@@ -50,13 +55,13 @@ static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
 static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 
 ////static String data;  //  Used for converting F(...) to char[].
-static Print Serial;
+
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
 SoftwareSerial *serialPort = NULL;  //  Serial port for send/receive.
-
+#if 0
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
   //  sendData contains a string of ASCII chars to be sent to the UART port.
@@ -65,17 +70,19 @@ void uart_task(void) {
   //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
   //  depending on success/failure sending the data.  Response is recorded in the
   //  "response" variable of the context, for the caller to retrieve.
-  UARTContext *context;  //  The context for the task.
-  static UARTMsg msg;  //  The received message.
-  uint8_t sendChar;  //  Character to be sent.
+  UARTContext *context;		//  The context for the task.
+  static UARTMsg msg;		//  The received message.
+  uint8_t sendChar;			//  Character to be sent.
 
-  task_open();  //  Start of the task. Must be matched with task_close().
-  for (;;) { //  Run the UART sending code forever. So the task never ends.
+  task_open();
+  
+  for (;;) {
     msg_receive(os_get_running_tid(), &msg);
+    
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
+    
     logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
-    //  log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.
     context->status = true;  //  Assume the return status will be successful.
@@ -178,6 +185,16 @@ void uart_task(void) {
     #endif  //  NOTUSED
   }  //  Loop back and wait for next queued message.
   task_close();  //  End of the task. Should not come here.
+}
+#endif
+
+void uart_task() {
+  task_open();
+  for(;;) {
+    task_wait(100);
+    pin::togglePin(0);
+  }
+  task_close();
 }
 
 void setup_uart(

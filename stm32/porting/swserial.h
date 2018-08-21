@@ -5,6 +5,8 @@
 #define SWSERIAL_H_
 #ifdef __cplusplus  //  SoftwareSerial class for C++ only.
 
+#include <stdint.h>
+
 class SoftwareSerial {  //  : public Print {  //  TODO: Handle UART Task.
 public:
   SoftwareSerial(unsigned rx, unsigned tx);
