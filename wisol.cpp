@@ -10,6 +10,9 @@
 #include "aggregate.h"
 #include "downlink.h"
 #include "wisol.h"
+#ifndef ARDUINO
+#include <wstring.h>  //  String class from porting library
+#endif  //  !ARDUINO
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"

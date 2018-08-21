@@ -1,7 +1,7 @@
 //  Implements the Display Task that receives display messages and displays them.
 #include "platform.h"
 #include <string.h>
-#include <stdio.h>
+// #include <stdio.h>
 #include <cocoos.h>
 #include "sensor.h"
 #include "display.h"
@@ -143,6 +143,7 @@ void debug(const char *s1, const char *s2) {
   debug_flush();  //  Let serial printing finish.
 }
 
+#ifdef ARDUINO  //  Flash not supported for STM32.
 void debug(const __FlashStringHelper *s1) {
   //  Print 1 flash string.
   Serial.begin(SERIAL_BAUD);
@@ -172,3 +173,4 @@ void debug(const __FlashStringHelper *s1, const char *s2) {
   Serial.println("");
   Serial.flush();  //  Let serial printing finish.
 }
+#endif  //  ARDUINO

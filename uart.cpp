@@ -2,7 +2,10 @@
 #include "platform.h"
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
-#endif
+#else
+#include <wstring.h>  //  String class from porting library
+#include <swserial.h>  //  SoftwareSerial class from porting library
+#endif  //  ARDUINO
 #include <cocoos.h>
 #include "sensor.h"
 #include "uart.h"

@@ -41,54 +41,11 @@
 
 #ifdef STM32  //  For STM32 only
 
+#define __FlashStringHelper char
+#define F(x) x  //  No need for flash memory helper on STM32.
 #define millis() (tickCount)  //  Return timestamp in milliseconds.
-
-#include <stdlib.h>  //  For size_t
 #include <stdint.h>  //  For uint32_t
-#include <stdio.h>   //  For printf()
-#include <wstring.h> //  For Arduino String class
 
-#ifdef __cplusplus  //  Serial class for C++ only.
-
-typedef const char *PSTR;
-typedef const char *PGM_P;
-
-class Print {  //  Reproduce the Arduino base class for Serial class.
-public:
-  Print() {}
-  Print(unsigned rx, unsigned tx) {}
-  void begin(int i) {}
-  void print(const char *s) { printf(s); }
-  void print(const String &s) { printf(s.c_str()); }
-  void print(int i) { printf("%d", i); }
-  void print(float f) { printf("%f", f); }
-  void print(size_t z) { printf("%zu", z); }
-  void println(const char *s) { puts(s); }
-  void println(const String &s) { puts(s.c_str()); }
-  void println(int i) { printf("%d\n", i); }
-  void println(float f) { printf("%f\n", f); }
-  void println(size_t z) { printf("%zu\n", z); }
-  void flush() {}
-  void listen() {}
-  void write(uint8_t ch) { putchar(ch); }
-  int read() { return -1; }
-  bool available() { return false; }
-  void end() {}
-};
-Print Serial;
-
-class SoftwareSerial: public Print {
-public:
-  SoftwareSerial(unsigned rx, unsigned tx): Print(rx, tx) {}
-};
-
-bool operator!(Print &p) {
-  //  Allow wait for the Serial interface to be ready:
-  //  while (!Serial) {}
-  return false;
-}
-
-#endif  //  __cplusplus
 #endif  //  STM32
 
 BEGIN_EXTERN_C

@@ -3,11 +3,12 @@
 #define WSTRING_UTIL_H_
 #ifndef ARDUINO
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <time.h>
+#include "util.h"
 
 char *ltoa(long num, char *str, int radix) {
   char sign = 0;
@@ -156,9 +157,6 @@ char *ultoa(unsigned long num, char *str, int radix) {
 char *dtostrf(double value, unsigned char d1, unsigned char d2, char *buf) {
   return (char *) "888";
 }
-
-#define strcpy_P strcpy
-#define strlen_P strlen
 
 #ifdef NOTUSED
 class Print {
