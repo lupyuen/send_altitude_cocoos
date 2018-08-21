@@ -9,7 +9,7 @@
 #include <cocoos.h>
 #define SERIAL_BAUD 9600  //  Serial Monitor will run at this bitrate.
 
-#ifdef DISABLE_DEBUG_LOG  //  If debug logging is disabled...
+#if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
 
 #define debug(p1, p2) {}
 #define debug_begin(p1) {}
@@ -17,7 +17,7 @@
 #define debug_println(p1) {}
 #define debug_flush() {}
 
-#else //  If debug logging is enabled, use Serial object to print.
+#elif defined(ARDUINO)  //  Use Serial object to print.
 
 #ifdef __cplusplus  //  Serial class for C++ only.
 #define debug_begin(x) 
@@ -26,11 +26,32 @@
 #define debug_flush() 
 #endif  //  __cplusplus
 
-#endif  //  DISABLE_DEBUG_LOG
+#elif defined(STM32)  //  TODO: Define the debug log functions.
+#include <stdlib.h>  //  For size_t
+
+BEGIN_EXTERN_C
+void debug_begin(uint16_t bps);
+void debug_print(const char *s);
+void debug_println(const char *s);
+void debug_flush(void);
+END_EXTERN_C
+
+#ifdef __cplusplus  //  Overload for C++
+void debug_print(int i);
+void debug_print(size_t l);
+void debug_print(char ch);
+void debug_print(float f);
+
+void debug_println(int i);
+void debug_println(size_t l);
+void debug_println(char ch);
+void debug_println(float f);
+#endif  //  __cplusplus
+
+#endif
 
 #ifndef DISABLE_DEBUG_LOG  //  If debug logging is enabled...
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
-
 //  Print a message to the Arduino serial console.  The function is overloaded to support
 //  printing of strings in dynamic memory and strings in flash (e.g. F(...)).
 void debug(
@@ -42,23 +63,11 @@ void debug(
   );
 END_EXTERN_C
 
-#ifdef __cplusplus  //  Overloaded functions for C++ only, not C.
-
-void debug(
-  const __FlashStringHelper *s1  //  String in flash memory e.g. F("the string")
-);
-
-void debug(
-  const char *s1,  //  String in dynamic memory.
-  const __FlashStringHelper *s2  //  String in flash memory e.g. F("the string")
-);
-
-void debug(
-  const __FlashStringHelper *s1,  //  String in flash memory e.g. F("the string")
-  const char *s2  //  String in dynamic memory.
-);
-
-#endif  //  __cplusplus
+#if defined(__cplusplus) && defined(ARDUINO)  //  Overloaded Flash functions for C++ only, not C.
+void debug(const __FlashStringHelper *s1); //  String in flash memory e.g. F("the string")
+void debug(const char *s1, const __FlashStringHelper *s2); //  Dynamic memory + flash memory
+void debug(const __FlashStringHelper *s1, const char *s2); //  Flash memory + dynamic memory
+#endif  //  __cplusplus && ARDUINO
 #endif  //  !DISABLE_DEBUG_LOG
 
 #ifdef SENSOR_DISPLAY  //  If display sensor data instead of sending to network...

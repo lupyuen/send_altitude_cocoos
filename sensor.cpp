@@ -2,7 +2,7 @@
 #define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
-#include <stdio.h>
+// #include <stdio.h>
 #include <cocoos.h>
 #include "sensor.h"
 #include "display.h"

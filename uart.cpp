@@ -1,8 +1,12 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
 #include "platform.h"
+#include <string.h>
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
-#endif
+#else
+////#include <wstring.h>  //  String class from porting library
+#include <swserial.h>  //  SoftwareSerial class from porting library
+#endif  //  ARDUINO
 #include <cocoos.h>
 #include "sensor.h"
 #include "uart.h"
@@ -13,11 +17,25 @@ static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
 
-//  Use a macro for logging.
+#ifdef ARDUINO  //  Use a macro for logging, Arduino only.
 #define log1(x) { echoPort->println(x); echoPort->flush(); }
 #define log2(x, y) { echoPort->print(x); echoPort->println(y); echoPort->flush(); }
 #define log3(x, y, z) { echoPort->print(x); echoPort->print(y); echoPort->println(z); echoPort->flush(); }
 #define log4(x, y, z, a) { echoPort->print(x); echoPort->print(y); echoPort->print(z); echoPort->println(a); echoPort->flush(); }
+//  Drop all data passed to this port.  Used to suppress echo output.
+class NullPort: public Print {
+  virtual size_t write(uint8_t) { return 0; }
+};
+static NullPort nullPort;
+Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
+Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
+
+#else  //  Don't log for STM32.
+#define log1(x) { }
+#define log2(x, y) { }
+#define log3(x, y, z) { }
+#define log4(x, y, z, a) { }
+#endif  //  ARDUINO
 
 //  Macro for testing the timer accuracy.
 #define TEST_TIMER(ms) \
@@ -31,21 +49,13 @@ static const uint16_t delayAfterStart = 200;  //  Delay after UART port init.
 static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
 static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 
-//  Drop all data passed to this port.  Used to suppress echo output.
-class NullPort: public Print {
-  virtual size_t write(uint8_t) { return 0; }
-};
-
-static NullPort nullPort;
-static String data;
+////static String data;  //  Used for converting F(...) to char[].
 static Print Serial;
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
 SoftwareSerial *serialPort = NULL;  //  Serial port for send/receive.
-Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
-Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
 
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
@@ -131,7 +141,9 @@ void uart_task(void) {
       //  If not "\r" marker, append the received char to the response.
       int len = strlen(context->response);
       if (len >= MAX_UART_RESPONSE_MSG_SIZE) {
+#ifdef ARDUINO        
         Serial.print(F("***** Error: UART response overflow - ")); Serial.println(len);
+#endif  //  ARDUINO
       } else {
         context->response[len] = (char) receiveChar;
         context->response[len + 1] = 0;
@@ -177,9 +189,11 @@ void setup_uart(
   //  Init the object with the response buffer and the specified transmit and receive pins.
   context->response = response;
   serialPort = new SoftwareSerial(rx, tx);
+#ifdef ARDUINO
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;
   lastEchoPort = &Serial;
+#endif  //  ARDUINO
 }
 
 static void rememberMarker(UARTContext *context) {
@@ -202,7 +216,9 @@ static void logSendReceive(UARTContext *context) {
   if (context->status == true) { /* log2(F(" - uart.sendData: response: "), context->response); */ }
   else if (strlen(context->response) == 0) { log1(F("***** uart.sendData: Error: Response timeout")); }
   else { log2(F("***** uart.sendData: Error: Unknown response: "), context->response); }
+#ifdef ARDUINO  
   Serial.flush();
+#endif  //  ARDUINO
 }
 
 //  Convert nibble to hex digit.
@@ -212,6 +228,7 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *data, char 
                             uint8_t *markerPos, uint8_t markerCount) {
   //  Log the send/receive data for debugging.  markerPos is an array of positions in data
   //  where the '\r' marker was seen and removed.  If markerCount=0, don't show markers.
+#ifdef ARDUINO  
   echoPort->print(prefix);
   size_t m = 0, i = 0;
   for (i = 0; i < strlen(data); i++) {
@@ -228,14 +245,17 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *data, char 
     m++;
   }
   echoPort->write('\n');
+#endif  //  ARDUINO
 }
 
 static void logChar(char ch) {
   //  Log the character in hex e.g. '\r' becomes "[0x0d]"
+#ifdef ARDUINO  
   echoPort->print("[0x");
   echoPort->write((uint8_t) nibbleToHex[ch / 16]);
   echoPort->write((uint8_t) nibbleToHex[ch % 16]);
   echoPort->print("]");
+#endif  //  ARDUINO
 }
 
 #ifdef NOTUSED

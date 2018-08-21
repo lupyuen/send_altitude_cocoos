@@ -2,7 +2,7 @@
 //  network transmission on Arduino with cocoOS.
 //  Based on https://github.com/lupyuen/cocoOSExample-arduino
 #include "platform.h"
-#include <stdio.h>
+// #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
