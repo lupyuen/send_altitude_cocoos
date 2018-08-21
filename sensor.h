@@ -1,6 +1,7 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+#include "platform.h"
 #include <stdlib.h>
 #include <cocoos.h>
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.

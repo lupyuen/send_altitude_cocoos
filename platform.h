@@ -46,9 +46,9 @@
 #include <stdlib.h>  //  For size_t
 #include <stdint.h>  //  For uint32_t
 #include <stdio.h>   //  For printf()
+#include <wstring.h> //  For Arduino String class
 
 #ifdef __cplusplus  //  Serial class for C++ only.
-#include "wstring.h" //  For String class
 
 typedef const char *PSTR;
 typedef const char *PGM_P;

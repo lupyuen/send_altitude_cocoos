@@ -1,8 +1,8 @@
+//  Reproduce Arduino conversion functions. Used by wstring.cpp.
 #ifndef WSTRING_UTIL_H_
 #define WSTRING_UTIL_H_
-#ifndef ARDUINO  //  Reproduce Arduino conversion functions
+#ifndef ARDUINO
 
-#include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -160,6 +160,7 @@ char *dtostrf(double value, unsigned char d1, unsigned char d2, char *buf) {
 #define strcpy_P strcpy
 #define strlen_P strlen
 
+#ifdef NOTUSED
 class Print {
 public:
   Print() {}
@@ -199,6 +200,7 @@ void delay(long i) {  //  Milliseconds.
 }
 
 typedef uint8_t byte;
+#endif  //  NOTUSED
 
 #endif  //  !ARDUINO
 #endif  //  WSTRING_UTIL_H_
