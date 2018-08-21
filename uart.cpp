@@ -4,7 +4,6 @@
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
-////#include <wstring.h>  //  String class from porting library
 #include <swserial.h>  //  SoftwareSerial class from porting library
 #endif  //  ARDUINO
 #include <cocoos.h>
@@ -49,13 +48,11 @@ static const uint16_t delayAfterStart = 200;  //  Delay after UART port init.
 static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
 static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 
-////static String data;  //  Used for converting F(...) to char[].
-
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
-SoftwareSerial *serialPort = NULL;  //  Serial port for send/receive.
+SoftwareSerial serialPort(UART_RX_PORT, UART_TX_PORT);  //  Serial port for send/receive.
 
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
@@ -85,10 +82,10 @@ void uart_task(void) {
     context->actualMarkerCount = 0;  //  How many markers we actually received.
 
     //  Initialise the UART port.
-    serialPort->begin(MODEM_BITS_PER_SECOND);  //  Start the UART interface.
+    serialPort.begin(UART_BITS_PER_SECOND);  //  Start the UART interface.
     task_wait(delayAfterStart);  //  Wait for the UART port to be ready.
     context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
-    serialPort->listen();  //  Start listening for responses from the UART port.
+    serialPort.listen();  //  Start listening for responses from the UART port.
     
     //  Send Loop
     for (;;) {  //  Send the sendData char by char.
@@ -97,7 +94,7 @@ void uart_task(void) {
         || context->sendIndex >= MAX_UART_SEND_MSG_SIZE) { break; }
       //  Send the next char.
       sendChar = (uint8_t) context->msg->sendData[context->sendIndex];
-      serialPort->write(sendChar);
+      serialPort.write(sendChar);
       context->sendIndex++;  ////  Serial.println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
       task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
       context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
@@ -115,7 +112,7 @@ void uart_task(void) {
         logBuffer(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
         break;
       }
-      if (serialPort->available() <= 0) { 
+      if (serialPort.available() <= 0) { 
         //  No data is available in the serial port sendData to receive now.  We retry later.
         //  Wait a while before checking receive.
         remainingTime = context->msg->timeout - elapsedTime;
@@ -125,7 +122,7 @@ void uart_task(void) {
         continue;  //  Check again.
       }
       //  Attempt to read the data.
-      int receiveChar = serialPort->read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
+      int receiveChar = serialPort.read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
       if (receiveChar == -1) { continue; }  //  Should not come here.
@@ -149,7 +146,7 @@ void uart_task(void) {
         context->response[len + 1] = 0;
       }  ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
     }  //  Loop until receive is complete or timeout.
-    serialPort->end();  //  Finished the send/receive.  We close the UART port.
+    serialPort.end();  //  Finished the send/receive.  We close the UART port.
     context = (UARTContext *) task_get_data();  //  Must fetch again to be safe.
 
     //  If we did not see the expected number of '\r' markers, record the error.
@@ -181,14 +178,11 @@ void uart_task(void) {
 }
 
 void setup_uart(
-  UARTContext *context, 
-  char *response, 
-  uint8_t rx, 
-  uint8_t tx, 
-  bool echo) {
+  UARTContext *context,  //  Will be used to store the context of the UART Task.
+  char *response,        //  Buffer that will be used to store the UART response.
+  bool echo) {           //  If true, all commands will be echoed to console.
   //  Init the object with the response buffer and the specified transmit and receive pins.
   context->response = response;
-  serialPort = new SoftwareSerial(rx, tx);
 #ifdef ARDUINO
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;

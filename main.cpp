@@ -1,8 +1,10 @@
-//  Sample application demonstrating multitasking of multiple IoT sensors and
-//  network transmission on Arduino with cocoOS.
+//  Sample application demonstrating multitasking of multiple IoT sensors and network transmission on Arduino with cocoOS.
 //  Based on https://github.com/lupyuen/cocoOSExample-arduino
+//  Note: Never use the "new" operator like:
+//    serialPort = new SoftwareSerial(rx, tx);
+//  On STM32 this pulls in the C++ Demangler (cp-demangle.o) which adds 27 KB of useless code.
+//  https://docs.google.com/spreadsheets/d/1g_6hTMSofzywcjiIgl0YKy3Qodn9TXdNRaKW-Qyn5s0/edit#gid=517105377
 #include "platform.h"
-// #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
@@ -81,13 +83,9 @@ static uint8_t network_setup(void) {
   //  Start the network task to send and receive network messages.
 
   //  Start the UART Task for transmitting UART data to the Wisol module.
-  const uint8_t WISOL_TX = 4;  //  Transmit port for Wisol module.
-  const uint8_t WISOL_RX = 5;  //  Receive port for Wisol module.
   setup_uart(
     &uartContext,
     uartResponse,
-    WISOL_RX, 
-    WISOL_TX, 
     true);
   uint8_t uartTaskID = task_create(
     uart_task,     //  Task will run this function.
@@ -211,3 +209,7 @@ ISR(TIMER1_COMPA_vect) {
   os_tick();
 }
 #endif  //  ARDUINO
+
+//  Fix for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html
+extern "C" void __cxa_pure_virtual() { while (true) {} }
+void operator delete(void *) { }

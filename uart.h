@@ -1,13 +1,15 @@
+//  UART Task for sending and receiving data to/from the UART port.
+//  The UART port is connected to the Wisol Sigfox module.
 #ifndef UART_H_
 #define UART_H_
-
+#include "platform.h"
 #include <stddef.h>
 #include <cocoos.h>
-#ifdef __cplusplus
-extern "C" {  //  Allows functions below to be called by C and C++ code.
-#endif
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
-#define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
+#define UART_TX_PORT 4  //  Transmit port for Wisol module.
+#define UART_RX_PORT 5  //  Receive port for Wisol module.
+#define UART_BITS_PER_SECOND 9600  //  Connect to Wisol module at this bps.
 #define UART_MSG_POOL_SIZE 2  //  Should not allow concurrent UART messages.  Hangs if <2.
 
 struct SensorMsg;  //  Forward declaration
@@ -37,14 +39,10 @@ struct UARTContext {
 };
 
 void setup_uart(
-  UARTContext *context, 
-  char *response, 
-  uint8_t rx, 
-  uint8_t tx, 
-  bool echo);
+  UARTContext *context,  //  Will be used to store the context of the UART Task.
+  char *response,        //  Buffer that will be used to store the UART response.
+  bool echo);            //  If true, all commands will be echoed to console.
 void uart_task(void);
 
-#ifdef __cplusplus
-}  //  End of extern C scope.
-#endif
+END_EXTERN_C  //  End of extern C scope.
 #endif  //  UART_H_
