@@ -7,6 +7,7 @@
 #include <swserial.h>  //  SoftwareSerial class from porting library
 #endif  //  ARDUINO
 #include <cocoos.h>
+#include "display.h"
 #include "sensor.h"
 #include "uart.h"
 
@@ -95,7 +96,7 @@ void uart_task(void) {
       //  Send the next char.
       sendChar = (uint8_t) context->msg->sendData[context->sendIndex];
       serialPort.write(sendChar);
-      context->sendIndex++;  ////  Serial.println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
+      context->sendIndex++;  ////  debug_println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
       task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
       context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
     }
@@ -122,7 +123,7 @@ void uart_task(void) {
         continue;  //  Check again.
       }
       //  Attempt to read the data.
-      int receiveChar = serialPort.read();  ////  Serial.println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
+      int receiveChar = serialPort.read();  ////  debug_println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
       if (receiveChar == -1) { continue; }  //  Should not come here.
@@ -138,13 +139,11 @@ void uart_task(void) {
       //  If not "\r" marker, append the received char to the response.
       int len = strlen(context->response);
       if (len >= MAX_UART_RESPONSE_MSG_SIZE) {
-#ifdef ARDUINO        
-        Serial.print(F("***** Error: UART response overflow - ")); Serial.println(len);
-#endif  //  ARDUINO
+        debug_print(F("***** Error: UART response overflow - ")); debug_println(len);
       } else {
         context->response[len] = (char) receiveChar;
         context->response[len + 1] = 0;
-      }  ////   Serial.println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
+      }  ////   debug_println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
     }  //  Loop until receive is complete or timeout.
     serialPort.end();  //  Finished the send/receive.  We close the UART port.
     context = (UARTContext *) task_get_data();  //  Must fetch again to be safe.
@@ -203,16 +202,14 @@ static void logSendReceive(UARTContext *context) {
   //  logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
   logBuffer(F("<< "), context->response, context->msg->markerChar, markerPos, context->actualMarkerCount);
 
-  // Serial.print(F("<< status: ")); Serial.println(context->status);
-  // Serial.print(F("<< response: ")); Serial.println(context->response);
-  // Serial.print(F("<< actualMarkerCount: ")); Serial.println(context->actualMarkerCount);
+  // debug_print(F("<< status: ")); debug_println(context->status);
+  // debug_print(F("<< response: ")); debug_println(context->response);
+  // debug_print(F("<< actualMarkerCount: ")); debug_println(context->actualMarkerCount);
 
   if (context->status == true) { /* log2(F(" - uart.sendData: response: "), context->response); */ }
   else if (strlen(context->response) == 0) { log1(F("***** uart.sendData: Error: Response timeout")); }
   else { log2(F("***** uart.sendData: Error: Unknown response: "), context->response); }
-#ifdef ARDUINO  
-  Serial.flush();
-#endif  //  ARDUINO
+  debug_flush();
 }
 
 //  Convert nibble to hex digit.

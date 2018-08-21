@@ -1,3 +1,6 @@
+//  Display the debug log on the console.  If SENSOR_DISPLAY is enabled,
+//  there will be a Display Task that will receive sensor data messages
+//  and displays them on the console.
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
