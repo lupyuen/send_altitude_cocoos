@@ -1,9 +1,10 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
 #include "platform.h"
+#include <string.h>
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
-#include <wstring.h>  //  String class from porting library
+////#include <wstring.h>  //  String class from porting library
 #include <swserial.h>  //  SoftwareSerial class from porting library
 #endif  //  ARDUINO
 #include <cocoos.h>
@@ -48,7 +49,7 @@ static const uint16_t delayAfterStart = 200;  //  Delay after UART port init.
 static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
 static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 
-static String data;  //  Used for converting F(...) to char[].
+////static String data;  //  Used for converting F(...) to char[].
 
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;

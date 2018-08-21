@@ -11,7 +11,7 @@
 #include "downlink.h"
 #include "wisol.h"
 #ifndef ARDUINO
-#include <wstring.h>  //  String class from porting library
+////#include <wstring.h>  //  String class from porting library
 #endif  //  !ARDUINO
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
@@ -436,7 +436,11 @@ bool getDownlink(NetworkContext *context, const char *response0) {
 }
 
 static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
+#ifdef ARDUINO
 static String cmdData;
+#else
+static const char *cmdData;
+#endif  //  ARDUINO
 
 static void convertCmdToUART(
   NetworkCmd *cmd,
@@ -455,7 +459,11 @@ static void convertCmdToUART(
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
     cmdData = cmd->sendData;
+#ifdef ARDUINO    
     const char *cmdDataStr = cmdData.c_str();
+#else
+    const char *cmdDataStr = cmdData;
+#endif  //  ARDUINO    
     strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
@@ -471,7 +479,11 @@ static void convertCmdToUART(
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
     cmdData = cmd->sendData2;
+#ifdef ARDUINO
     const char *cmdDataStr = cmdData.c_str();
+#else
+    const char *cmdDataStr = cmdData;
+#endif  //  ARDUINO    
     strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
     uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
     uartMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.
