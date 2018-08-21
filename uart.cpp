@@ -17,25 +17,19 @@ static void logSendReceive(UARTContext *context);
 static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, char markerChar,
                             uint8_t *markerPos, uint8_t markerCount);
 
-#ifdef ARDUINO  //  Use a macro for logging, Arduino only.
-#define log1(x) { echoPort->println(x); echoPort->flush(); }
-#define log2(x, y) { echoPort->print(x); echoPort->println(y); echoPort->flush(); }
-#define log3(x, y, z) { echoPort->print(x); echoPort->print(y); echoPort->println(z); echoPort->flush(); }
-#define log4(x, y, z, a) { echoPort->print(x); echoPort->print(y); echoPort->print(z); echoPort->println(a); echoPort->flush(); }
-//  Drop all data passed to this port.  Used to suppress echo output.
-class NullPort: public Print {
-  virtual size_t write(uint8_t) { return 0; }
-};
-static NullPort nullPort;
-Print *echoPort = &Serial;  //  Port for sending echo output.  Defaults to Serial.
-Print *lastEchoPort = &Serial;  //  Last port used for sending echo output.
-
-#else  //  Don't log for STM32.
+#ifdef DISABLE_DEBUG_LOG  //  Don't do debug logging.
 #define log1(x) { }
 #define log2(x, y) { }
 #define log3(x, y, z) { }
 #define log4(x, y, z, a) { }
-#endif  //  ARDUINO
+
+#else  //  Use a macro for logging.
+
+#define log1(x) { debug_println(x); debug_flush(); }
+#define log2(x, y) { debug_print(x); debug_println(y); debug_flush(); }
+#define log3(x, y, z) { debug_print(x); debug_print(y); debug_println(z); debug_flush(); }
+#define log4(x, y, z, a) { debug_print(x); debug_print(y); debug_print(z); debug_println(a); debug_flush(); }
+#endif  //  DISABLE_DEBUG_LOG
 
 //  Macro for testing the timer accuracy.
 #define TEST_TIMER(ms) \
@@ -178,15 +172,9 @@ void uart_task(void) {
 
 void setup_uart(
   UARTContext *context,  //  Will be used to store the context of the UART Task.
-  char *response,        //  Buffer that will be used to store the UART response.
-  bool echo) {           //  If true, all commands will be echoed to console.
-  //  Init the object with the response buffer and the specified transmit and receive pins.
+  char *response) {      //  Buffer that will be used to store the UART response.
+  //  Init the UART context with the response buffer.
   context->response = response;
-#ifdef ARDUINO
-  if (echo) echoPort = &Serial;
-  else echoPort = &nullPort;
-  lastEchoPort = &Serial;
-#endif  //  ARDUINO
 }
 
 static void rememberMarker(UARTContext *context) {
@@ -219,8 +207,7 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *data, char 
                             uint8_t *markerPos, uint8_t markerCount) {
   //  Log the send/receive data for debugging.  markerPos is an array of positions in data
   //  where the '\r' marker was seen and removed.  If markerCount=0, don't show markers.
-#ifdef ARDUINO  
-  echoPort->print(prefix);
+  debug_print(prefix);
   size_t m = 0, i = 0;
   for (i = 0; i < strlen(data); i++) {
     if (m < markerCount && markerPos[m] == i) {
@@ -229,24 +216,21 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *data, char 
     }
     char ch = data[i];
     if (ch < ' ' || ch > '~') { logChar(ch); }  //  Log non-ASCII char in hex.
-    else { echoPort->write((uint8_t) ch); }
+    else { debug_write((uint8_t) ch); }
   }
   if (m < markerCount && markerPos[m] == i) {
     logChar(markerChar);
     m++;
   }
-  echoPort->write('\n');
-#endif  //  ARDUINO
+  debug_write('\n');
 }
 
 static void logChar(char ch) {
   //  Log the character in hex e.g. '\r' becomes "[0x0d]"
-#ifdef ARDUINO  
-  echoPort->print("[0x");
-  echoPort->write((uint8_t) nibbleToHex[ch / 16]);
-  echoPort->write((uint8_t) nibbleToHex[ch % 16]);
-  echoPort->print("]");
-#endif  //  ARDUINO
+  debug_print("[0x");
+  debug_write((uint8_t) nibbleToHex[ch / 16]);
+  debug_write((uint8_t) nibbleToHex[ch % 16]);
+  debug_print("]");
 }
 
 #ifdef NOTUSED

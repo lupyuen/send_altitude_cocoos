@@ -16,6 +16,7 @@
 
 #define debug(p1, p2) {}
 #define debug_begin(p1) {}
+#define debug_write(p1) {}
 #define debug_print(p1) {}
 #define debug_println(p1) {}
 #define debug_flush() {}
@@ -24,6 +25,7 @@
 
 #ifdef __cplusplus  //  Serial class for C++ only.
 #define debug_begin(x) Serial.begin(x)
+#define debug_write(x) Serial.write(x)
 #define debug_print(x) Serial.print(x)
 #define debug_println(x) Serial.println(x)
 #define debug_flush() Serial.flush()
@@ -34,6 +36,7 @@
 
 BEGIN_EXTERN_C
 void debug_begin(uint16_t bps);
+void debug_write(uint8_t ch);
 void debug_print(const char *s);
 void debug_println(const char *s);
 void debug_flush(void);

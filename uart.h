@@ -38,10 +38,12 @@ struct UARTContext {
   UARTMsg *msg;  //  Message being sent. Set by uart_task() upon receiving a message.
 };
 
+//  Init the UART context with the response buffer.
 void setup_uart(
   UARTContext *context,  //  Will be used to store the context of the UART Task.
-  char *response,        //  Buffer that will be used to store the UART response.
-  bool echo);            //  If true, all commands will be echoed to console.
+  char *response);       //  Buffer that will be used to store the UART response.
+
+//  UART Task loop that processes requests to send/receive UART data.
 void uart_task(void);
 
 END_EXTERN_C  //  End of extern C scope.

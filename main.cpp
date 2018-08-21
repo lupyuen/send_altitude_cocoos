@@ -84,9 +84,8 @@ static uint8_t network_setup(void) {
 
   //  Start the UART Task for transmitting UART data to the Wisol module.
   setup_uart(
-    &uartContext,
-    uartResponse,
-    true);
+    &uartContext,  //  Init the context for UART Task.
+    uartResponse); //  UART Task will save the response data here.
   uint8_t uartTaskID = task_create(
     uart_task,     //  Task will run this function.
     &uartContext,  //  task_get_data() will be set to the display object.
@@ -97,7 +96,7 @@ static uint8_t network_setup(void) {
 
   //  Start the Network Task for receiving sensor data and transmitting to UART Task.
   setup_wisol(
-    &wisolContext,
+    &wisolContext,  //  Init the context for the Network Task.
     &uartContext,
     uartTaskID, 
     COUNTRY_SG, 
