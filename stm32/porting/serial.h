@@ -8,9 +8,9 @@
 
 class Print {  //  Reproduce the Arduino base class for Serial class.
 public:
-  Print() {}
-  Print(unsigned rx, unsigned tx) {}
-  void begin(int i) {}
+  Print(); // {}
+  Print(unsigned rx, unsigned tx); // {}
+  void begin(int i); // {}
   void print(const char *s); // { printf(s); }
   void print(const String &s); // { printf(s.c_str()); }
   void print(int i); // { printf("%d", i); }
@@ -21,12 +21,12 @@ public:
   void println(int i); // { printf("%d\n", i); }
   void println(float f); // { printf("%f\n", f); }
   void println(size_t z); // { printf("%zu\n", z); }
-  void flush() {}
-  void listen() {}
+  void flush(); // {}
+  void listen(); // {}
   void write(uint8_t ch); // { putchar(ch); }
-  int read() { return -1; }
-  bool available() { return false; }
-  void end() {}
+  int read(); // { return -1; }
+  bool available(); // { return false; }
+  void end(); // {}
 };
 extern Print Serial;
 
