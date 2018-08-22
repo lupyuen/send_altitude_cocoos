@@ -1,8 +1,3 @@
-/*
- * config.h
- *
- */
-
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
@@ -10,7 +5,7 @@
 #include <stdint.h>
 #include <pin.h>
 
-//#include <inc/usart.h>
+#include <stm32f4uart.h>
 
 
 
@@ -36,14 +31,14 @@ struct pin::cfg_t {
 
 
 /*=====================  USART CONFIGURATION  =====================*/
-/*
+
 struct usart::cfg_t {
     USART_TypeDef* usart;
     USART_InitTypeDef init;
     NVIC_InitTypeDef nvic;
     uint8_t *out;
 };
-*/
+
 
 
 

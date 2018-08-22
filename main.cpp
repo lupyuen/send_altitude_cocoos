@@ -15,7 +15,7 @@
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "stm32setup.h"
-
+#include "stm32f4uart.h"
 #ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
@@ -23,6 +23,7 @@
 static void system_setup(void);
 static void sensor_setup(uint8_t display_task_id);
 static uint8_t network_setup(void);
+static usart::ptr createConsole();
 
 
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
@@ -40,6 +41,7 @@ static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];
 
 // Pool of sensor data messages for the Network Task message queue.
 static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];
+
 
 int main(void) {
   //  The application starts here. We create the tasks to read and display sensor data 
@@ -69,12 +71,18 @@ static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
 
   stm32_setup();
+  (void)createConsole();
   os_disable_interrupts();
 
   // Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   i2cSemaphore = sem_counting_create( maxCount, initValue );
+}
+
+static usart::ptr createConsole() {
+  static usart console(0);
+  return &console;
 }
 
 static uint8_t network_setup(void) {
