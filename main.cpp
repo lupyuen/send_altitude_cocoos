@@ -201,6 +201,8 @@ ISR(TIMER1_COMPA_vect) {
   tickCount++;
   os_tick();
 }
+#else
+//  For STM32, platform_setup() and platform_start_timer() are defined in stm32/porting/porting.cpp
 #endif  //  ARDUINO
 
 //  Disable exceptions for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html
