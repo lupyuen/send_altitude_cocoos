@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include <cocoos.h>
+#include "radioController.h"
+
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
@@ -34,6 +36,8 @@ struct UARTContext {
   uint8_t actualMarkerCount;  //  Actual number of markers received.
   unsigned long testTimer;  //  For testing timer.
   UARTMsg *msg;  //  Message being sent. Set by uart_task() upon receiving a message.
+  RadioController *radio;
+  Evt_t rxDoneEvent;
 };
 
 void setup_uart(
@@ -41,7 +45,9 @@ void setup_uart(
   char *response, 
   uint8_t rx, 
   uint8_t tx, 
-  bool echo);
+  bool echo,
+  RadioController *radio);
+
 void uart_task(void);
 
 #ifdef __cplusplus

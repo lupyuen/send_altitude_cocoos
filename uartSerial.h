@@ -1,17 +1,17 @@
-#ifndef _SERIAL_DEVICE_H_
-#define _SERIAL_DEVICE_H_
+#ifndef _UART_SERIAL_H_
+#define _UART_SERIAL_H_
 
 #include <stdint.h>
 
 
 
-class SerialDevice {
+class UartSerial {
 public:
-    typedef SerialDevice *ptr;
+    typedef UartSerial *ptr;
     typedef uint16_t ID;
 
-    SerialDevice( ID id );
-    ~SerialDevice();
+    UartSerial( ID id );
+    ~UartSerial();
 
     // Get a pointer to the instance
     static ptr instance( ID id );

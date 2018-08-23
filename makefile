@@ -18,13 +18,12 @@ ASSEM = $(ASSEM_PATH) $(ASSEM_FLAGS)
 includes = -I. \
 -I./stm32/porting \
 -I./stm32f4/inc \
--I../mcal/stm32f4 \
+-I./radios \
 -I../cocoOS/common/inc \
--I../utils/common \
 -I../stmlib/stm32f4 \
 -I../stmlib/stm32f4/inc
 
-source = . ./stm32f4/src
+source = . ./stm32f4/src ./radios
 output = ./output
 modpath = ..
 
@@ -61,7 +60,9 @@ $(moddeps) :
 ./output/%.o : %.cpp
 	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
 	
-
+./output/%.o : ./radios/%.cpp
+	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
+	
 ./output/%.o : ./$(mcu)/src/%.cpp
 	$(COMPILE_CPP) $(includes) -c $^ -o $@
 

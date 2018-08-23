@@ -13,7 +13,7 @@
 #include "sensor.h"
 #include "uart.h"
 #include "pin.h"
-#include "serialDevice.h"
+#include "uartSerial.h"
 static void rememberMarker(UARTContext *context);
 static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
@@ -189,14 +189,26 @@ void uart_task(void) {
 #endif
 
 void uart_task() {
+  UARTContext *context;
+
   task_open();
+  context = (UARTContext *) task_get_data();
+  context->rxDoneEvent = event_create();
+  context->radio->setDoneEvent(context->rxDoneEvent);
+
   for(;;) {
     task_wait(10);
+    context = (UARTContext *) task_get_data();
 
-    if (SerialDevice::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("hello world\n")),12 ) == false) {
-      // could not send - wait and send error message
+    if (context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Hello World\n")),12)) {
+      event_wait(context->rxDoneEvent);
+      context = (UARTContext *) task_get_data();
+      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Received response\n")),18);
+    }
+    else {
       task_wait(100);
-      SerialDevice::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
+      context = (UARTContext *) task_get_data();
+      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
     }
 
     pin::togglePin(0);
@@ -209,10 +221,13 @@ void setup_uart(
   char *response, 
   uint8_t rx, 
   uint8_t tx, 
-  bool echo) {
+  bool echo,
+  RadioController *radio) {
   //  Init the object with the response buffer and the specified transmit and receive pins.
   context->response = response;
-  serialPort = new SoftwareSerial(rx, tx);
+  //serialPort = new SoftwareSerial(rx, tx);
+  context->radio = radio;
+
 #ifdef ARDUINO
   if (echo) echoPort = &Serial;
   else echoPort = &nullPort;

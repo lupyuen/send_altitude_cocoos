@@ -16,7 +16,8 @@
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "stm32setup.h"
 #include "config.h"
-#include "serialDevice.h"
+#include "uartSerial.h"
+#include "wisolController.h"
 #ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
@@ -24,7 +25,7 @@
 static void system_setup(void);
 static void sensor_setup(uint8_t display_task_id);
 static uint8_t network_setup(void);
-static SerialDevice::ptr createDebugConsole();
+static UartSerial::ptr createDebugConsole();
 
 
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
@@ -73,7 +74,7 @@ static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
 
   stm32_setup();
-  (void)createDebugConsole();
+  //(void)createDebugConsole();
   os_disable_interrupts();
 
   // Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -82,8 +83,8 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-static SerialDevice::ptr createDebugConsole() {
-  static SerialDevice console(DEBUG_USART_ID);
+static UartSerial::ptr createDebugConsole() {
+  static UartSerial console(DEBUG_USART_ID);
   return &console;
 }
 
@@ -93,12 +94,17 @@ static uint8_t network_setup(void) {
   //  Start the UART Task for transmitting UART data to the Wisol module.
   const uint8_t WISOL_TX = 4;  //  Transmit port for Wisol module.
   const uint8_t WISOL_RX = 5;  //  Receive port for Wisol module.
+
+  static WisolController radio(createDebugConsole());
+
   setup_uart(
     &uartContext,
     uartResponse,
-    WISOL_RX, 
-    WISOL_TX, 
-    true);
+    WISOL_RX,
+    WISOL_TX,
+    true,
+    &radio);
+
   uint8_t uartTaskID = task_create(
     uart_task,     //  Task will run this function.
     &uartContext,  //  task_get_data() will be set to the display object.
