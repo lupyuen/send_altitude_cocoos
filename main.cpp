@@ -16,22 +16,19 @@
 #include "temp_sensor.h"   //  Temperature sensor (BME280)
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
-#ifdef GYRO_SENSOR
+#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
+
+//  Functions specific to the platform, e.g. Arduino, STM32.
+extern "C" void platform_setup(void);  //  Initialise the Arduino or STM32 platform.
+extern "C" void platform_start_timer(void);  //  Start the Arduino or STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
-#if defined(ARDUINO)
-static void arduino_setup(void);  //  Initialise the Arduino timers.
-static void arduino_start_timer(void);  //  Start the AVR Timer 1 to generate interrupt ticks for cocoOS to perform task switching.
-#elif defined(STM32)
-void stm32_setup(void);  //  Initialise the STM32 platform.
-void stm32_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
-#endif
-#ifdef SENSOR_DISPLAY
+#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 #endif  //  SENSOR_DISPLAY
 
@@ -56,7 +53,7 @@ int main(void) {
   //  Erase the aggregated sensor data.
   setup_aggregate();
 
-#ifdef SENSOR_DISPLAY
+#ifdef SENSOR_DISPLAY  //  Display the sensor data instead of sending to network.
   //  Start the display task that displays sensor data.
   uint8_t task_id = display_setup();
 #endif  //  SENSOR_DISPLAY
@@ -68,11 +65,8 @@ int main(void) {
   //  to the Network Task or Display Task.
   sensor_setup(task_id);
 
-#if defined(ARDUINO)
-  arduino_start_timer();  //  Start the Arduino AVR timer to generate ticks for cocoOS to switch tasks.
-#elif defined(STM32)
-  stm32_start_timer();  //  TODO: Start the STM32 timer to generate ticks for cocoOS to switch tasks.
-#endif
+  //  Start the Arduino or STM32 timer to generate ticks for cocoOS to switch tasks.
+  platform_start_timer();
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   os_start();  //  Never returns.  
@@ -80,7 +74,9 @@ int main(void) {
 }
 
 static uint8_t network_setup(void) {
-  //  Start the network task to send and receive network messages.
+  //  Start the Network Task to send and receive network messages.
+  //  Also starts the UART Task called by the Network Task to send/receive data to the UART port.
+  //  UART Task must have the highest task priority because it must respond to UART data immediately.
 
   //  Start the UART Task for transmitting UART data to the Wisol module.
   setup_uart(
@@ -124,7 +120,7 @@ static void sensor_setup(uint8_t task_id) {
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
   SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
   SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
-#ifdef GYRO_SENSOR
+#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
 #endif  //  GYRO_SENSOR
 
@@ -137,7 +133,7 @@ static void sensor_setup(uint8_t task_id) {
     0, 0, 0);  //  Will not receive message queue data.
   task_create(sensor_task, altContext, 130,  //  Priority 130
     0, 0, 0);  //  Will not receive message queue data.
-#ifdef GYRO_SENSOR
+#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
   task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.
 #endif  //  GYRO_SENSOR
@@ -145,14 +141,12 @@ static void sensor_setup(uint8_t task_id) {
 #endif  //  SENSOR_DATA
 
 static void system_setup(void) {
-  //  Initialise the system. Create the semaphore.
-#if defined(ARDUINO)
-  arduino_setup(); 
-#elif defined(STM32)
-  stm32_setup();  //  TODO
-#endif
+  //  Initialise the system. Create the I2C semaphore.
 
-#ifdef SENSOR_DISPLAY    //// debug(F("init_display")); ////
+  //  Setup the Arduino or STM32 platform.
+  platform_setup();
+
+#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
   init_display();
 #endif  //  SENSOR_DISPLAY
 
@@ -163,7 +157,7 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-#ifdef SENSOR_DISPLAY
+#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
 static uint8_t display_setup(void) {
   //  Start the display task that displays sensor data.  Return the task ID.
   uint8_t display_task_id = task_create(
@@ -180,13 +174,13 @@ static uint8_t display_setup(void) {
 volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
 
 #ifdef ARDUINO
-static void arduino_setup(void) {
+void platform_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
   init();
-  debug(F("----arduino_setup"));
+  debug(F("----platform_setup"));
 }
 
-static void arduino_start_timer(void) {
+void platform_start_timer(void) {
   //  Start the AVR Timer 1 to generate interrupt ticks every millisecond
   //  for cocoOS to perform task switching.  AVR Timer 0 is reserved for 
   //  Arduino timekeeping. From https://arduinodiy.wordpress.com/2012/02/28/timer-interrupts/
@@ -209,6 +203,6 @@ ISR(TIMER1_COMPA_vect) {
 }
 #endif  //  ARDUINO
 
-//  Fix for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html
+//  Disable exceptions for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html
 extern "C" void __cxa_pure_virtual() { while (true) {} }
 void operator delete(void *) { }
