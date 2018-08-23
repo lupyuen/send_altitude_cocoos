@@ -20,21 +20,24 @@ void platform_start_timer(void) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-//  STM32 Blue Pill Testing. 
+//  STM32 Blue Pill Testing 
 
-#ifdef NOTUSED
 //  ARM Semihosting code from http://www.keil.com/support/man/docs/ARMCC/armcc_chr1359125001592.htm
 //  https://wiki.dlang.org/Minimal_semihosted_ARM_Cortex-M_%22Hello_World%22
 
-int __semihost(int cmd, const void *msg) {
-    asm {
-      "mov r0, %[cmd]; 
-       mov r1, %[msg]; 
-       bkpt #0xAB"
-	:                              
-	: [cmd] "r" command, [msg] "r" message
-	: "r0", "r1", "memory";
-    }
+int __semihost(int command, void* message) {
+    __asm( 
+      "mov r0, %[cmd] \n"
+      "mov r1, %[msg] \n" 
+      "bkpt #0xAB \n"
+	:  //  Output_operand_list
+	:  //  Input_operand_list
+		[cmd] "r" (command), 
+		[msg] "r" (message)
+	:  //  Clobbered register list
+		"r0", "r1", "memory"
+	);
+	return 0;  //  TODO
 }
 
 //  ARM Semihosting code from https://github.com/ARMmbed/mbed-os/blob/master/platform/mbed_semihost_api.c
@@ -52,7 +55,7 @@ int __semihost(int cmd, const void *msg) {
 #define SYS_RENAME (0xf)
 #define SYS_EXIT   (0x18)
 
-int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length, int mode)
+int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length)
 {
     if (length == 0) { return 0; }
     uint32_t args[3];
@@ -61,15 +64,14 @@ int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length
     args[2] = (uint32_t)length;
     return __semihost(SYS_WRITE, args);
 }
-#endif
 
 //  Blink code from https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+#include <string.h>
 
 static void gpio_setup(void) {
-
 	/* Enable GPIOC clock. */
 	rcc_periph_clock_enable(RCC_GPIOC);
 
@@ -81,10 +83,14 @@ static void gpio_setup(void) {
 int test_main(void) {
 	//  We blink the Blue Pill onboard LED in a special pattern to distinguish ourselves
 	//  from other blink clones - 2 x on, then 1 x off.
+
+#ifdef SEMIHOSTING
+	const char *msg = "hello\n";
+	semihost_write(2, (const unsigned char *) msg, strlen(msg));
+#endif  //  SEMIHOSTING
+
 	int i;
-
 	gpio_setup();
-
 	for (;;) {
 		gpio_clear(GPIOC,GPIO13);	/* LED on */
 		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
