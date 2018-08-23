@@ -15,8 +15,8 @@
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "stm32setup.h"
-#include "stm32f4uart.h"
 #include "config.h"
+#include "serialDevice.h"
 #ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
@@ -24,7 +24,7 @@
 static void system_setup(void);
 static void sensor_setup(uint8_t display_task_id);
 static uint8_t network_setup(void);
-static usart::ptr createDebugConsole();
+static SerialDevice::ptr createDebugConsole();
 
 
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
@@ -82,8 +82,8 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-static usart::ptr createDebugConsole() {
-  static usart console(DEBUG_USART_ID);
+static SerialDevice::ptr createDebugConsole() {
+  static SerialDevice console(DEBUG_USART_ID);
   return &console;
 }
 

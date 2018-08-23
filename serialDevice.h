@@ -1,18 +1,17 @@
-#ifndef STM32F4_USART_H_
-#define STM32F4_USART_H_
+#ifndef _SERIAL_DEVICE_H_
+#define _SERIAL_DEVICE_H_
 
 #include <stdint.h>
-#include <cstddef>
 
 
 
-class usart {
+class SerialDevice {
 public:
-    typedef usart *ptr;
+    typedef SerialDevice *ptr;
     typedef uint16_t ID;
 
-    usart( ID id );
-    ~usart();
+    SerialDevice( ID id );
+    ~SerialDevice();
 
     // Get a pointer to the instance
     static ptr instance( ID id );
@@ -24,7 +23,7 @@ public:
     // receive uart data
     class IReaderCb {
     public:
-        virtual void usart_update(uint8_t data) = 0;
+        virtual void update(uint8_t data) = 0;
     };
 
     // Register a uart listener
@@ -56,4 +55,4 @@ private:
 
 
 
-#endif /* STM32F4_USART_H_ */
+#endif /* _SERIAL_DEVICE_H_ */

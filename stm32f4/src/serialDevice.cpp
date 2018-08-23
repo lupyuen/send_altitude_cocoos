@@ -1,14 +1,14 @@
-#include <stm32f4uart.h>
+#include <serialDevice.h>
 #include <config.h>
 #include <inc/stm32f4xx.h>
 #include <string.h>
 
 
 
-static usart::ptr usart_inst[ usart::N_MAX_USARTS ] = {0};
-static usart::ptr irq_inst[ usart::N_MAX_USARTS ] = {0};
+static SerialDevice::ptr usart_inst[ SerialDevice::N_MAX_USARTS ] = {0};
+static SerialDevice::ptr irq_inst[ SerialDevice::N_MAX_USARTS ] = {0};
 
-usart::usart( ID id ):
+SerialDevice::SerialDevice( ID id ):
     reader(nullptr),
     m_id(id),
     n_write(0),
@@ -21,17 +21,17 @@ usart::usart( ID id ):
 }
 
 
-usart::~usart() {
+SerialDevice::~SerialDevice() {
     usart_inst[ m_id ] = 0;
 }
 
-usart::ptr usart::instance( ID id ) {
+SerialDevice::ptr SerialDevice::instance( ID id ) {
 
-    if (( id >= usart::N_MAX_USARTS ) || ( id > n_configured_usarts - 1 )) return 0;
+    if (( id >= SerialDevice::N_MAX_USARTS ) || ( id > n_configured_usarts - 1 )) return 0;
     return usart_inst[ id ];
 }
 
-uint8_t usart::irqnum( ID id ) {
+uint8_t SerialDevice::irqnum( ID id ) {
     uint8_t irqn = settings[id]->nvic.NVIC_IRQChannel;
     switch (irqn) {
         case USART1_IRQn: return 0;
@@ -44,7 +44,7 @@ uint8_t usart::irqnum( ID id ) {
     return 0;
 }
 
-void usart::init() {
+void SerialDevice::init() {
     USART_Init(settings[m_id]->usart, (USART_InitTypeDef*)&(settings[m_id]->init));
     NVIC_Init((NVIC_InitTypeDef*)&(settings[m_id]->nvic));
     //USART_OverrunDetectionConfig(settings[m_id]->usart, USART_OVRDetection_Enable);
@@ -70,11 +70,11 @@ void usart::init() {
     USART_Cmd(settings[m_id]->usart, ENABLE);
 }
 
-void usart::registerReader(IReaderCb* rd) {
+void SerialDevice::registerReader(IReaderCb* rd) {
     reader = rd;
 }
 
-void usart::isr() {
+void SerialDevice::isr() {
   // tx?
   if ( SET == USART_GetITStatus(settings[m_id]->usart,USART_IT_TXE) ) {
     if (n_write--) {
@@ -90,14 +90,14 @@ void usart::isr() {
   else if ( SET == USART_GetITStatus(settings[m_id]->usart,USART_IT_RXNE) ) {
     uint16_t data = USART_ReceiveData(settings[m_id]->usart);
     if ( reader ) {
-      reader->usart_update(data);
+      reader->update(data);
     }
     else {
     }
   }
 }
 
-bool usart::write(uint8_t *buf, uint8_t len) {
+bool SerialDevice::write(uint8_t *buf, uint8_t len) {
   if (not busy && len <= settings[m_id]->bufsz) {
     // Copy data buffer to output buffer and start transmission
     // by enabling TXE interrupt

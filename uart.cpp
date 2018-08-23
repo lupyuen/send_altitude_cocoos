@@ -13,7 +13,7 @@
 #include "sensor.h"
 #include "uart.h"
 #include "pin.h"
-#include "stm32f4uart.h"
+#include "serialDevice.h"
 static void rememberMarker(UARTContext *context);
 static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
@@ -191,12 +191,12 @@ void uart_task(void) {
 void uart_task() {
   task_open();
   for(;;) {
-    task_wait(1);
+    task_wait(10);
 
-    if (usart::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("hello world\n")),12 ) == false) {
+    if (SerialDevice::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("hello world\n")),12 ) == false) {
       // could not send - wait and send error message
       task_wait(100);
-      usart::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
+      SerialDevice::instance(0)->write(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
     }
 
     pin::togglePin(0);

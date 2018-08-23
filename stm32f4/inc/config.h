@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <pin.h>
 
-#include <stm32f4uart.h>
+#include "../../serialDevice.h"
 
 
 
@@ -29,7 +29,7 @@ struct pin::cfg_t {
 
 #define DEBUG_USART_ID  0
 
-struct usart::cfg_t {
+struct SerialDevice::cfg_t {
     USART_TypeDef* usart;
     USART_InitTypeDef init;
     NVIC_InitTypeDef nvic;
