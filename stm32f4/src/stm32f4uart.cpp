@@ -16,6 +16,7 @@ usart::usart( ID id ):
     busy(false) {
     usart_inst[ id ] = this;
     irq_inst[ irqnum(id) ] = this;
+    txdata = settings[id]->out;
     init();
 }
 
@@ -69,6 +70,10 @@ void usart::init() {
     USART_Cmd(settings[m_id]->usart, ENABLE);
 }
 
+void usart::registerReader(IReaderCb* rd) {
+    reader = rd;
+}
+
 void usart::isr() {
   // tx?
   if ( SET == USART_GetITStatus(settings[m_id]->usart,USART_IT_TXE) ) {
@@ -93,14 +98,14 @@ void usart::isr() {
 }
 
 bool usart::write(uint8_t *buf, uint8_t len) {
-  if (not busy) {
+  if (not busy && len <= settings[m_id]->bufsz) {
     // Copy data buffer to output buffer and start transmission
     // by enabling TXE interrupt
     n_write = len;
 
-    memcpy(outmsg, buf, len);
+    memcpy(txdata, buf, len);
 
-    next = &outmsg[0];
+    next = &txdata[0];
     busy = true;
     USART_ClearITPendingBit(settings[m_id]->usart, USART_IT_TXE);
     USART_ITConfig(settings[m_id]->usart, USART_IT_TXE, ENABLE);

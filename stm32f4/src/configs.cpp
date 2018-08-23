@@ -1,10 +1,14 @@
 
 #include <config.h>
 
+#define DEBUG_BUF_SZ    128
 
-static uint8_t txbuf[32];
 
-usart::cfg_t usartCfg1 =    {   USART2,
+// buffer for outgoing debug usart data
+// data will be copied into this buffer when performing a uart::write() call
+static uint8_t debug[DEBUG_BUF_SZ];
+
+usart::cfg_t debugUartCfg =    {   USART2,
                                 {
                                     115200,
                                     USART_WordLength_8b,
@@ -19,10 +23,11 @@ usart::cfg_t usartCfg1 =    {   USART2,
                                     10,
                                     ENABLE
                                 },
-                                txbuf
+                                debug,
+                                DEBUG_BUF_SZ
                             };
 
-const usart::cfg_t *usart::settings[] = { &usartCfg1};
+const usart::cfg_t *usart::settings[] = { &debugUartCfg };
 const uint16_t usart::n_configured_usarts = 1;
 
 

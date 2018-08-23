@@ -28,7 +28,7 @@ public:
     };
 
     // Register a uart listener
-    void registerReader(IReaderCb* reader);
+    void registerReader(IReaderCb* rd);
 
     bool write(uint8_t *buf, uint8_t len);
 
@@ -45,7 +45,7 @@ private:
 
     uint8_t irqnum( ID id );
 
-    uint8_t outmsg[32];
+    uint8_t *txdata;
     IReaderCb *reader;
     ID m_id;
     uint8_t n_write;

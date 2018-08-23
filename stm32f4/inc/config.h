@@ -9,11 +9,6 @@
 
 
 
-
-
-
-
-
 /*=====================  PORTS/PINS CONFIGURATION  =====================*/
 
 struct af_t {
@@ -32,11 +27,14 @@ struct pin::cfg_t {
 
 /*=====================  USART CONFIGURATION  =====================*/
 
+#define DEBUG_USART_ID  0
+
 struct usart::cfg_t {
     USART_TypeDef* usart;
     USART_InitTypeDef init;
     NVIC_InitTypeDef nvic;
     uint8_t *out;
+    uint16_t bufsz;
 };
 
 

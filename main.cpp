@@ -16,6 +16,7 @@
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "stm32setup.h"
 #include "stm32f4uart.h"
+#include "config.h"
 #ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
@@ -23,7 +24,7 @@
 static void system_setup(void);
 static void sensor_setup(uint8_t display_task_id);
 static uint8_t network_setup(void);
-static usart::ptr createConsole();
+static usart::ptr createDebugConsole();
 
 
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
@@ -64,14 +65,15 @@ int main(void) {
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   os_start();  //  Never returns.  
-	return EXIT_SUCCESS;
+
+  return EXIT_SUCCESS;
 }
 
 static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
 
   stm32_setup();
-  (void)createConsole();
+  (void)createDebugConsole();
   os_disable_interrupts();
 
   // Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -80,8 +82,8 @@ static void system_setup(void) {
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-static usart::ptr createConsole() {
-  static usart console(0);
+static usart::ptr createDebugConsole() {
+  static usart console(DEBUG_USART_ID);
   return &console;
 }
 
