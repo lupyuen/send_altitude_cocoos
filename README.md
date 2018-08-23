@@ -164,6 +164,14 @@ And comment the line (insert `;` in front):
 ; env_default = uno
 ```
 
+OpenOCD is needed for debugging.
+
+For Mac:
+
+```bash
+brew install openocd
+```
+
 -----
 ## Source Files
 

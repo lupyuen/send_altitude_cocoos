@@ -20,7 +20,50 @@ void platform_start_timer(void) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-//  STM32 Blue Pill Testing. From https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC
+//  STM32 Blue Pill Testing. 
+
+#ifdef NOTUSED
+//  ARM Semihosting code from http://www.keil.com/support/man/docs/ARMCC/armcc_chr1359125001592.htm
+//  https://wiki.dlang.org/Minimal_semihosted_ARM_Cortex-M_%22Hello_World%22
+
+int __semihost(int cmd, const void *msg) {
+    asm {
+      "mov r0, %[cmd]; 
+       mov r1, %[msg]; 
+       bkpt #0xAB"
+	:                              
+	: [cmd] "r" command, [msg] "r" message
+	: "r0", "r1", "memory";
+    }
+}
+
+//  ARM Semihosting code from https://github.com/ARMmbed/mbed-os/blob/master/platform/mbed_semihost_api.c
+
+//  ARM Semihosting Commands
+#define SYS_OPEN   (0x1)
+#define SYS_CLOSE  (0x2)
+#define SYS_WRITE  (0x5)
+#define SYS_READ   (0x6)
+#define SYS_ISTTY  (0x9)
+#define SYS_SEEK   (0xa)
+#define SYS_ENSURE (0xb)
+#define SYS_FLEN   (0xc)
+#define SYS_REMOVE (0xe)
+#define SYS_RENAME (0xf)
+#define SYS_EXIT   (0x18)
+
+int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length, int mode)
+{
+    if (length == 0) { return 0; }
+    uint32_t args[3];
+    args[0] = (uint32_t)fh;
+    args[1] = (uint32_t)buffer;
+    args[2] = (uint32_t)length;
+    return __semihost(SYS_WRITE, args);
+}
+#endif
+
+//  Blink code from https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
