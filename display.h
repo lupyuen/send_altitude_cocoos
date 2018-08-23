@@ -31,29 +31,8 @@
 #define debug_flush() Serial.flush()
 #endif  //  __cplusplus
 
-#elif defined(STM32)  //  TODO: Define the debug log functions.
-#include <stdlib.h>  //  For size_t
-
-BEGIN_EXTERN_C
-void debug_begin(uint16_t bps);
-void debug_write(uint8_t ch);
-void debug_print(const char *s);
-void debug_println(const char *s);
-void debug_flush(void);
-END_EXTERN_C
-
-#ifdef __cplusplus  //  Overload for C++
-void debug_print(int i);
-void debug_print(size_t l);
-void debug_print(char ch);
-void debug_print(float f);
-
-void debug_println(int i);
-void debug_println(size_t l);
-void debug_println(char ch);
-void debug_println(float f);
-#endif  //  __cplusplus
-
+#elif defined(STM32)  //  Use logger functions defined in logger library.
+#include "logger.h"
 #endif
 
 #ifndef DISABLE_DEBUG_LOG  //  If debug logging is enabled...
