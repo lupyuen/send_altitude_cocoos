@@ -4,7 +4,7 @@
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
-#include <swserial.h>  //  SoftwareSerial class from porting library
+#include <uartint.h>  //  For UARTInterface
 #endif  //  ARDUINO
 #include <cocoos.h>
 #include "display.h"
@@ -47,7 +47,11 @@ static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
 const uint8_t markerPosMax = 5;
 static uint8_t markerPos[markerPosMax];
 
+#ifdef ARDUINO
 SoftwareSerial serialPort(UART_RX_PORT, UART_TX_PORT);  //  Serial port for send/receive.
+#else
+UARTInterface serialPort(UART_RX_PORT, UART_TX_PORT);  //  UART port for send/receive.
+#endif  //  ARDUINO
 
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
