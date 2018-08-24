@@ -1,22 +1,54 @@
 //  Defines functions specific to the STM32 platform.
+#include <logger.h>
 #include <Wire.h>
 
 I2CInterface Wire;  //  Used by BME280 library.
 
 //  Functions specific to the platform, e.g. STM32.  Called by main.cpp.
+extern "C" void enable_debug(void);  //  Enable ARM Semihosting for displaying debug messages.
+extern "C" void disable_debug(void); //  Disable ARM Semihosting for displaying debug messages.
 extern "C" void platform_setup(void);  //  Initialise the STM32 platform.
 extern "C" void platform_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 extern "C" int test_main(void);  //  WARNING: test_main() never returns.
+static void gpio_setup(void);
+static void led_on(void);
+static void led_off(void);
+static void led_wait(void);
+
+//  Debugging is off by default.  Developer must switch it on with enable_debug().
+static bool debugEnabled = false;
 
 void platform_setup(void) {
-    //  TODO: Initialise the STM32 platform.
-
+    //  Initialise the STM32 platform. At startup, the onboard LED will blink on-off-on-off-on and stays on.
+	//  If LED blinks on-off-on-off and stays off, then debug mode is enabled and no debugger is connected.
+	if (debugEnabled) {
+		gpio_setup();
+		led_on(); led_wait();
+		led_off(); led_wait();
+		led_on(); led_wait();
+		led_off(); led_wait();
+		//  This line will call ARM Semihosting and may hang until debugger is connected.
+  		debug_println("----platform_setup");
+		led_on();
+	}
     //  TODO: Do some STM32 testing for now. Will be removed.
-    test_main();  //  WARNING: test_main() never returns.
+    //  test_main();  //  WARNING: test_main() never returns.
 }
 
 void platform_start_timer(void) {
     //  TODO: Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
+}
+
+void enable_debug(void) {
+	//  Enable ARM Semihosting for displaying debug messages.
+	debugEnabled = true;
+	enable_log();
+}
+
+void disable_debug(void) {
+	//  Disable ARM Semihosting for displaying debug messages.
+	debugEnabled = false;
+	disable_log();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,6 +65,7 @@ static int __semihost(int command, void* message) {
 	//  To see the message you need to run opencd and gdb concurrently:
 	//    openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg
 	//    arm-none-eabi-gdb -x loader.gdb
+	//  loader.gdb is located at the root of this project and contains the list of gdb commands.
 
 	//  Warning: This code will trigger a breakpoint and hang unless a debugger is connected.
 	//  That's how ARM Semihosting sends a command to the debugger to print a message.
@@ -89,6 +122,19 @@ static void gpio_setup(void) {
 	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
 }
 
+static void led_on(void) {
+	gpio_clear(GPIOC, GPIO13);	/* LED on */
+}
+
+static void led_off(void) {
+	gpio_set(GPIOC, GPIO13);  /* LED off */
+}
+
+static void led_wait(void) {
+	for (int i = 0; i < 1500000; i++)	/* Wait a bit. */
+		__asm__("nop");
+}
+
 int test_main(void) {
 #define SEMIHOSTING
 #ifdef SEMIHOSTING
@@ -100,18 +146,11 @@ int test_main(void) {
 
 	//  We blink the Blue Pill onboard LED in a special pattern to distinguish ourselves
 	//  from other blink clones - 2 x on, then 1 x off.
-	int i;
 	gpio_setup();
 	for (;;) {
-		gpio_clear(GPIOC,GPIO13);	/* LED on */
-		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
-			__asm__("nop");
-		gpio_clear(GPIOC,GPIO13);	/* LED on */
-		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
-			__asm__("nop");
-		gpio_set(GPIOC,GPIO13);		/* LED off */
-		for (i = 0; i < 500000; i++)	/* Wait a bit. */
-			__asm__("nop");
+		led_on(); led_wait();
+		led_on(); led_wait();
+		led_off(); led_wait();
 	}
 	return 0;
 }

@@ -21,6 +21,8 @@
 #endif
 
 //  Functions specific to the platform, e.g. Arduino, STM32.
+extern "C" void enable_debug(void);  //  Enable displaying of debug messages.
+extern "C" void disable_debug(void); //  Disable displaying of debug messages.
 extern "C" void platform_setup(void);  //  Initialise the Arduino or STM32 platform.
 extern "C" void platform_start_timer(void);  //  Start the Arduino or STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 
@@ -43,8 +45,11 @@ static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display me
 #endif  //  SENSOR_DISPLAY
 
 int main(void) {
-  //  The application starts here. We create the tasks to read and display sensor data 
-  //  and start the task scheduler. Note: setup() and loop() will not be called since main() is defined.
+  //  The application starts here. We create the tasks to read and send sensor data 
+  //  and start the task scheduler. Note: Arduino's setup() and loop() will not be called since main() is defined.
+
+  enable_debug();  //  Allow display of debug messages.
+  //  disable_debug();  //  Disable display of debug messages.
 
   //  Init the system and OS for cocoOS.
   system_setup();
@@ -95,8 +100,8 @@ static uint8_t network_setup(void) {
     &wisolContext,  //  Init the context for the Network Task.
     &uartContext,
     uartTaskID, 
-    COUNTRY_SG, 
-    false);
+    COUNTRY_SG,  //  Change this to your country code. Affects the Sigfox frequency used.
+    false);      //  Must be false because we are not using the Sigfox emulator.
   uint8_t networkTaskID = task_create(
       network_task,   //  Task will run this function.
       &wisolContext,  //  task_get_data() will be set to the display object.
@@ -201,8 +206,13 @@ ISR(TIMER1_COMPA_vect) {
   tickCount++;
   os_tick();
 }
+
+//  TODO: Enable and disable display of debug messages.
+void enable_debug(void) {}
+void disable_debug(void) {}
+
 #else
-//  For STM32, platform_setup() and platform_start_timer() are defined in stm32/porting/porting.cpp
+//  For STM32, enable_debug(), disable_debug(), platform_setup() and platform_start_timer() are defined in stm32/porting/porting.cpp
 #endif  //  ARDUINO
 
 //  Disable exceptions for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html

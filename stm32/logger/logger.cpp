@@ -1,6 +1,12 @@
 //  Log messages to the debug console.  We use ARM Semihosting to display messages.
 #include "logger.h"
 #include <string.h>
+#include <stdio.h> ////
+
+//  Logging is off by default.  Developer must switch it on with enable_debug().
+static bool logEnabled = false;
+void enable_log(void) { logEnabled = true; }
+void disable_log(void) { logEnabled = false; }
 
 //  ARM Semihosting code from 
 //  http://www.keil.com/support/man/docs/ARMCC/armcc_pge1358787046598.htm
@@ -17,6 +23,7 @@ static int __semihost(int command, void* message) {
 	//  Warning: This code will trigger a breakpoint and hang unless a debugger is connected.
 	//  That's how ARM Semihosting sends a command to the debugger to print a message.
 	//  This code MUST be disabled on production devices.
+    if (!logEnabled) return -1;
     __asm( 
       "mov r0, %[cmd] \n"
       "mov r1, %[msg] \n" 
@@ -60,15 +67,21 @@ static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int
     return __semihost(SYS_WRITE, args);
 }
 
+static int semihost_debug(const char *buffer, unsigned int length) {
+    //  Write "length" number of bytes from "buffer" to the debugger's log.
+	semihost_write(SEMIHOST_HANDLE, (const unsigned char *) buffer, length);
+}
+
 void debug_print(size_t l) {
     //  We only print up to 10 digits, since 32 bits will give max 4,294,967,296.    
+    //// char buf[32]; sprintf(buf, "%ud", l); debug_print(buf); return; ////  TODO
     #define MAX_INT_LENGTH 10
     char buffer[MAX_INT_LENGTH + 1];
     int size = MAX_INT_LENGTH + 1;
     bool prefixByZero = false;
     int length = 0;
     for(size_t divisor = 1000000000ul; divisor >= 1; divisor = divisor / 10) {
-        char digit = '0' + (l / divisor);
+        char digit = '0' + (char)(l / divisor);
         if (digit > '9') {
             debug_print("(Overflow)");
             return;
@@ -83,14 +96,14 @@ void debug_print(size_t l) {
     if (length < size) buffer[length] = 0;
     buffer[size - 1] = 0;  //  Terminate in case of overflow.
 
-    debug_print(buffer);
+    semihost_debug(buffer, strlen(buffer));
 }
 
 void debug_print(int i) {
-    if (i == 0) { debug_print((uint8_t) '0'); } 
+    if (i == 0) { semihost_debug("0", 1); } 
     else if (i >= 0) { debug_print((size_t) i); }
     else {  // i < 0.
-        debug_print((uint8_t) '-');
+        semihost_debug("-", 1);
         debug_print((size_t) -i);
     }
 }
@@ -98,15 +111,15 @@ void debug_print(int i) {
 void debug_print(float f) {
     //  Assume max 10 digits to the left of decimal point and 2 digits to the right.
     if (f == 0) {
-        debug_print("0.00");
+        semihost_debug("0.00", 4);
         return;
     } else if (f < 0) {
-        debug_print((uint8_t) '-');
+        semihost_debug("-", 1);
         f = -f;
     }
     //  Print the digits left of the decimal point.
     debug_print((size_t) f);
-    debug_print((uint8_t) '.');
+    semihost_debug(".", 1);
     //  Print the 2 digits right of the decimal point.
     f = f * 10.0;
     debug_print(((size_t) f) % 10);
@@ -122,33 +135,39 @@ void debug_flush(void) {
 }
 
 void debug_write(uint8_t ch) {
-	semihost_write(SEMIHOST_HANDLE, (const unsigned char *) &ch, 1);
+	semihost_debug((const char *) &ch, 1);
 }
+
 void debug_print(const char *s) {
-	semihost_write(SEMIHOST_HANDLE, (const unsigned char *) s, strlen(s));
+    if (s[0] == 0) return;
+	semihost_debug(s, strlen(s));
 }
+
 void debug_println(const char *s) {
-    debug_print(s);
-    debug_print((uint8_t) '\n');
+    if (s[0] != 0) { debug_print(s); }
+    semihost_debug("\n", 1);
 }
 
 void debug_print(char ch) {
-    debug_print((uint8_t) ch);
+	semihost_debug(&ch, 1);
 }
 
 void debug_println(int i) {
     debug_print(i);
-    debug_print((uint8_t) '\n');
+    semihost_debug("\n", 1);
 }
+
 void debug_println(size_t l) {
     debug_print(l);
-    debug_print((uint8_t) '\n');
+    semihost_debug("\n", 1);
 }
+
 void debug_println(char ch) {
     debug_print(ch);
-    debug_print((uint8_t) '\n');
+    semihost_debug("\n", 1);
 }
+
 void debug_println(float f) {
     debug_print(f);
-    debug_print((uint8_t) '\n');
+    semihost_debug("\n", 1);
 }

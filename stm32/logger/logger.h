@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
+void enable_log(void);
+void disable_log(void);
 void debug_begin(uint16_t bps);
 void debug_write(uint8_t ch);
 void debug_print(const char *s);
