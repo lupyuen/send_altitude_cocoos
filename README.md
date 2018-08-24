@@ -152,25 +152,91 @@ requests but they are not guaranteed.
 -----
 ## Build for STM32 Blue Pill with PlatformIO
 
-To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the line (remove `;` in front):
+To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the `bluepill_f103c8` line (by removing `;` in front):
 
 ```ini
 env_default = bluepill_f103c8
 ```
 
-And comment the line (insert `;` in front):
+And comment the `uno` line (by inserting `;` in front):
 
 ```ini
 ; env_default = uno
 ```
 
-OpenOCD is needed for debugging.
+### Install GDB ARM Debugger
 
-For Mac:
+- For Windows:
 
-```bash
-brew install openocd
-```
+  1. Install ARM Cross-Compiler and Linker from the ARM Developer Website: <br>
+    https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
+
+  1. Scroll down the page till you find <br>
+    `Windows 32-bit File: gcc-arm-none-eabi-…-win32.exe` <br>
+    Click `Download` <br>
+
+  1. Select the _"Add path to environment variable"_ option at the last install step
+
+- For Ubuntu:
+
+  ```bash
+  sudo apt install binutils-arm-none-eabi gcc-arm-none-eabi
+  ```
+
+- For Mac: Install `arm-none-eabi-gdb` (TODO)
+
+- For Ubuntu: Install required packages  (`arm-none-eabi-gdb` is obsolete)
+
+  ```bash
+  sudo apt install pkg-config cmake libssl-dev zlib1g-dev gdb-multiarch curl git
+  
+  sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
+  ```
+
+### Check GDB ARM Debugger Installation
+
+1. Open a __new__  Windows, Mac or Ubuntu command prompt (not Windows Bash) and enter
+
+    ```bash
+    arm-none-eabi-gdb -v
+    ```
+
+1. You should see something like `version 5.4.1 20160919 (release)`
+
+1. If you see no errors, close the command prompt.
+
+1. If you see an error, update your PATH environment variable so that it  includes the folder for the ARM ".exe" files.
+
+### Install OpenOCD For Displaying Debug Log
+
+- For Windows:
+
+  1. Download OpenOCD (for debugging the Blue Pill) from the unofficial OpenOCD release website: <br>
+    https://github.com/gnu-mcu-eclipse/openocd/releases <br>
+    Look for `gnu-mcu-eclipse-openocd-…-win64.zip`
+
+  1. Unzip the OpenOCD download and copy the OpenOCD files into `c:\openocd` such that `opencd.exe` is located in the folder `c:\openocd\bin`
+
+- For Mac:
+
+  ```bash
+  brew install openocd
+  ```
+
+- For Ubuntu:
+
+  ```bash
+  sudo apt install openocd
+  ```
+
+### For Windows only: Install ST-Link USB Driver
+
+1. For Windows only: Download the ST-Link USB driver from the ST-Link Driver Website (email registration required): <br>
+  http://www.st.com/en/embedded-software/stsw-link009.html
+
+1. Scroll down and click the `Get Software` button
+
+1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
 
 -----
 ## Source Files
@@ -209,6 +275,19 @@ brew install openocd
 ### Other Code
 
 [`display.cpp`](display.cpp), [`display.h`](display.h): Display Task to display sensor data
+
+-----
+### STM32 Code
+
+[`stm32`](stm32): Platform-specific code for STM32 Blue Pill
+
+[`stm32/porting`](stm32/porting): Library for porting Arduino code to STM32
+
+[`stm32/logger`](stm32/logger): Debugger logging library based on ARM Semihosting
+
+[`stm32/i2cint`](stm32/i2cint): I2C Interface
+
+[`stm32/uartint`](stm32/uartint): UART Interface
 
 -----
 ### Build and Configuration Files
