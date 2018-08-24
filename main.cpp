@@ -7,7 +7,6 @@
 #include <string.h>
 #include <cocoos.h>
 #include "display.h"
-#include "uart.h"
 #include "wisol.h"
 #include "sensor.h"
 #include "aggregate.h"
@@ -16,8 +15,9 @@
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "stm32setup.h"
 #include "config.h"
+#include "radio.h"
+#include "radios/wisolRadio.h"
 #include "uartSerial.h"
-#include "wisolController.h"
 #ifdef GYRO_SENSOR
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
@@ -31,15 +31,15 @@ static UartSerial::ptr createDebugConsole();
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
 Sem_t i2cSemaphore;
 
-// Buffer for writing UART response.
-static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];
+// Buffer for writing radio response.
+static char radioResponse[MAX_RADIO_RESPONSE_MSG_SIZE + 1];
 
 // Task contexts
-static UARTContext uartContext;
-static NetworkContext wisolContext;
+static RadioContext radioContext;
+static NetworkContext networkContext;
 
 // Pool of UART messages for the UART Tasks message queue.
-static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];
+static RadioMsg radioMsgPool[RADIO_MSG_POOL_SIZE];
 
 // Pool of sensor data messages for the Network Task message queue.
 static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];
@@ -74,7 +74,6 @@ static void system_setup(void) {
   //  Initialise the system. Create the semaphore.
 
   stm32_setup();
-  //(void)createDebugConsole();
   os_disable_interrupts();
 
   // Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
@@ -90,39 +89,32 @@ static UartSerial::ptr createDebugConsole() {
 
 static uint8_t network_setup(void) {
   //  Start the network task to send and receive network messages.
+  //  Start the Radio Task for transmitting data to the Wisol module.
 
-  //  Start the UART Task for transmitting UART data to the Wisol module.
-  const uint8_t WISOL_TX = 4;  //  Transmit port for Wisol module.
-  const uint8_t WISOL_RX = 5;  //  Receive port for Wisol module.
+  static WisolRadio radio(createDebugConsole());
 
-  static WisolController radio(createDebugConsole());
+  radioContext.response = radioResponse;
+  radioContext.radio = &radio;
 
-  setup_uart(
-    &uartContext,
-    uartResponse,
-    WISOL_RX,
-    WISOL_TX,
-    true,
-    &radio);
-
-  uint8_t uartTaskID = task_create(
-    uart_task,     //  Task will run this function.
-    &uartContext,  //  task_get_data() will be set to the display object.
+  uint8_t radioTaskID = task_create(
+    radio_task,     //  Task will run this function.
+    &radioContext,  //  task_get_data() will be set to the display object.
     10,            //  Priority 10 = highest priority
-    (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    UART_MSG_POOL_SIZE,     //  Size of queue pool.
-    sizeof(UARTMsg));       //  Size of queue message.
+    (Msg_t *) radioMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    RADIO_MSG_POOL_SIZE,     //  Size of queue pool.
+    sizeof(RadioMsg));       //  Size of queue message.
 
   //  Start the Network Task for receiving sensor data and transmitting to UART Task.
   setup_wisol(
-    &wisolContext,
-    &uartContext,
-    uartTaskID, 
-    COUNTRY_SG, 
+    &networkContext,
+    &radioContext,
+    radioTaskID,
+    COUNTRY_SE,
     false);
+
   uint8_t networkTaskID = task_create(
       network_task,   //  Task will run this function.
-      &wisolContext,  //  task_get_data() will be set to the display object.
+      &networkContext,  //  task_get_data() will be set to the display object.
       20,             //  Priority 20 = lower priority than UART task
       (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
       NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.

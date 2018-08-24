@@ -1,17 +1,18 @@
-#ifndef WISOL_CONTROLLER_H_
-#define WISOL_CONTROLLER_H_
+#ifndef WISOL_RADIO_H_
+#define WISOL_RADIO_H_
 
 #include <cocoos.h>
-#include "radioController.h"
+
+#include "radioDevice.h"
 #include "uartSerial.h"
 
 
 
 // A class for communicating with the Wisol radio chip
-class WisolController : public RadioController {
+class WisolRadio : public RadioDevice {
 public:
-  WisolController(UartSerial *serial);
-  ~WisolController() = default;
+  WisolRadio(UartSerial *serial);
+  ~WisolRadio() = default;
 
   // send a data buffer to the radio
   bool send(const uint8_t *data, uint8_t len) override;
@@ -38,4 +39,4 @@ private:
   unsigned receivedMarkers;
 };
 
-#endif /* WisolController */
+#endif /* WISOL_RADIO_H_ */

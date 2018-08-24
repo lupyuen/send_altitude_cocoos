@@ -10,7 +10,7 @@
 //  Define multiple timeouts for better multitasking.  Uplink to network is slower than normal
 //  commands.  Downlink is slowest, up to 1 minute.
 //  COMMAND_TIMEOUT < UPLINK_TIMEOUT < DOWNLINK_TIMEOUT
-#define COMMAND_TIMEOUT ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
+#define COMMAND_TIMEOUT ((unsigned long) 100 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
 #define UPLINK_TIMEOUT ((unsigned long) 20 * 1000)  //  Wait up to 20 seconds for uplink command response from Sigfox module.
 #define DOWNLINK_TIMEOUT ((unsigned long) 60 * 1000)  //  Wait up to 60 seconds for downlink command response from Sigfox module.
 #define MAX_TIMEOUT DOWNLINK_TIMEOUT  //  Maximum possible timeout.

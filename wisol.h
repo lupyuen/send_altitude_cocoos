@@ -13,7 +13,7 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 
 struct SensorMsg;  //  Forward declaration.
 struct NetworkContext;  //  Forward declaration.
-struct UARTContext;  //  Forward declaration.
+struct RadioContext;  //  Forward declaration.
 
 //  Defines a Wisol AT command string, to be sent via UART Task. Sequence is
 //    sendData + payload + sendData2
@@ -27,8 +27,8 @@ struct NetworkCmd {
 
 //  Network Task maintains this context in the task data.
 struct NetworkContext {
-  UARTContext *uartContext;  //  Context of the UART Task.
-  uint8_t uartTaskID;  //  Task ID of the UART Task.  Network Task transmits UART data by sending a message to this task.
+  RadioContext *radioContext;  //  Context of the UART Task.
+  uint8_t radioTaskID;  //  Task ID of the UART Task.  Network Task transmits UART data by sending a message to this task.
   int zone;  //  1 to 4 representing SIGFOX frequencies RCZ 1 to 4.
   Country country;   //  Country to be set for SIGFOX transmission frequencies.
   bool useEmulator;  //  Set to true if using SNEK Emulator.
@@ -60,7 +60,7 @@ extern NetworkCmd endOfList; //  Command to indicate end of command list.
 
 void setup_wisol(
   NetworkContext *context,
-  UARTContext *uartContext, 
+  RadioContext *radioContext,
   int8_t uartTaskID, 
   Country country0, 
   bool useEmulator0);

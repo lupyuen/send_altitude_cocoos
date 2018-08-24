@@ -1,7 +1,7 @@
-#include "wisolController.h"
 #include "cocoos.h"
+#include "wisolRadio.h"
 
-WisolController::WisolController(UartSerial *serial):
+WisolRadio::WisolRadio(UartSerial *serial):
   dev(serial),
   writepos(0),
   readpos(0),
@@ -11,11 +11,11 @@ WisolController::WisolController(UartSerial *serial):
   dev->registerReader(this);
 }
 
-bool WisolController::send(const uint8_t *data, uint8_t len) {
+bool WisolRadio::send(const uint8_t *data, uint8_t len) {
   return dev->write(data, len);
 }
 
-uint8_t WisolController::receive(uint8_t *buf) {
+uint8_t WisolRadio::receive(uint8_t *buf) {
 
     if (receivedMarkers == expectedMarkerCount) {
         uint8_t cnt = 0;
@@ -36,15 +36,15 @@ uint8_t WisolController::receive(uint8_t *buf) {
     return 0;
 }
 
-void WisolController::setDoneEvent(Evt_t event) {
+void WisolRadio::setDoneEvent(Evt_t event) {
   rxDoneEvt = event;
 }
 
-void WisolController::setMarkerCount(unsigned count) {
+void WisolRadio::setMarkerCount(unsigned count) {
     expectedMarkerCount = count;
 }
 
-void WisolController::update(uint8_t data) {
+void WisolRadio::update(uint8_t data) {
   rxbuf[writepos] = data;
 
   if ((data == '\n') && (++receivedMarkers == expectedMarkerCount)){

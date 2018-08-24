@@ -1,21 +1,15 @@
-/*
- * radioController.h
- *
- *  Created on: Aug 23, 2018
- *      Author: peter
- */
 
-#ifndef RADIOCONTROLLER_H_
-#define RADIOCONTROLLER_H_
+#ifndef RADIODEVICE_H_
+#define RADIODEVICE_H_
 
 #include "uartSerial.h"
 
-// Base class for radio chip controllers
+// Base class for radio chip devices
 // Should be implemented by specialized classes for specific chips in the radios subfolder
-class RadioController : public UartSerial::IReaderCb {
+class RadioDevice : public UartSerial::IReaderCb {
 public:
-  RadioController() = default;
-  virtual ~RadioController() = default;
+  RadioDevice() = default;
+  virtual ~RadioDevice() = default;
   virtual bool send(const uint8_t *data, uint8_t len) = 0;
   virtual uint8_t receive(uint8_t *buf) = 0;
   virtual void update(uint8_t data) = 0;
@@ -23,4 +17,4 @@ public:
   virtual void setMarkerCount(unsigned count) = 0;
 };
 
-#endif /* RADIOCONTROLLER_H_ */
+#endif /* RADIODEVICE_H_ */

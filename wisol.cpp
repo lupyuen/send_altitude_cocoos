@@ -6,10 +6,11 @@
 #include <cocoos.h>
 #include "display.h"
 #include "sensor.h"
-#include "uart.h"
 #include "aggregate.h"
 #include "downlink.h"
 #include "wisol.h"
+
+#include "radio.h"
 #ifndef ARDUINO
 ////#include <wstring.h>  //  String class from porting library
 #endif  //  !ARDUINO
@@ -30,7 +31,7 @@ static int getCmdIndex(NetworkCmd list[], int listSize);
 static void convertCmdToUART(
   NetworkCmd *cmd,
   NetworkContext *context,
-  UARTMsg *uartMsg, 
+  RadioMsg *radioMsg,
   Evt_t successEvent0, 
   Evt_t failureEvent0,
   SensorMsg *responseMsg,
@@ -44,7 +45,7 @@ static Evt_t failureEvent;
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg responseMsg;  //  Pending response message from UART to Wisol.
-static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
+static RadioMsg radioMsg;  //  Outgoing UART message containing Wisol command.
 
 void network_task(void) {
   //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
@@ -103,21 +104,21 @@ void network_task(void) {
       if (cmd->sendData == NULL) { break; }  //  No more commands to send.
 
       //  Convert Wisol command to UART command.
-      convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
-      context->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
+      convertCmdToUART(cmd, context, &radioMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
+      context->lastSend = millis() + radioMsg.timeout;  //  Estimate last send time for the next command.
       context->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
 
       //  Send the UART command thru the UART Task.
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
-      msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
+      msg_post(context->radioTaskID, radioMsg);  //  Send the message to the UART task for transmission.
       context = (NetworkContext *) task_get_data();  //  Must get context in case msg_post(blocks)
 
       //  For sending payload: Break out of the loop and release the semaphore lock. 
       //  This allows other tasks to run.
-      if (uartMsg.responseMsg != NULL) {
+      if (radioMsg.responseMsg != NULL) {
         context->pendingResponse = true;
         break;
-       }
+      }
       //  Wait for success or failure then process the response.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
       context = (NetworkContext *) task_get_data();  //  Must get context after event_wait_multiple().
@@ -163,8 +164,8 @@ static void processResponse(NetworkContext *context) {
   //  process response function.  Set the status to false if the processing failed.
 
   //  Get the response text.
-  const char *response = (context && context->uartContext)
-    ? context->uartContext->response
+  const char *response = (context && context->radioContext)
+    ? context->radioContext->response
     : "";          
   //  Process the response text, regardless of success/failure.
   //  Call the process response function if has been set.
@@ -178,7 +179,7 @@ static void processResponse(NetworkContext *context) {
     }
   }
   //  In case of failure, stop.
-  if (context->uartContext->status != true) {
+  if (context->radioContext->status != true) {
     context->status = false;  //  Propagate status to Wisol context.
     debug(F("***** Error: network_task Failed, response: "), response);
     return;  //  Quit processing.
@@ -389,7 +390,7 @@ bool getDownlink(NetworkContext *context, const char *response0) {
   //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
 
   //  Get a writeable response pointer in the uartContext.
-  char *response = context->uartContext->response;
+  char *response = context->radioContext->response;
   // debug(F(" - wisol.getDownlink: "), response); ////
 
   //  Check the original response.
@@ -409,8 +410,8 @@ bool getDownlink(NetworkContext *context, const char *response0) {
     foundPtr[0] = 0;  //  Terminate <<BEFORE>>
     const char *after = foundPtr + strlen(downlinkPrefix);
     //  Shift <<AFTER>> next to <<BEFORE>>.
-    strncat(response, after, MAX_UART_SEND_MSG_SIZE - strlen(response));
-    response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
+    strncat(response, after, MAX_RADIO_SEND_MSG_SIZE - strlen(response));
+    response[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   } else {
     //  Return error e.g. ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT
     context->status = false;
@@ -418,7 +419,7 @@ bool getDownlink(NetworkContext *context, const char *response0) {
   //  Remove all spaces.
   int src = 0, dst = 0;
   for (;;) {
-    if (src >= MAX_UART_SEND_MSG_SIZE) break;
+    if (src >= MAX_RADIO_SEND_MSG_SIZE) break;
     //  Don't copy spaces and newlines in the source.
     if (response[src] == ' ' || response[src] == '\n') { 
       src++; 
@@ -430,12 +431,13 @@ bool getDownlink(NetworkContext *context, const char *response0) {
     if (response[dst] == 0) break;
     dst++; src++;  //  Shift to next char.
   }
-  response[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
+  response[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the response in case of overflow.
   context->downlinkData = response;
   return true;
 }
 
-static char uartData[MAX_UART_SEND_MSG_SIZE + 1];
+static char radioData[MAX_RADIO_SEND_MSG_SIZE + 1];
+
 #ifdef ARDUINO
 static String cmdData;
 #else
@@ -445,16 +447,16 @@ static const char *cmdData;
 static void convertCmdToUART(
   NetworkCmd *cmd,
   NetworkContext *context,
-  UARTMsg *uartMsg, 
+  RadioMsg *radioMsg,
   Evt_t successEvent0, 
   Evt_t failureEvent0,
   SensorMsg *responseMsg,
   uint8_t responseTaskID) {
   //  Convert the Wisol command into a UART message.
-  uartMsg->sendData = uartData;
-  uartData[0] = 0;  //  Clear the dest buffer.
-  uartMsg->timeout = COMMAND_TIMEOUT;
-  uartMsg->responseMsg = NULL;
+  radioMsg->sendData = radioData;
+  radioData[0] = 0;  //  Clear the dest buffer.
+  radioMsg->timeout = COMMAND_TIMEOUT;
+  radioMsg->responseMsg = NULL;
 
   if (cmd->sendData != NULL) {
     //  Append sendData if it exists.  Need to use String class because sendData is in flash memory.
@@ -464,17 +466,17 @@ static void convertCmdToUART(
 #else
     const char *cmdDataStr = cmdData;
 #endif  //  ARDUINO    
-    strncpy(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));  //  Copy the command string.
-    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+    strncpy(radioData, cmdDataStr, MAX_RADIO_SEND_MSG_SIZE - strlen(radioData));  //  Copy the command string.
+    radioData[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   }
   if (cmd->payload != NULL) {
     //  Append payload if it exists.
-    strncat(uartData, cmd->payload, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
-    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
-    uartMsg->timeout = UPLINK_TIMEOUT;  //  Increase timeout for uplink.
+    strncat(radioData, cmd->payload, MAX_RADIO_SEND_MSG_SIZE - strlen(radioData));
+    radioData[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+    radioMsg->timeout = UPLINK_TIMEOUT;  //  Increase timeout for uplink.
     //  If there is payload to send, send the response message when sending is completed.
-    uartMsg->responseMsg = responseMsg;
-    uartMsg->responseTaskID = responseTaskID;
+    radioMsg->responseMsg = responseMsg;
+    radioMsg->responseTaskID = responseTaskID;
   }
   if (cmd->sendData2 != NULL) {
     //  Append sendData2 if it exists.  Need to use String class because sendData is in flash memory.
@@ -484,29 +486,29 @@ static void convertCmdToUART(
 #else
     const char *cmdDataStr = cmdData;
 #endif  //  ARDUINO    
-    strncat(uartData, cmdDataStr, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
-    uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
-    uartMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.
+    strncat(radioData, cmdDataStr, MAX_RADIO_SEND_MSG_SIZE - strlen(radioData));
+    radioData[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+    radioMsg->timeout = DOWNLINK_TIMEOUT;  //  Increase timeout for downlink.
   }
   //  Terminate the command with "\r".
-  strncat(uartData, CMD_END, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
-  uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
+  strncat(radioData, CMD_END, MAX_RADIO_SEND_MSG_SIZE - strlen(radioData));
+  radioData[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
   //  debug(F("uartData="), uartData);  ////
   //  Check total msg length.
-  if (strlen(uartData) >= MAX_UART_SEND_MSG_SIZE - 1) {
-    debug_print(F("***** Error: uartData overflow - ")); debug_print(strlen(uartData));
-    debug_print(" / "); debug_println(uartData); debug_flush();
+  if (strlen(radioData) >= MAX_RADIO_SEND_MSG_SIZE - 1) {
+    debug_print(F("***** Error: uartData overflow - ")); debug_print(strlen(radioData));
+    debug_print(" / "); debug_println(radioData); debug_flush();
   }
-  uartMsg->markerChar = END_OF_RESPONSE;
-  uartMsg->expectedMarkerCount = cmd->expectedMarkerCount;
-  uartMsg->successEvent = successEvent0;
-  uartMsg->failureEvent = failureEvent0;
+  radioMsg->markerChar = END_OF_RESPONSE;
+  radioMsg->expectedMarkerCount = cmd->expectedMarkerCount;
+  radioMsg->successEvent = successEvent0;
+  radioMsg->failureEvent = failureEvent0;
 }
 
 void setup_wisol(
   NetworkContext *context,
-  UARTContext *uartContext, 
-  int8_t uartTaskID, 
+  RadioContext *radioContext,
+  int8_t radioTaskID,
   Country country0, 
   bool useEmulator0) {
   //  Init the Wisol context.
@@ -515,8 +517,8 @@ void setup_wisol(
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   sendSemaphore = sem_counting_create( maxCount, initValue );
 
-  context->uartContext = uartContext;
-  context->uartTaskID = uartTaskID;
+  context->radioContext = radioContext;
+  context->radioTaskID = radioTaskID;
   context->country = country0;
   context->useEmulator = useEmulator0;
   context->stepBeginFunc = getStepBegin;
