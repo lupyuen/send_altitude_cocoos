@@ -38,11 +38,11 @@ int __semihost(int command, void* message) {
       "mov r0, %[cmd] \n"
       "mov r1, %[msg] \n" 
       "bkpt #0xAB \n"
-	:  //  Output_operand_list
-	:  //  Input_operand_list
+	:  //  Output operand list: (nothing)
+	:  //  Input operand list:
 		[cmd] "r" (command), 
 		[msg] "r" (message)
-	:  //  Clobbered register list
+	:  //  Clobbered register list:
 		"r0", "r1", "memory"
 	);
 	return 0;  //  TODO
@@ -82,38 +82,33 @@ int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length
 static void gpio_setup(void) {
 	/* Enable GPIOC clock. */
 	rcc_periph_clock_enable(RCC_GPIOC);
-
 	/* Set GPIO8 (in GPIO port C) to 'output push-pull'. */
-	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL,GPIO13);
+	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
 }
 
 int test_main(void) {
+#define SEMIHOSTING
+#ifdef SEMIHOSTING
+	//  Show a "hello" message on the debug console.  
+	//  "semihost_write(2, ...)" means write the message to the debugger's stderr output.
+	const char *msg = "hello\n";
+	semihost_write(2, (const unsigned char *) msg, strlen(msg));
+#endif  //  SEMIHOSTING
+
 	//  We blink the Blue Pill onboard LED in a special pattern to distinguish ourselves
 	//  from other blink clones - 2 x on, then 1 x off.
-
 	int i;
 	gpio_setup();
 	for (;;) {
-
-#define SEMIHOSTING
-#ifdef SEMIHOSTING
-		const char *msg = "hello\n";
-		semihost_write(2, (const unsigned char *) msg, strlen(msg));
-#endif  //  SEMIHOSTING
-
 		gpio_clear(GPIOC,GPIO13);	/* LED on */
 		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
 			__asm__("nop");
-
 		gpio_clear(GPIOC,GPIO13);	/* LED on */
 		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
 			__asm__("nop");
-
 		gpio_set(GPIOC,GPIO13);		/* LED off */
 		for (i = 0; i < 500000; i++)	/* Wait a bit. */
 			__asm__("nop");
 	}
-
 	return 0;
 }
