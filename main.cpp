@@ -24,7 +24,7 @@
 extern "C" void enable_debug(void);  //  Enable displaying of debug messages.
 extern "C" void disable_debug(void); //  Disable displaying of debug messages.
 extern "C" void platform_setup(void);  //  Initialise the Arduino or STM32 platform.
-extern "C" void platform_start_timer(void);  //  Start the Arduino or STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
+extern "C" void platform_start_timer(void (*tickFunc0)(void));  //  Start the Arduino or STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
@@ -71,7 +71,7 @@ int main(void) {
   sensor_setup(task_id);
 
   //  Start the Arduino or STM32 timer to generate ticks for cocoOS to switch tasks.
-  platform_start_timer();
+  platform_start_timer(os_tick);
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   os_start();  //  Never returns.  
@@ -179,16 +179,20 @@ static uint8_t display_setup(void) {
 volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
 
 #ifdef ARDUINO
+//  This is the tick function we will call every millisecond.  Usually points to os_tick() in cocoOS.
+static void (*tickFunc)(void) = NULL;
+
 void platform_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
   init();
   debug(F("----platform_setup"));
 }
 
-void platform_start_timer(void) {
+void platform_start_timer(void (*tickFunc0)(void)) {
   //  Start the AVR Timer 1 to generate interrupt ticks every millisecond
   //  for cocoOS to perform task switching.  AVR Timer 0 is reserved for 
   //  Arduino timekeeping. From https://arduinodiy.wordpress.com/2012/02/28/timer-interrupts/
+  tickFunc = tickFunc0;
   cli();          //  Disable global interrupts
   TCCR1A = 0;     //  Set entire TCCR1A register to 0
   TCCR1B = 0;     //  Same for TCCR1B 
@@ -204,7 +208,7 @@ ISR(TIMER1_COMPA_vect) {
   //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
   ////  debug(F("os_tick")); ////
   tickCount++;
-  os_tick();
+  if (tickFunc != NULL) tickFunc();
 }
 
 //  TODO: Enable and disable display of debug messages.

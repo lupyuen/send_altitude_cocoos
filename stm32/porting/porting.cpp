@@ -1,4 +1,6 @@
 //  Defines functions specific to the STM32 platform.
+#include <libopencm3/cm3/cortex.h>
+#include <libopencm3/stm32/rcc.h>
 #include <logger.h>
 #include <Wire.h>
 
@@ -8,11 +10,11 @@ I2CInterface Wire;  //  Used by BME280 library.
 extern "C" void enable_debug(void);  //  Enable ARM Semihosting for displaying debug messages.
 extern "C" void disable_debug(void); //  Disable ARM Semihosting for displaying debug messages.
 extern "C" void platform_setup(void);  //  Initialise the STM32 platform.
-extern "C" void platform_start_timer(void);  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 extern "C" int test_main(void);  //  WARNING: test_main() never returns.
-static void gpio_setup(void);
-static void led_on(void);
-static void led_off(void);
+extern "C" void led_on(void);
+extern "C" void led_off(void);
+extern "C" void led_toggle(void);
+static void led_setup(void);
 static void led_wait(void);
 
 //  Debugging is off by default.  Developer must switch it on with enable_debug().
@@ -21,8 +23,10 @@ static bool debugEnabled = false;
 void platform_setup(void) {
     //  Initialise the STM32 platform. At startup, the onboard LED will blink on-off-on-off-on and stays on.
 	//  If LED blinks on-off-on-off and stays off, then debug mode is enabled and no debugger is connected.
+	rcc_clock_setup_in_hse_8mhz_out_72mhz();
+	led_setup();
+
 	if (debugEnabled) {
-		gpio_setup();
 		led_on(); led_wait();
 		led_off(); led_wait();
 		led_on(); led_wait();
@@ -35,10 +39,6 @@ void platform_setup(void) {
     //  test_main();  //  WARNING: test_main() never returns.
 }
 
-void platform_start_timer(void) {
-    //  TODO: Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
-}
-
 void enable_debug(void) {
 	//  Enable ARM Semihosting for displaying debug messages.
 	debugEnabled = true;
@@ -49,6 +49,40 @@ void disable_debug(void) {
 	//  Disable ARM Semihosting for displaying debug messages.
 	debugEnabled = false;
 	disable_log();
+}
+
+//////////////////////////////////////////////////////////////////////////
+//  Blink code from https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC
+
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+
+static void led_setup(void) {
+	//  Set up Blue Pill LED GPIO.
+	//  Enable GPIOC clock.
+	rcc_periph_clock_enable(RCC_GPIOC);
+	//  Set GPIO13 (in GPIO port C) to 'output push-pull'.
+	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
+}
+
+void led_on(void) {
+	//  Switch Blue Pill LED on.
+	gpio_clear(GPIOC, GPIO13);
+}
+
+void led_off(void) {
+	//  Switch Blue Pill LED off.
+	gpio_set(GPIOC, GPIO13);
+}
+
+void led_toggle(void) {
+	//  Toggle Blue Pill LED.
+	gpio_toggle(GPIOC, GPIO13);
+}
+
+static void led_wait(void) {
+	for (int i = 0; i < 1500000; i++)	/* Wait a bit. */
+		__asm__("nop");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -109,31 +143,7 @@ static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int
     return __semihost(SYS_WRITE, args);
 }
 
-//  Blink code from https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC
-
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
 #include <string.h>
-
-static void gpio_setup(void) {
-	/* Enable GPIOC clock. */
-	rcc_periph_clock_enable(RCC_GPIOC);
-	/* Set GPIO8 (in GPIO port C) to 'output push-pull'. */
-	gpio_set_mode(GPIOC,GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
-}
-
-static void led_on(void) {
-	gpio_clear(GPIOC, GPIO13);	/* LED on */
-}
-
-static void led_off(void) {
-	gpio_set(GPIOC, GPIO13);  /* LED off */
-}
-
-static void led_wait(void) {
-	for (int i = 0; i < 1500000; i++)	/* Wait a bit. */
-		__asm__("nop");
-}
 
 int test_main(void) {
 #define SEMIHOSTING
@@ -146,7 +156,7 @@ int test_main(void) {
 
 	//  We blink the Blue Pill onboard LED in a special pattern to distinguish ourselves
 	//  from other blink clones - 2 x on, then 1 x off.
-	gpio_setup();
+	led_setup();
 	for (;;) {
 		led_on(); led_wait();
 		led_on(); led_wait();
