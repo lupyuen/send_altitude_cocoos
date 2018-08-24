@@ -27,6 +27,10 @@ void platform_start_timer(void) {
 
 int __semihost(int command, void* message) {
 	//  Send an ARM Semihosting command to the debugger, e.g. to print a message.
+	//  To see the message you need to run opencd and gdb concurrently:
+	//    openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg
+	//    arm-none-eabi-gdb -x loader.gdb
+
 	//  Warning: This code will trigger a breakpoint and hang unless a debugger is connected.
 	//  That's how ARM Semihosting sends a command to the debugger to print a message.
 	//  This code MUST be disabled on production devices.
