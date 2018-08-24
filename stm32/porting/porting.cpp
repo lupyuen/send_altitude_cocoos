@@ -28,7 +28,7 @@ void platform_start_timer(void) {
 //  http://www.keil.com/support/man/docs/ARMCC/armcc_chr1359125001592.htm
 //  https://wiki.dlang.org/Minimal_semihosted_ARM_Cortex-M_%22Hello_World%22
 
-int __semihost(int command, void* message) {
+static int __semihost(int command, void* message) {
 	//  Send an ARM Semihosting command to the debugger, e.g. to print a message.
 	//  To see the message you need to run opencd and gdb concurrently:
 	//    openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg
@@ -66,7 +66,7 @@ int __semihost(int command, void* message) {
 #define SYS_RENAME (0xf)
 #define SYS_EXIT   (0x18)
 
-int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length)
+static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int length)
 {
     if (length == 0) { return 0; }
     uint32_t args[3];
