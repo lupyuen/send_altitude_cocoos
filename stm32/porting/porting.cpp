@@ -26,6 +26,10 @@ void platform_start_timer(void) {
 //  https://wiki.dlang.org/Minimal_semihosted_ARM_Cortex-M_%22Hello_World%22
 
 int __semihost(int command, void* message) {
+	//  Send an ARM Semihosting command to the debugger, e.g. to print a message.
+	//  Warning: This code will trigger a breakpoint and hang unless a debugger is connected.
+	//  That's how ARM Semihosting sends a command to the debugger to print a message.
+	//  This code MUST be disabled on production devices.
     __asm( 
       "mov r0, %[cmd] \n"
       "mov r1, %[msg] \n" 
@@ -84,14 +88,16 @@ int test_main(void) {
 	//  We blink the Blue Pill onboard LED in a special pattern to distinguish ourselves
 	//  from other blink clones - 2 x on, then 1 x off.
 
-#ifdef SEMIHOSTING
-	const char *msg = "hello\n";
-	semihost_write(2, (const unsigned char *) msg, strlen(msg));
-#endif  //  SEMIHOSTING
-
 	int i;
 	gpio_setup();
 	for (;;) {
+
+#define SEMIHOSTING
+#ifdef SEMIHOSTING
+		const char *msg = "hello\n";
+		semihost_write(2, (const unsigned char *) msg, strlen(msg));
+#endif  //  SEMIHOSTING
+
 		gpio_clear(GPIOC,GPIO13);	/* LED on */
 		for (i = 0; i < 1500000; i++)	/* Wait a bit. */
 			__asm__("nop");

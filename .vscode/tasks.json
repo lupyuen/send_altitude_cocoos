@@ -1,0 +1,31 @@
+{
+    // Defines the Visual Studio Code Tasks for building and debugging.
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            //  Connect to the Blue Pill via OpenOCD, to be used for debugging.
+            //  Note: You must kill this task before flashing an app.
+            "label": "🔗 Connect To STM32 Blue Pill",
+            "type": "shell",
+            "windows": {
+                "command": "c:\\openocd\\bin\\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+            },
+            "osx": {
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+            },
+            "linux": {
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+            },
+            "problemMatcher": []
+        },
+        {
+            //  Show output log for debug() commands.
+            "label": "💬 Show Output Log (STM32 Blue Pill)",
+            "type": "shell",
+            "command": "arm-none-eabi-gdb -x loader.gdb",
+            "problemMatcher": []
+        },
+    ]
+}
