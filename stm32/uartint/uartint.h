@@ -9,7 +9,7 @@ public:
   UARTInterface(unsigned rx, unsigned tx);
   void begin(uint16_t bps);
   void listen();
-  bool available();
+  int available();
   int read();
   void write(uint8_t ch);
   void end();

@@ -11,14 +11,14 @@ void UARTInterface::begin(uint16_t bps) {
 void UARTInterface::listen() {
     //  TODO
 }
-bool UARTInterface::available() { 
+int UARTInterface::available() { 
     //  TODO
-    return false; 
+    return 1; 
 }
 int UARTInterface::read() { 
     //  TODO
     debug_println("uart_read");
-    return -1; 
+    return 30; 
 }
 void UARTInterface::write(uint8_t ch) {
     debug_println("uart_write");
