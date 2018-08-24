@@ -22,7 +22,10 @@ void platform_start_timer(void) {
 //////////////////////////////////////////////////////////////////////////
 //  STM32 Blue Pill Testing 
 
-//  ARM Semihosting code from http://www.keil.com/support/man/docs/ARMCC/armcc_chr1359125001592.htm
+//  ARM Semihosting code from 
+//  http://www.keil.com/support/man/docs/ARMCC/armcc_pge1358787046598.htm
+//  http://www.keil.com/support/man/docs/ARMCC/armcc_pge1358787048379.htm
+//  http://www.keil.com/support/man/docs/ARMCC/armcc_chr1359125001592.htm
 //  https://wiki.dlang.org/Minimal_semihosted_ARM_Cortex-M_%22Hello_World%22
 
 int __semihost(int command, void* message) {
