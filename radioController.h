@@ -16,10 +16,11 @@ class RadioController : public UartSerial::IReaderCb {
 public:
   RadioController() = default;
   virtual ~RadioController() = default;
-  virtual bool send(uint8_t *data, uint8_t len) = 0;
-  virtual void receive(uint8_t *buf) = 0;
+  virtual bool send(const uint8_t *data, uint8_t len) = 0;
+  virtual uint8_t receive(uint8_t *buf) = 0;
   virtual void update(uint8_t data) = 0;
   virtual void setDoneEvent(Evt_t event) = 0;
+  virtual void setMarkerCount(unsigned count) = 0;
 };
 
 #endif /* RADIOCONTROLLER_H_ */

@@ -14,11 +14,11 @@ public:
   ~WisolController() = default;
 
   // send a data buffer to the radio
-  bool send(uint8_t *data, uint8_t len) override;
+  bool send(const uint8_t *data, uint8_t len) override;
 
   // fetch message received by the radio.
   // should be called after the rxDoneEvent have been signaled
-  void receive(uint8_t *buf) override;
+  uint8_t receive(uint8_t *buf) override;
 
   // callback from the uart rx
   void update(uint8_t data) override;
@@ -27,12 +27,14 @@ public:
   // message have been received by the radio
   void setDoneEvent(Evt_t event) override;
 
+  void setMarkerCount(unsigned count) override;
 private:
   UartSerial *dev;
   uint8_t rxbuf[128];
   uint8_t writepos;
   uint8_t readpos;
   Evt_t rxDoneEvt;
+  unsigned expectedMarkerCount;
 };
 
 #endif /* WisolController */

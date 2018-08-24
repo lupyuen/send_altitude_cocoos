@@ -188,33 +188,104 @@ void uart_task(void) {
 }
 #endif
 
-void uart_task() {
-  UARTContext *context;
+void uart_task(void) {
+  //  This task loops and waits for an incoming message containing UART data to be sent.
+  //  sendData contains a string of ASCII chars to be sent to the UART port.
+  //  We send the sendData to the port.  expectedMarkerCount is the number of
+  //  end-of-command markers '\r' we expect to see.  actualMarkerCount
+  //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
+  //  depending on success/failure sending the data.  Response is recorded in the
+  //  "response" variable of the context, for the caller to retrieve.
+  UARTContext *context;     //  The context for the task.
+  static UARTMsg msg;       //  The received message.
 
   task_open();
+
   context = (UARTContext *) task_get_data();
   context->rxDoneEvent = event_create();
   context->radio->setDoneEvent(context->rxDoneEvent);
 
-  for(;;) {
-    task_wait(10);
+  for (;;) {
+    msg_receive(os_get_running_tid(), &msg);
+
+    context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
+    context->msg = &msg;  //  Remember the message until it's sent via UART.
+
+    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
+
+    //  Initialise the context for the task. These variables will change while sending.
+    context->status = true;         //  Assume the return status will be successful.
+    context->actualMarkerCount = 0; //  How many response messages do we expect
+
+    // setup response logic : request event when expected number of markers have been received
+    context->radio->setMarkerCount(context->msg->expectedMarkerCount);
+
+    //  Send message
+    context->radio->send((const uint8_t*)context->msg->sendData, strlen(context->msg->sendData));
+
+    // wait for event or timeout
+    event_wait_timeout(context->rxDoneEvent, context->msg->timeout);
+
+    // was it timeout or rx done?
+    if (event_get_timeout() == 0) {
+        //timeout
+        context->status = false;
+    }
+
     context = (UARTContext *) task_get_data();
 
-    if (context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Hello World\n")),12)) {
-      event_wait(context->rxDoneEvent);
-      context = (UARTContext *) task_get_data();
-      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Received response\n")),18);
-    }
-    else {
-      task_wait(100);
-      context = (UARTContext *) task_get_data();
-      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
+    // fetch received message(s)
+    uint8_t len = context->radio->receive((uint8_t*)context->response);
+
+    // make sure we null terminate
+    context->response[len] = '\0';
+
+    if (context->msg->responseMsg != NULL) {
+      //  If caller has requested for response message, then send it instead of event.
+      msg_post(context->msg->responseTaskID, *(context->msg->responseMsg));
+
+    } else if (context->status == true) {
+      //  If no error, trigger the success event to caller.
+      //  The caller can read the response from the context.response.
+      event_signal(context->msg->successEvent);
+    } else {
+      //  If we hit an error, trigger the failure event to the caller.
+      event_signal(context->msg->failureEvent);  //  Trigger the failure event.
     }
 
-    pin::togglePin(0);
-  }
-  task_close();
+    context = (UARTContext *) task_get_data();
+
+  }  //  Loop back and wait for next queued message.
+  task_close();  //  End of the task. Should not come here.
 }
+
+//void uart_task() {
+//  UARTContext *context;
+//
+//  task_open();
+//  context = (UARTContext *) task_get_data();
+//  context->rxDoneEvent = event_create();
+//  context->radio->setDoneEvent(context->rxDoneEvent);
+//
+//  for(;;) {
+//    task_wait(10);
+//    context = (UARTContext *) task_get_data();
+//
+//    if (context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Hello World\n")),12)) {
+//      event_wait(context->rxDoneEvent);
+//      context = (UARTContext *) task_get_data();
+//      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("Received response\n")),18);
+//    }
+//    else {
+//      task_wait(100);
+//      context = (UARTContext *) task_get_data();
+//      context->radio->send(reinterpret_cast<uint8_t*>(const_cast<char*>("tx overflow\n")),12 );
+//    }
+//
+//    pin::togglePin(0);
+//  }
+//  task_close();
+//}
 
 void setup_uart(
   UARTContext *context, 
