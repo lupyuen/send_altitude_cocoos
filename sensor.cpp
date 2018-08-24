@@ -41,53 +41,45 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
+
   task_open();  //  Start of the task. Must be matched with task_close().
-  for (;;) {  //  Run the sensor processing code forever. So the task never ends.
-    //  We should not make this variable static, because the task data should be unique for each task.
+  for (;;) {
     context = (SensorContext *) task_get_data();
 
-    //  This code is executed by multiple sensors. We use a global semaphore to prevent 
-    //  concurrent access to the single shared I2C Bus on Arduino Uno.
-    debug(context->sensor->info.name, F(" >> Wait for semaphore")); ////
-    sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
-    debug(context->sensor->info.name, F(" >> Got semaphore")); ////
+    sem_wait(i2cSemaphore);
 
     //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
 
     //  Prepare a display message for copying the sensor data.
-    SensorMsg msg;
-    msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    //// memset(msg.name, 0, MAX_SENSOR_NAME_SIZE + 1);  //  Zero the name array.
-    strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
-    msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
+
+    context->msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
+    strncpy(context->msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
+
+    context->msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
     //  Poll for the sensor data and copy into the display message.
-    msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
+    context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
-    debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
+    context = (SensorContext *) task_get_data();
 
     //  Do we have new data?
-    if (msg.count > 0) {
+    if (context->msg.count > 0) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
       //  debug(msg.name, F(" >> Send msg")); ////
-      debug_print(msg.name); debug_print(F(" >> Send msg ")); 
-      if (msg.count > 0) { debug_println(msg.data[0]); }
-      else { debug_println("(empty)"); }
-      debug_flush();
+
       //  Note: msg_post() will block if the receiver's queue is full.
       //  That's why we send the message outside the semaphore lock.
       ////msg_post(context->receive_task_id, msg);
-      msg_post_async(context->receive_task_id, msg);////
+      msg_post_async(context->receive_task_id, context->msg);////
     }
 
     //  Wait a short while before polling the sensor again.
-    debug(context->sensor->info.name, F(" >> Wait interval")); ////
     task_wait(context->sensor->info.poll_interval);
   }
-  debug(F("task_close"), NULL); ////
+
   task_close();  //  End of the task. Should never come here.
 }
 

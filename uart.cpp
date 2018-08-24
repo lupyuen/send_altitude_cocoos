@@ -225,14 +225,13 @@ void uart_task(void) {
 
     // wait for event or timeout
     event_wait_timeout(context->rxDoneEvent, context->msg->timeout);
+    context = (UARTContext *) task_get_data();
 
     // was it timeout or rx done?
     if (event_get_timeout() == 0) {
         //timeout
         context->status = false;
     }
-
-    context = (UARTContext *) task_get_data();
 
     // fetch received message(s)
     uint8_t len;

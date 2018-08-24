@@ -73,6 +73,7 @@ struct Sensor {
 //  Each sensor task will have a Task Data in this format to remember the context of the sensor.
 struct SensorContext {
   Sensor *sensor;  //  The sensor for the context.
+  SensorMsg msg;
   uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
 };
 
