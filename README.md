@@ -177,19 +177,12 @@ And comment the `uno` line (by inserting `;` in front):
 
   1. Select the _"Add path to environment variable"_ option at the last install step
 
-- For Ubuntu:
-
-  ```bash
-  sudo apt install binutils-arm-none-eabi gcc-arm-none-eabi
-  ```
-
 - For Mac: Install `arm-none-eabi-gdb` (TODO)
 
-- For Ubuntu: Install required packages  (`arm-none-eabi-gdb` is obsolete)
+- For Ubuntu: (`arm-none-eabi-gdb` is obsolete)
 
   ```bash
-  sudo apt install pkg-config cmake libssl-dev zlib1g-dev gdb-multiarch curl git
-  
+  sudo apt install gdb-multiarch
   sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
   ```
 
