@@ -238,6 +238,34 @@ And comment the `uno` line (by inserting `;` in front):
 
 1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
 
+### Display STM32 Blue Pill Debug Log
+
+- For Windows: Open each command in a separate window:
+
+  ```cmd
+  c:\openocd\bin\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg
+  
+  arm-none-eabi-gdb -x loader.gdb
+  ```
+
+- For Mac: Open each command in a separate window:
+
+  ```bash
+  openocd -f interface/stlink-v2.cfg -f stm32f1x.cfg
+
+  arm-none-eabi-gdb -x loader.gdb
+  ```
+
+- For Ubuntu: Open each command in a separate window:
+
+  ```bash
+  openocd -f interface/stlink-v2.cfg -f stm32f1x.cfg
+  
+  arm-none-eabi-gdb -x loader.gdb
+  ```
+
+- Both `openocd` and `gdb` windows should be closed before using the PlatformIO Upload (Flash) command
+
 -----
 ## Source Files
 
