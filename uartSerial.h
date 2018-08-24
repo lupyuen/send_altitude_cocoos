@@ -29,7 +29,7 @@ public:
     // Register a uart listener
     void registerReader(IReaderCb* rd);
 
-    bool write(uint8_t *buf, uint8_t len);
+    bool write(const uint8_t *buf, uint8_t len);
 
     void isr();
     struct cfg_t;

@@ -97,7 +97,7 @@ void UartSerial::isr() {
   }
 }
 
-bool UartSerial::write(uint8_t *buf, uint8_t len) {
+bool UartSerial::write(const uint8_t *buf, uint8_t len) {
   if (not busy && len <= settings[m_id]->bufsz) {
     // Copy data buffer to output buffer and start transmission
     // by enabling TXE interrupt

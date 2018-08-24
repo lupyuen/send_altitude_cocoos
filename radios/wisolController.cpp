@@ -6,7 +6,8 @@ WisolController::WisolController(UartSerial *serial):
   writepos(0),
   readpos(0),
   rxDoneEvt(NO_EVENT),
-  expectedMarkerCount(0){
+  expectedMarkerCount(0),
+  receivedMarkers(0){
   dev->registerReader(this);
 }
 
@@ -15,7 +16,23 @@ bool WisolController::send(const uint8_t *data, uint8_t len) {
 }
 
 uint8_t WisolController::receive(uint8_t *buf) {
-    // TODO: implement this
+
+    if (receivedMarkers == expectedMarkerCount) {
+        uint8_t cnt = 0;
+        uint8_t *data = &rxbuf[0];
+        uint8_t nbytes = 0;
+
+        while(cnt < expectedMarkerCount) {
+            *buf++ = *data;
+            nbytes++;
+            if (*data == '\n') {
+                cnt++;
+            }
+            data++;
+        }
+        receivedMarkers = 0;
+        return nbytes;
+    }
     return 0;
 }
 
@@ -30,9 +47,9 @@ void WisolController::setMarkerCount(unsigned count) {
 void WisolController::update(uint8_t data) {
   rxbuf[writepos] = data;
 
-  if (data == '\n') {
+  if ((data == '\n') && (++receivedMarkers == expectedMarkerCount)){
+
     // we have received a full message, signal upper layer
-    // TODO: check for number of marker counts here
     if (NO_EVENT != rxDoneEvt) {
       event_ISR_signal(rxDoneEvt);
     }

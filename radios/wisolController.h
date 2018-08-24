@@ -35,6 +35,7 @@ private:
   uint8_t readpos;
   Evt_t rxDoneEvt;
   unsigned expectedMarkerCount;
+  unsigned receivedMarkers;
 };
 
 #endif /* WisolController */

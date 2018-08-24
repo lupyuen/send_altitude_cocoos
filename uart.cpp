@@ -235,7 +235,8 @@ void uart_task(void) {
     context = (UARTContext *) task_get_data();
 
     // fetch received message(s)
-    uint8_t len = context->radio->receive((uint8_t*)context->response);
+    uint8_t len;
+    len = context->radio->receive((uint8_t*)context->response);
 
     // make sure we null terminate
     context->response[len] = '\0';
@@ -256,6 +257,7 @@ void uart_task(void) {
     context = (UARTContext *) task_get_data();
 
   }  //  Loop back and wait for next queued message.
+
   task_close();  //  End of the task. Should not come here.
 }
 
