@@ -51,7 +51,7 @@ size_t I2CInterface::write(uint8_t dataRegister0) {  //  Used by BME280I2C.cpp
 
 uint8_t I2CInterface::requestFrom(uint8_t addr, uint8_t length) {  //  Used by BME280I2C.cpp
     //  Simulate the handling of a request to read "length" number of bytes from the register at "dataRegister".
-    debug_print("i2c_request reg: "); debug_println(dataRegister);
+    //  debug_print("i2c_request reg: "); debug_println(dataRegister);
     dataIndex = 0;
     switch (dataRegister) {
         case ID_ADDR: data = ID_DATA; dataLength = (uint8_t) sizeof(ID_DATA); break;

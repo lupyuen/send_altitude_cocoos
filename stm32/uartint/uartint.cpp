@@ -61,7 +61,7 @@ int UARTInterface::available() {
 }
 int UARTInterface::read() { 
     //  Return the next simulated byte to be read from the UART port. Or return -1 if none.
-    debug_println("uart_read");
+    //  debug_println("uart_read");
     if (dataIndex >= dataLength) { return -1; }
     return data[dataIndex++];
 }
@@ -115,7 +115,7 @@ static void simulateCommand(const char *cmd) {
 
 void UARTInterface::write(uint8_t ch) {
     //  Simulate the handling of a command char sent to the Wisol module via the UART port.
-    debug_println("uart_write");
+    //  debug_println("uart_write");
     if (ch != CMD_END[0]) {
         //  Not end of command. Append the character.
         int commandLength = strlen(command);
