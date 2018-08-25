@@ -82,7 +82,7 @@ static void simulateCommand(const char *cmd) {
     data[0] = 0;
     dataIndex = 0;
     dataLength = 0;
-    dataTimestamp = millis() + COMMAND_TIMEOUT;  //  Delay a few seconds.
+    dataTimestamp = millis() + 2000;  //  Delay 2 seconds by default.
     const char *response = "OK";  //  Default response.
     if (strcmp(cmd, CMD_NONE) == 0) {  //  "AT": Empty placeholder command.
         //  Default to "OK".
@@ -105,7 +105,7 @@ static void simulateCommand(const char *cmd) {
         //  If it ends with ",1", request for downlink.
         int pos = strlen(cmd) - strlen(CMD_SEND_MESSAGE_RESPONSE);
         if (strcmp(cmd + pos, CMD_SEND_MESSAGE_RESPONSE) == 0) {
-            //  Downlink.  Return after 1 min.
+            //  Downlink.  Return response 1 min later.
             response = "OK\r\nRX=01 23 45 67 89 AB CD EF";
             dataTimestamp = millis() + DOWNLINK_TIMEOUT;
         } else {
