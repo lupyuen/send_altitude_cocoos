@@ -42,10 +42,8 @@ void led_wait(void);    //  Delay a while before updating the LED state.
 #endif  //  ARDUINO
 
 #ifdef STM32  //  For STM32 only
-#include <bluepill.h>  //  For the platform, timer, millis(), debug and LED functions.
-#include <stdint.h>  //  For uint32_t
-#define __FlashStringHelper char
-#define F(x) x  //  No need for flash memory helper on STM32.
+#include <bluepill.h>  //  For platform, timer, millis(), debug and LED functions
+#include <flash.h>     //  For flash helper
 #endif  //  STM32
 
 #endif  //  PLATFORM_H_

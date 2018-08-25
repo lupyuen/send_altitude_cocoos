@@ -1,6 +1,6 @@
 //  Stubs to allow Arduino programs to compile on STM32.
 //  To be removed when porting is completed.
-//  Used by BME280 library.
+//  SPI Interface used by BME280 library but implementation not needed.
 #ifndef SPI_H_
 #define SPI_H_
 
