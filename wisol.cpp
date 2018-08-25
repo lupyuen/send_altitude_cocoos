@@ -10,9 +10,6 @@
 #include "aggregate.h"
 #include "downlink.h"
 #include "wisol.h"
-#ifndef ARDUINO
-////#include <wstring.h>  //  String class from porting library
-#endif  //  !ARDUINO
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
@@ -202,7 +199,7 @@ void sendTestSensorMsg() {
 #define CMD_OUTPUT_POWER_MAX "ATS302=15"  //  For RCZ1: Set output power to maximum power level.
 #define CMD_GET_CHANNEL "AT$GI?"  //  For RCZ2, 4: Get current and next TX macro channel usage.  Returns X,Y.
 #define CMD_RESET_CHANNEL "AT$RC"  //  For RCZ2, 4: Reset default channel. Send this command if CMD_GET_CHANNEL returns X=0 or Y<3.
-#define CMD_SEND_MESSAGE "AT$SF="  //  Prefix to send a message to SIGFOX cloud.
+#define CMD_SEND_MESSAGE "AT$SF="  //  Prefix to send a message to Sigfox.
 #define CMD_SEND_MESSAGE_RESPONSE ",1"  //  Append to payload if downlink response from Sigfox is needed.
 #define CMD_GET_ID "AT$I=10"  //  Get Sigfox device ID.
 #define CMD_GET_PAC "AT$I=11"  //  Get Sigfox device PAC, used for registering the device.

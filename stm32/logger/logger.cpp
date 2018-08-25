@@ -1,7 +1,6 @@
 //  Log messages to the debug console.  We use ARM Semihosting to display messages.
 #include "logger.h"
 #include <string.h>
-#include <stdio.h> ////
 
 //  Logging is off by default.  Developer must switch it on with enable_debug().
 static bool logEnabled = false;
@@ -69,7 +68,7 @@ static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int
 
 static int semihost_debug(const char *buffer, unsigned int length) {
     //  Write "length" number of bytes from "buffer" to the debugger's log.
-	semihost_write(SEMIHOST_HANDLE, (const unsigned char *) buffer, length);
+	return semihost_write(SEMIHOST_HANDLE, (const unsigned char *) buffer, length);
 }
 
 void debug_print(size_t l) {

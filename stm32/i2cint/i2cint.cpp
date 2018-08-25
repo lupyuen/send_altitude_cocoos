@@ -1,9 +1,9 @@
 //  I2C Interface for STM32. Compatible with Arduino's Wire I2C interface.
-#define SIMULATE_BME280
+#define SIMULATE_BME280  //  Simulate a BME280 sensor connected to I2C Bus.
 #include <logger.h>
 #include "i2cint.h"
 
-#ifdef SIMULATE_BME280  //  Simulate a BME280 without connecting the actual sensor.
+#ifdef SIMULATE_BME280  //  Simulate a BME280 sensor connected to I2C Bus.
 //  BME280 Registers from https://github.com/finitespace/BME280/blob/master/src/BME280.h
 static const uint8_t CTRL_HUM_ADDR   = 0xF2;
 static const uint8_t CTRL_MEAS_ADDR  = 0xF4;
@@ -60,7 +60,7 @@ uint8_t I2CInterface::requestFrom(uint8_t addr, uint8_t length) {  //  Used by B
         case HUM_DIG_ADDR2: data = HUM_DIG_DATA2; dataLength = (uint8_t) sizeof(HUM_DIG_DATA2); break;
         case PRESS_ADDR: data = PRESS_DATA; dataLength = (uint8_t) sizeof(PRESS_DATA); break;
         case PRESS_DIG_ADDR: data = PRESS_DIG_DATA; dataLength = (uint8_t) sizeof(PRESS_DIG_DATA); break;
-        default: debug_print("Unknown i2c addr: "); debug_println(addr); data = ID_DATA; dataLength = (uint8_t) sizeof(ID_DATA);
+        default: debug_print("Unknown i2c reg: "); debug_println(dataRegister); data = ID_DATA; dataLength = (uint8_t) sizeof(ID_DATA);
     }
     return dataLength;
 }
