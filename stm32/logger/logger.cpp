@@ -74,7 +74,8 @@ static int semihost_debug(const char *buffer, unsigned int length) {
 
 void debug_print(size_t l) {
     //  We only print up to 10 digits, since 32 bits will give max 4,294,967,296.    
-    //// char buf[32]; sprintf(buf, "%ud", l); debug_print(buf); return; ////  TODO
+    //  char buf[32]; sprintf(buf, "%u", l); semihost_debug(buf, strlen(buf)); return; ////  TODO
+    
     #define MAX_INT_LENGTH 10
     char buffer[MAX_INT_LENGTH + 1];
     int size = MAX_INT_LENGTH + 1;
@@ -91,6 +92,7 @@ void debug_print(size_t l) {
                 buffer[length++] = digit;
             }
         }
+        l = l % divisor;
     }
     if (length == 0) { buffer[length++] = '0'; };
     if (length < size) buffer[length] = 0;
