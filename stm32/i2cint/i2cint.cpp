@@ -44,7 +44,7 @@ static uint8_t dataIndex = 0;  //  Current index to the simulated data to be ret
 
 size_t I2CInterface::write(uint8_t dataRegister0) {  //  Used by BME280I2C.cpp
     //  Simulate the handling of a request to read a register at "dataRegister0".
-    debug_print("i2c_write reg: "); debug_println(dataRegister0);
+    //  debug_print("i2c_write reg: "); debug_println(dataRegister0);
     dataRegister = dataRegister0;
     return 1;
 }
@@ -72,7 +72,7 @@ int I2CInterface::available(void) {  //  Used by BME280I2C.cpp
 
 int I2CInterface::read(void) {  //  Used by BME280I2C.cpp
     //  Return the next simulated byte to be read from the I2C address.
-    debug_println("i2c_read");
+    //  debug_println("i2c_read");
     if (dataIndex >= dataLength) { return -1; }
     return data[dataIndex++];
 }

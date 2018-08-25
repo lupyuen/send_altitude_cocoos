@@ -12,13 +12,13 @@ void UARTInterface::listen() {
     //  TODO
 }
 int UARTInterface::available() { 
-    //  TODO
-    return 1; 
+    //  TODO: Return number of bytes available for reading.
+    return 0; 
 }
 int UARTInterface::read() { 
-    //  TODO
+    //  TODO: Return the next byte, or -1 if none.
     debug_println("uart_read");
-    return 30; 
+    return -1; 
 }
 void UARTInterface::write(uint8_t ch) {
     debug_println("uart_write");

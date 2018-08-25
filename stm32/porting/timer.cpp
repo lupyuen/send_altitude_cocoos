@@ -20,7 +20,7 @@ static void (*tickFunc)(void) = NULL;
 
 void rtc_isr(void) {
 	++rtc_isr_count;
-#ifdef NOTUSED
+#ifdef NOTUSED  //  TODO: Overflow timer.
 	if ( rtc_check_flag(RTC_OW) ) {
 		// Timer overflowed:
 		++rtc_overflow_count;
@@ -50,9 +50,12 @@ static void rtc_setup(void) {
 	//// TODO: rtc_awake_from_off(RCC_HSE); 
 	rtc_awake_from_off(HSE); //// TODO: Older version of libopencm3?
 	
-	rtc_set_prescale_val(62500);  //  1 second tick.
-	// rtc_set_prescale_val(62);  //  Should be 62.5 for 1 millisecond tick.
-	// rtc_set_counter_val(0xFFFFFFF0);  //  TODO.
+	rtc_set_prescale_val(62);  //  1 millisecond tick: Should be 62.5
+	// rtc_set_prescale_val(625);  //  0.01 second tick
+	// rtc_set_prescale_val(6250);  //  0.1 second tick
+	// rtc_set_prescale_val(62500);  //  1 second tick
+
+	// rtc_set_counter_val(0xFFFFFFF0);  //  TODO: Overflow timer.
 
 	nvic_enable_irq(NVIC_RTC_IRQ);
 
@@ -61,7 +64,7 @@ static void rtc_setup(void) {
 	rtc_clear_flag(RTC_ALR);
 	rtc_clear_flag(RTC_OW);
 	rtc_interrupt_enable(RTC_SEC);
-	// rtc_interrupt_enable(RTC_OW);
+	// rtc_interrupt_enable(RTC_OW);  //  TODO: Overflow timer.
 	cm_enable_interrupts();
 }
 
