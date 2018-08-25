@@ -3,6 +3,10 @@
 #include <logger.h>
 #include "i2cint.h"
 
+//  TODO: Implement a real I2C interface based on
+//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/i2c_stts75_sensor.c
+//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/stts75.c
+
 #ifdef SIMULATE_BME280  //  Simulate a BME280 sensor connected to I2C Bus.
 //  BME280 Registers from https://github.com/finitespace/BME280/blob/master/src/BME280.h
 static const uint8_t CTRL_HUM_ADDR   = 0xF2;

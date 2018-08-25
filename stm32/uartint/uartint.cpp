@@ -5,6 +5,9 @@
 #include <logger.h>
 #include "uartint.h"
 
+//  TODO: Implement a real UART interface with interrupts based on
+//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
+
 #ifdef SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 //  Message limits from https://github.com/lupyuen/send_altitude_cocoos/blob/master/platform.h
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
