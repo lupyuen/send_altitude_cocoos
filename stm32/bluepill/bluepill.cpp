@@ -1,4 +1,4 @@
-//  Defines functions specific to the STM32 platform.
+//  Defines functions specific to the STM32 Blue Pill platform.
 #include <libopencm3/cm3/cortex.h>
 #include <libopencm3/stm32/rcc.h>
 #include <logger.h>
@@ -22,8 +22,6 @@ void platform_setup(void) {
   		debug_println("----platform_setup");
 		led_on();
 	}
-    //  TODO: Do some STM32 testing for now. Will be removed.
-    //  test_main();  //  WARNING: test_main() never returns.
 }
 
 void enable_debug(void) {
