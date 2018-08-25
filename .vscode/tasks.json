@@ -21,8 +21,9 @@
             "problemMatcher": []
         },
         {
-            //  Show output log for debug() commands.
-            "label": "💬 Show Output Log (STM32 Blue Pill)",
+            //  Restart the Blue Pill, which will show output log for debug() commands.
+            //  Close the window after restarting.
+            "label": "💬 Restart STM32 Blue Pill",
             "type": "shell",
             "command": "arm-none-eabi-gdb -x loader.gdb",
             "problemMatcher": []
