@@ -20,17 +20,11 @@
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
 #endif
 
-//  Functions specific to the platform, e.g. Arduino, STM32.
-extern "C" void enable_debug(void);  //  Enable displaying of debug messages.
-extern "C" void disable_debug(void); //  Disable displaying of debug messages.
-extern "C" void platform_setup(void);  //  Initialise the Arduino or STM32 platform.
-extern "C" void platform_start_timer(void (*tickFunc0)(void));  //  Start the Arduino or STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
-
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
-#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
+#ifdef SENSOR_DISPLAY  //  If we are display sensor data instead of send to network...
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 #endif  //  SENSOR_DISPLAY
 
@@ -58,9 +52,8 @@ int main(void) {
   //  Erase the aggregated sensor data.
   setup_aggregate();
 
-#ifdef SENSOR_DISPLAY  //  Display the sensor data instead of sending to network.
-  //  Start the display task that displays sensor data.
-  uint8_t task_id = display_setup();
+#ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
+  uint8_t task_id = display_setup();  //  Start the display task that displays sensor data.
 #endif  //  SENSOR_DISPLAY
 
   //  Start the network task to send and receive network messages.
@@ -113,7 +106,7 @@ static uint8_t network_setup(void) {
   return networkTaskID;
 }
 
-#ifdef SENSOR_DATA  //  Use real not simulated sensors.
+#ifdef SENSOR_DATA  //  If we are getting data from sensors and not using hardcoded data...
 static void sensor_setup(uint8_t task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
   //  Sensor data will be sent to the message queue at the given task ID,
@@ -151,18 +144,18 @@ static void system_setup(void) {
   //  Setup the Arduino or STM32 platform.
   platform_setup();
 
-#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
-  init_display();
+#ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
+  init_display();  //  Setup the display objects.
 #endif  //  SENSOR_DISPLAY
 
-  //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+  //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus.
   debug(F("Create semaphore")); ////
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
   i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
-#ifdef SENSOR_DISPLAY  //  Display sensor data, don't send to network.
+#ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
 static uint8_t display_setup(void) {
   //  Start the display task that displays sensor data.  Return the task ID.
   uint8_t display_task_id = task_create(
@@ -176,48 +169,9 @@ static uint8_t display_setup(void) {
 }
 #endif  //  SENSOR_DISPLAY
 
-#ifdef ARDUINO
-//  This is the tick function we will call every millisecond.  Usually points to os_tick() in cocoOS.
-static void (*tickFunc)(void) = NULL;
-static volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
-
-void platform_setup(void) {
-  //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().
-  init();
-  debug(F("----platform_setup"));
-}
-
-void platform_start_timer(void (*tickFunc0)(void)) {
-  //  Start the AVR Timer 1 to generate interrupt ticks every millisecond
-  //  for cocoOS to perform task switching.  AVR Timer 0 is reserved for 
-  //  Arduino timekeeping. From https://arduinodiy.wordpress.com/2012/02/28/timer-interrupts/
-  tickFunc = tickFunc0;
-  cli();          //  Disable global interrupts
-  TCCR1A = 0;     //  Set entire TCCR1A register to 0
-  TCCR1B = 0;     //  Same for TCCR1B 
-  OCR1A = 16000;    //  Set compare match register to desired timer count  
-  TCCR1B |= (1 << WGM12);  //  Turn on CTC mode (Clear Timer on Compare Match)
-  TCCR1B |= (1 << CS10);   //  Set timer prescaler as 1 (fastest)
-  // TCCR1B |= (1 << CS11);   //  Set timer prescaler as 8 (fast)
-  TIMSK1 |= (1 << OCIE1A);  //  Enable timer compare interrupt
-  sei();          //  Enable global interrupts
-}
-
-ISR(TIMER1_COMPA_vect) {
-  //  Handle the AVR Timer 1 interrupt. Trigger an os_tick() for cocoOS to perform task switching.
-  ////  debug(F("os_tick")); ////
-  tickCount++;
-  if (tickFunc != NULL) tickFunc();
-}
-
-//  TODO: Enable and disable display of debug messages.
-void enable_debug(void) {}
-void disable_debug(void) {}
-
-#else
-//  For STM32, enable_debug(), disable_debug(), platform_setup() and platform_start_timer() are defined in stm32/porting/porting.cpp
-#endif  //  ARDUINO
-
 //  Disable exceptions for abstract classes. From https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/abstract_classes.html
 extern "C" void __cxa_pure_virtual() { while (true) {} }
 void operator delete(void *) { }
+
+//  Arduino-specific functions are in send_altitude_cocoos.ino.
+//  STM32-specific functions are in stm32/bluepill library.

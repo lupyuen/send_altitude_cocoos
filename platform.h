@@ -4,11 +4,9 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
-//  Uncomment to use real sensor data instead of simulated data.
-////#ifndef SENSOR_DATA
+//  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 #define SENSOR_DATA
-////#endif  //  !SENSOR_DATA
-//  Uncomment to use simulated sensor data instead of real data.
+//  Uncomment to use hardcoded data.
 //  #define SIMULATED_DATA
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
@@ -30,11 +28,21 @@
 #endif
 
 #ifdef ARDUINO  //  For Arduino only
-#include <Arduino.h>
+#include <Arduino.h>        //  Every platform should define the common functions below plus millis()...
+void enable_debug(void);    //  Enable display of debug messages.
+void disable_debug(void);   //  Disable display of debug messages.
+void platform_setup(void);  //  Initialise the Arduino platform.
+void platform_start_timer(void (*tickFunc0)(void));  //  Start the Arduino Timer to generate interrupt ticks for cocoOS to perform task switching.
+
+void led_setup(void);   //  Initialise the onboard LED.
+void led_on(void);      //  Switch the onboard LED on.
+void led_off(void);     //  Switch the onboard LED off.
+void led_toggle(void);  //  Toggle the onboard LED on or off.
+void led_wait(void);    //  Delay a while before updating the LED state.
 #endif  //  ARDUINO
 
 #ifdef STM32  //  For STM32 only
-#include <bluepill.h>
+#include <bluepill.h>  //  For the platform, timer, millis(), debug and LED functions.
 #include <stdint.h>  //  For uint32_t
 #define __FlashStringHelper char
 #define F(x) x  //  No need for flash memory helper on STM32.

@@ -32,7 +32,7 @@ bool aggregate_sensor_data(
     //  Aggregate the received sensor data.  Check whether we should send the data, based on 
     //  the throttle settings.  Return true if we should send the message.  The message commands are
     //  populated in cmdList, up to cmdListSize elements (including the terminating command).
-
+    led_toggle();  //  Blink the LED so we know we are aggregating continuously.
     if (strncmp(msg->name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) == 0) {
         //  If sensor name is "000", this is the Begin Step.
         context->stepBeginFunc(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
