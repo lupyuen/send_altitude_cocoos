@@ -38,11 +38,6 @@
 #include <stdint.h>  //  For uint32_t
 #define __FlashStringHelper char
 #define F(x) x  //  No need for flash memory helper on STM32.
-#define millis() (tickCount)  //  Return timestamp in milliseconds.
 #endif  //  STM32
-
-BEGIN_EXTERN_C
-extern volatile uint32_t tickCount;  //  Number of millisecond ticks.
-END_EXTERN_C
 
 #endif  //  PLATFORM_H_

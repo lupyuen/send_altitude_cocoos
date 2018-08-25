@@ -176,11 +176,10 @@ static uint8_t display_setup(void) {
 }
 #endif  //  SENSOR_DISPLAY
 
-volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
-
 #ifdef ARDUINO
 //  This is the tick function we will call every millisecond.  Usually points to os_tick() in cocoOS.
 static void (*tickFunc)(void) = NULL;
+static volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
 
 void platform_setup(void) {
   //  Initialise the Arduino timers, since we are using main() instead of setup()+loop().

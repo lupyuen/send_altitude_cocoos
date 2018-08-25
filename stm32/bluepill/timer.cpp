@@ -7,31 +7,27 @@
 #include <libopencm3/cm3/nvic.h>
 #include "bluepill.h"
 
-static volatile unsigned 
-	rtc_isr_count = 0u,		// Times rtc_isr() called
-	rtc_overflow_count = 0u;	// Times overflow occurred
-
 //  This is the tick function we will call every millisecond.  
 //  Usually points to os_tick() in cocoOS.
 static void (*tickFunc)(void) = NULL;
+static volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
+
+uint32_t millis(void) {
+	//  Return the number of millisecond ticks since startup.
+	//  Compatible with Arduino's millis() function.
+	return tickCount;
+}
 
 /*********************************************************************
  * RTC Interrupt Service Routine
  *********************************************************************/
 
 void rtc_isr(void) {
-	++rtc_isr_count;
-#ifdef NOTUSED  //  TODO: Overflow timer.
-	if ( rtc_check_flag(RTC_OW) ) {
-		// Timer overflowed:
-		++rtc_overflow_count;
-		rtc_clear_flag(RTC_OW);
-		if (tickFunc != NULL) { tickFunc(); }
-	} 
-#endif
-	if ( rtc_check_flag(RTC_SEC) ) {
-		// RTC tick interrupt:
+	if (rtc_check_flag(RTC_SEC)) {
+		//  We hit an RTC tick interrupt.
 		rtc_clear_flag(RTC_SEC);
+		tickCount++;
+		//  Call the tick function os_tick() for cocoOS to perform multitasking.
 		if (tickFunc != NULL) { tickFunc(); }
 		return;
 	}
@@ -56,8 +52,6 @@ static void rtc_setup(void) {
 	// rtc_set_prescale_val(6250);  //  0.1 second tick
 	// rtc_set_prescale_val(62500);  //  1 second tick
 
-	// rtc_set_counter_val(0xFFFFFFF0);  //  TODO: Overflow timer.
-
 	nvic_enable_irq(NVIC_RTC_IRQ);
 
 	cm_disable_interrupts();
@@ -65,7 +59,6 @@ static void rtc_setup(void) {
 	rtc_clear_flag(RTC_ALR);
 	rtc_clear_flag(RTC_OW);
 	rtc_interrupt_enable(RTC_SEC);
-	// rtc_interrupt_enable(RTC_OW);  //  TODO: Overflow timer.
 	cm_enable_interrupts();
 }
 
