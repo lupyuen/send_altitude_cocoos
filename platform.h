@@ -14,6 +14,10 @@
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
 #define MAX_RADIO_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_RADIO_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
+#define MAX_SENSOR_DATA_SIZE25 25
+
+#define TRANSMIT_SIG 67
+#define SENSOR_DATA_SIG 68
 
 //  Wrap function and global variable declarations with BEGIN_EXTERN_C ... END_EXTERN_C so that
 //  the functions and global variables may be used in both C and C++ code.

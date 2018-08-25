@@ -26,6 +26,7 @@ struct RadioMsg {
   Evt_t failureEvent;           //  Event to be triggered upon failure.
   SensorMsg *responseMsg;       //  If not NULL, then send this response message when the response is completed.
   uint8_t responseTaskID;       //  Send to this task ID.
+  char sensorData[MAX_SENSOR_DATA_SIZE25];
 };
 
 //  Radio Task maintains this context in the task data.

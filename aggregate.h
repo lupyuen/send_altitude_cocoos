@@ -5,8 +5,7 @@
 // #define ENABLE_DOWNLINK false  //  Uplink data only
 #define ENABLE_DOWNLINK true  //  Uplink data and request for downlink
 
-//  Send a message to network every 20,000 milliseconds = 20 seconds.
-#define SEND_INTERVAL ((unsigned long) 20 * 1000)
+
 
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
@@ -20,6 +19,9 @@ bool aggregate_sensor_data(   //  Aggregate the received sensor data. Return tru
     SensorMsg *msg,           //  Sensor Data Message just received. Contains sensor name and sensor values.
     NetworkCmd cmdList[],     //  Upon return, will be populated by the list of AT Commands to be executed.
     int cmdListSize);         //  How many commands may be stored in cmdList.
+
+void aggregate_getSensorData(char *buf);
+void aggregate_saveSensorData(SensorMsg *msg);
 
 END_EXTERN_C  //  End of extern C scope.
 
