@@ -2,10 +2,12 @@
 #include "logger.h"
 #include <string.h>
 
-//  Logging is off by default.  Developer must switch it on with enable_debug().
-static bool logEnabled = false;
-void enable_log(void) { logEnabled = true; }
-void disable_log(void) { logEnabled = false; }
+#define DEBUG_BUFFER_SIZE 80
+static char debugBuffer[DEBUG_BUFFER_SIZE + 1];  //  Buffer to hold output before flushing.
+static bool logEnabled = false;  //  Logging is off by default.  Developer must switch it on with enable_debug().
+
+void enable_log(void) { logEnabled = true; debugBuffer[0] = 0; }
+void disable_log(void) { logEnabled = false; debugBuffer[0] = 0; }
 
 //  ARM Semihosting code from 
 //  http://www.keil.com/support/man/docs/ARMCC/armcc_pge1358787046598.htm
@@ -66,14 +68,30 @@ static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int
     return __semihost(SYS_WRITE, args);
 }
 
-static int semihost_debug(const char *buffer, unsigned int length) {
-    //  Write "length" number of bytes from "buffer" to the debugger's log.
-	return semihost_write(SEMIHOST_HANDLE, (const unsigned char *) buffer, length);
+static void debug_append(const char *buffer, unsigned int length) {
+    //  Append "length" number of bytes from "buffer" to the debug buffer.
+    const int debugBufferLength = strlen(debugBuffer);
+    //  If can't fit into buffer, just send to the debugger log now.
+    if (debugBufferLength + length >= DEBUG_BUFFER_SIZE) {
+        debug_flush();
+        semihost_write(SEMIHOST_HANDLE, (const unsigned char *) buffer, length);
+        return;
+    }
+    //  Else append to the buffer.
+    strncat(debugBuffer, buffer, length);
+    debugBuffer[debugBufferLength + length] = 0;  //  Terminate the string.
+}
+
+void debug_flush(void) {
+    //  Flush the debug buffer to the debugger log.  This will be slow.
+    if (debugBuffer[0] == 0) { return; }  //  Debug buffer is empty, nothing to write.
+	semihost_write(SEMIHOST_HANDLE, (const unsigned char *) debugBuffer, strlen(debugBuffer));
+    debugBuffer[0] = 0;
 }
 
 void debug_print(size_t l) {
     //  We only print up to 10 digits, since 32 bits will give max 4,294,967,296.    
-    //  char buf[32]; sprintf(buf, "%u", l); semihost_debug(buf, strlen(buf)); return; ////  TODO
+    //  char buf[32]; sprintf(buf, "%u", l); debug_append(buf, strlen(buf)); return; ////  TODO
     
     #define MAX_INT_LENGTH 10
     char buffer[MAX_INT_LENGTH + 1];
@@ -97,14 +115,14 @@ void debug_print(size_t l) {
     if (length < size) buffer[length] = 0;
     buffer[size - 1] = 0;  //  Terminate in case of overflow.
 
-    semihost_debug(buffer, strlen(buffer));
+    debug_append(buffer, strlen(buffer));
 }
 
 void debug_print(int i) {
-    if (i == 0) { semihost_debug("0", 1); } 
+    if (i == 0) { debug_append("0", 1); } 
     else if (i >= 0) { debug_print((size_t) i); }
     else {  // i < 0.
-        semihost_debug("-", 1);
+        debug_append("-", 1);
         debug_print((size_t) -i);
     }
 }
@@ -112,15 +130,15 @@ void debug_print(int i) {
 void debug_print(float f) {
     //  Assume max 10 digits to the left of decimal point and 2 digits to the right.
     if (f == 0) {
-        semihost_debug("0.00", 4);
+        debug_append("0.00", 4);
         return;
     } else if (f < 0) {
-        semihost_debug("-", 1);
+        debug_append("-", 1);
         f = -f;
     }
     //  Print the digits left of the decimal point.
     debug_print((size_t) f);
-    semihost_debug(".", 1);
+    debug_append(".", 1);
     //  Print the 2 digits right of the decimal point.
     f = f * 10.0;
     debug_print(((size_t) f) % 10);
@@ -131,44 +149,41 @@ void debug_print(float f) {
 void debug_begin(uint16_t bps) {
     //  TODO
 }
-void debug_flush(void) {
-    //  TODO
-}
 
 void debug_write(uint8_t ch) {
-	semihost_debug((const char *) &ch, 1);
+	debug_append((const char *) &ch, 1);
 }
 
 void debug_print(const char *s) {
     if (s[0] == 0) return;
-	semihost_debug(s, strlen(s));
+	debug_append(s, strlen(s));
 }
 
 void debug_println(const char *s) {
     if (s[0] != 0) { debug_print(s); }
-    semihost_debug("\n", 1);
+    debug_append("\n", 1);
 }
 
 void debug_print(char ch) {
-	semihost_debug(&ch, 1);
+	debug_append(&ch, 1);
 }
 
 void debug_println(int i) {
     debug_print(i);
-    semihost_debug("\n", 1);
+    debug_append("\n", 1);
 }
 
 void debug_println(size_t l) {
     debug_print(l);
-    semihost_debug("\n", 1);
+    debug_append("\n", 1);
 }
 
 void debug_println(char ch) {
     debug_print(ch);
-    semihost_debug("\n", 1);
+    debug_append("\n", 1);
 }
 
 void debug_println(float f) {
     debug_print(f);
-    semihost_debug("\n", 1);
+    debug_append("\n", 1);
 }
