@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/rtc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/nvic.h>
+#include "bluepill.h"
 
 static volatile unsigned 
 	rtc_isr_count = 0u,		// Times rtc_isr() called
@@ -71,8 +72,6 @@ static void rtc_setup(void) {
 /*********************************************************************
  * Start Platform Timer
  *********************************************************************/
-
-extern "C" void platform_start_timer(void (*tickFunc0)(void));  //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.
 
 void platform_start_timer(void (*tickFunc0)(void)) {
     //  Start the STM32 Timer to generate interrupt ticks for cocoOS to perform task switching.

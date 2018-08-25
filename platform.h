@@ -30,22 +30,15 @@
 #endif
 
 #ifdef ARDUINO  //  For Arduino only
-//  Reduce the Serial buffer size from 64 to 16 to reduce RAM usage.
-//  #define SERIAL_TX_BUFFER_SIZE 16
-//  #define SERIAL_RX_BUFFER_SIZE 16
-//  Reduce SoftwareSerial buffer size from 64 to max response length.
-//  #define _SS_MAX_RX_BUFF MAX_UART_RESPONSE_MSG_SIZE
-//  Define the Serial class.
 #include <Arduino.h>
 #endif  //  ARDUINO
 
 #ifdef STM32  //  For STM32 only
-
+#include <bluepill.h>
+#include <stdint.h>  //  For uint32_t
 #define __FlashStringHelper char
 #define F(x) x  //  No need for flash memory helper on STM32.
 #define millis() (tickCount)  //  Return timestamp in milliseconds.
-#include <stdint.h>  //  For uint32_t
-
 #endif  //  STM32
 
 BEGIN_EXTERN_C
