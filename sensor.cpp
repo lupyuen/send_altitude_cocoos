@@ -55,10 +55,9 @@ void sensor_task(void) {
     //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
 
-    //  Prepare a display message for copying the sensor data.
+    //  Prepare a sensor data message for copying the sensor data.
     SensorMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    //// memset(msg.name, 0, MAX_SENSOR_NAME_SIZE + 1);  //  Zero the name array.
     strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
     msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
@@ -68,6 +67,7 @@ void sensor_task(void) {
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
     debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
+    context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
 
     //  Do we have new data?
     if (msg.count > 0) {
