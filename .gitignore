@@ -2,6 +2,7 @@ send_altitude_cocoos
 src/*
 lib/cocoOS_5.0.2/*
 libraries
+output.map
 .DS_Store
 .idea
 .pioenvs
