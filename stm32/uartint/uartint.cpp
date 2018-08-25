@@ -1,6 +1,7 @@
 //  UART Interface for STM32 UART port. Compatible with Arduino's SoftwareSerial.
 #define SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 #include <string.h>
+#include <bluepill.h>
 #include <logger.h>
 #include "uartint.h"
 
@@ -8,6 +9,11 @@
 //  Message limits from https://github.com/lupyuen/send_altitude_cocoos/blob/master/platform.h
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
+
+//  Command timeouts from https://github.com/lupyuen/send_altitude_cocoos/blob/master/sigfox.h
+#define COMMAND_TIMEOUT ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
+#define UPLINK_TIMEOUT ((unsigned long) 20 * 1000)  //  Wait up to 20 seconds for uplink command response from Sigfox module.
+#define DOWNLINK_TIMEOUT ((unsigned long) 60 * 1000)  //  Wait up to 60 seconds for downlink command response from Sigfox module.
 
 //  Wisol AT Commands from https://github.com/lupyuen/send_altitude_cocoos/blob/master/wisol.cpp
 
@@ -44,25 +50,31 @@
 #define CMD_MODULATION_OFF "AT$CB=-1,0"  //  Modulation wave off.
 #endif
 
-static char command[MAX_UART_SEND_MSG_SIZE + 1];  //  AT command being received from the caller.
+static char command[MAX_UART_SEND_MSG_SIZE + 1];   //  AT command being received from the caller.
 static char data[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Simulated data to be returned for the response.
 static uint8_t dataLength = 0;  //  Number of simulated bytes in data to be returned.
-static uint8_t dataIndex = 0;  //  Current index to the simulated data to be returned.
+static uint8_t dataIndex = 0;   //  Current index to the simulated data to be returned.
+static uint32_t dataTimestamp = 0;  //  Response will only be delivered at this timestamp, to simulate delay.
 
 void UARTInterface::begin(uint16_t bps) {
     //  Erase the command buffer.
     command[0] = 0;
     dataIndex = 0;
     dataLength = 0;
+    dataTimestamp = 0;
 }
+
 int UARTInterface::available() { 
     //  Return the number of simulated bytes to be read from the UART port.
+    if (dataIndex >= dataLength) { return 0; }  //  No data.
+    if (millis() < dataTimestamp) { return 0; }  //  Not ready, wait for delay.
     return dataLength - dataIndex;
 }
+
 int UARTInterface::read() { 
     //  Return the next simulated byte to be read from the UART port. Or return -1 if none.
     //  debug_println("uart_read");
-    if (dataIndex >= dataLength) { return -1; }
+    if (available() == 0) { return -1; }  //  No data or not ready.
     return data[dataIndex++];
 }
 
@@ -70,6 +82,7 @@ static void simulateCommand(const char *cmd) {
     data[0] = 0;
     dataIndex = 0;
     dataLength = 0;
+    dataTimestamp = millis() + COMMAND_TIMEOUT;  //  Delay a few seconds.
     const char *response = "OK";  //  Default response.
     if (strcmp(cmd, CMD_NONE) == 0) {  //  "AT": Empty placeholder command.
         //  Default to "OK".
@@ -94,8 +107,10 @@ static void simulateCommand(const char *cmd) {
         if (strcmp(cmd + pos, CMD_SEND_MESSAGE_RESPONSE) == 0) {
             //  Downlink.  Return after 1 min.
             response = "OK\r\nRX=01 23 45 67 89 AB CD EF";
+            dataTimestamp = millis() + DOWNLINK_TIMEOUT;
         } else {
-            //  No downlink.  Default to "OK" after delay.            
+            //  No downlink.  Default to "OK" after send delay.
+            dataTimestamp = millis() + UPLINK_TIMEOUT;
         }
     } else {
         debug_print("***** Error: Unknown Wisol cmd ");
@@ -136,11 +151,13 @@ void UARTInterface::write(uint8_t ch) {
 #endif  // SIMULATE_WISOL
 
 UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
-    //  TODO
+    //  TODO: Init the UART port connected to the receive/transmit pins.
 }
+
 void UARTInterface::listen() {
-    //  TODO
+    //  TODO: Listen to incoming data from the UART port.
 }
+
 void UARTInterface::end() {
-    //  TODO
+    //  TODO: Close the UART port.
 }
