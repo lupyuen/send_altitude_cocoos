@@ -27,6 +27,7 @@ struct RadioMsg {
   SensorMsg *responseMsg;       //  If not NULL, then send this response message when the response is completed.
   uint8_t responseTaskID;       //  Send to this task ID.
   char sensorData[MAX_SENSOR_DATA_SIZE25];
+
 };
 
 //  Radio Task maintains this context in the task data.
@@ -37,6 +38,11 @@ struct RadioContext {
   RadioMsg *msg;                //  Message being sent. Set by radio_task() upon receiving a message.
   RadioDevice *radio;           //  Radio device in use
   Evt_t rxDoneEvent;            //  Event to be signalled by the radio device when upon message reception done
+  NetworkCmd *cmd;              //  Command in progress
+  unsigned nCommands;           //  Number of commands to send
+  char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
+  char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
+  const char *downlinkData;  //  If downlink was requested, set the downlink hex string e.g. 0102030405060708.
 };
 
 

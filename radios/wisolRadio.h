@@ -14,6 +14,9 @@ public:
   WisolRadio(UartSerial *serial);
   ~WisolRadio() = default;
 
+  // returns number of commands in list[]
+  unsigned getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) override;
+
   // send a data buffer to the radio
   bool send(const uint8_t *data, uint8_t len) override;
 
@@ -30,6 +33,9 @@ public:
 
   void setMarkerCount(unsigned count) override;
 private:
+  void addCmd(NetworkCmd list[], int listSize, NetworkCmd cmd);
+  int getCmdIndex(NetworkCmd list[], int listSize);
+
   UartSerial *dev;
   uint8_t rxbuf[128];
   uint8_t writepos;
@@ -37,6 +43,7 @@ private:
   Evt_t rxDoneEvt;
   unsigned expectedMarkerCount;
   unsigned receivedMarkers;
+  unsigned nCommands;
 };
 
 #endif /* WISOL_RADIO_H_ */

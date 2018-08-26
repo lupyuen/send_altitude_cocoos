@@ -20,7 +20,7 @@ struct RadioContext;  //  Forward declaration.
 struct NetworkCmd {
   const __FlashStringHelper *sendData;  //  Command string to be sent, in F() flash memory. 
   uint8_t expectedMarkerCount;  //  Wait for this number of markers until timeout.
-  bool (*processFunc)(NetworkContext *context, const char *response);  //  Function to process the response, NULL if none.
+  bool (*processFunc)(RadioContext *context, const char *response);  //  Function to process the response, NULL if none.
   const char *payload;  //  Additional payload to be sent right after sendData. Note: This is a pointer, not a buffer.
   const __FlashStringHelper *sendData2;  //  Second command string to be sent, in F() flash memory. 
 };
