@@ -5,28 +5,29 @@
     "version": "2.0.0",
     "tasks": [
         {
+            //  Connect to Blue Pill via OpenOCD and show the ARM Semihosting log.
             "label": "🔗 Connect To STM32 Blue Pill",
             "type": "shell",
             "windows": {
-                "command": "c:\\openocd\\bin\\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
+                "command": "c:\\openocd\\bin\\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -f scripts/connect.ocd"
             },
             "osx": {
-                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -f scripts/connect.ocd"
             },
             "linux": {
-                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -f scripts/connect.ocd"
             },
             "problemMatcher": [],
             "group": "test",
             "presentation": {
                 "reveal": "always",
-                "panel": "shared"
+                "panel": "dedicated"
             }
         },
         {
             "label": "⭕️ Restart STM32 Blue Pill",
             "type": "shell",
-            "command": "arm-none-eabi-gdb -x loader.gdb",
+            "command": "arm-none-eabi-gdb -x scripts/loader.gdb",
             "problemMatcher": [],
             "group": "test",
             "presentation": {
@@ -34,18 +35,5 @@
                 "panel": "shared"
             }
         },
-        {
-            "label": "💬 Show Log (STM32 Blue Pill)",
-            "dependsOn": [
-                "🔗 Connect To STM32 Blue Pill",
-                "⭕️ Restart STM32 Blue Pill"
-            ],
-            "problemMatcher": [],
-            "group": "test",
-            "presentation": {
-                "reveal": "never",
-                "panel": "shared"
-            }
-        }
     ]
 }

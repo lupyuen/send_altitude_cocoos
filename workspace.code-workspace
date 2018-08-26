@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "/Users/Luppy/stm32f103c8t6"
+		},
+		{
+			"path": "/usr/local/Cellar/open-ocd/0.10.0/share/openocd"
 		}
 	],
 	"settings": {
