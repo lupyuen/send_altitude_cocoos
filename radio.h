@@ -43,6 +43,7 @@ struct RadioContext {
   char device[MAX_DEVICE_ID_SIZE + 1];  //  Sigfox device ID read from device e.g. 002C2EA1
   char pac[MAX_DEVICE_CODE_SIZE + 1];  //  Sigfox PAC code read from device e.g. 5BEB8CF64E869BD1
   const char *downlinkData;  //  If downlink was requested, set the downlink hex string e.g. 0102030405060708.
+  bool initialized;
 };
 
 

@@ -54,7 +54,7 @@ struct NetworkContext {
 
   NetworkCmd *cmdList;  //  List of Wisol AT commands being sent.
   int cmdIndex;  //  Index of cmdList being sent.
-  bool initialized;
+  //bool initialized;
 };
 
 extern NetworkCmd endOfList; //  Command to indicate end of command list.

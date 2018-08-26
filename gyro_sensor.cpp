@@ -43,7 +43,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   sensorDataArray[2] = (rand() % 500) / 10.0;
 
   //  Copy the received sensor data and return the number of floats copied.
-  return receive_sensor_data(sensorDataArray, sensorDataSize, data, size);
+  return receive_sensor_data(data, size, sensorDataArray, sensorDataSize);
 }
 
 SensorContext *setup_gyro_sensor(

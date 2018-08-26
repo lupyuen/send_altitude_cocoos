@@ -10,6 +10,7 @@
 static void serialize(NetworkCmd *cmd, char *buf);
 static void processResponse(RadioContext *context);
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
+NetworkCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
@@ -45,7 +46,7 @@ void radio_task(void) {
     context->cmd = &cmdList[0];
     cmdList[0] = endOfList;
 
-    if (context->msg->sendData == NULL) {
+    if (!context->initialized) {
       context->nCommands = context->radio->getStepBegin(cmdList, MAX_NETWORK_CMD_LIST_SIZE, false);
     }
     else {
@@ -93,6 +94,10 @@ void radio_task(void) {
       if (context->status == false) break;  //  Quit if the processing failed.
 
       //  Command was successful. Move to next command.
+      if (!context->initialized) {
+        context->initialized = true;
+      }
+
       context->cmd++;  //  Next Wisol command.
       context->nCommands--;
     }  //  Loop to next Wisol command.

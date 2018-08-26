@@ -95,6 +95,7 @@ static uint8_t network_setup(void) {
 
   radioContext.response = radioResponse;
   radioContext.radio = &radio;
+  radioContext.initialized = false;
 
   uint8_t radioTaskID = task_create(
     radio_task,     //  Task will run this function.

@@ -2,21 +2,13 @@
 //#define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
-// #include <stdio.h>
 #include <cocoos.h>
 #include "sensor.h"
 #include "display.h"
 
-#ifdef SENSOR_DATA
+static uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
-uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
-
-void setup_sensor_context(
-  SensorContext *context,
-  Sensor *sensor,
-  uint16_t pollInterval,
-  uint8_t taskID
-  ) {
+void setup_sensor_context( SensorContext *context, Sensor *sensor, uint16_t pollInterval, uint8_t taskID) {
   //  Set up the sensor context and call the sensor to initialise itself.
   //  Allocate a unique sensor ID and create the event.
   uint8_t sensorID =  nextSensorID++;
@@ -43,57 +35,49 @@ void sensor_task(void) {
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
 
   task_open();  //  Start of the task. Must be matched with task_close().
+  context = (SensorContext *) task_get_data();
+
+  // Initialize the SensorMsg contained in this sensor context
+  context->msg.super.signal = SENSOR_DATA_SIG;
+  context->msg.sensorId = context->sensor->info.id;
+
   for (;;) {
-    context = (SensorContext *) task_get_data();
 
     sem_wait(i2cSemaphore);
 
     //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
 
-    //  Prepare a display message for copying the sensor data.
-
-    //context->msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    context->msg.super.signal = SENSOR_DATA_SIG;
-
-    strncpy(context->msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
-
-    context->msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
-
     //  Poll for the sensor data and copy into the display message.
     context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
     sem_signal(i2cSemaphore);
+
     context = (SensorContext *) task_get_data();
 
     //  Do we have new data?
     if (context->msg.count > 0) {
-      //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
-      //  debug(msg.name, F(" >> Send msg")); ////
-
-      //  Note: msg_post() will block if the receiver's queue is full.
-      //  That's why we send the message outside the semaphore lock.
-      ////msg_post(context->receive_task_id, msg);
-      msg_post_async(context->receive_task_id, context->msg);////
+      msg_post_async(context->receive_task_id, context->msg);
     }
 
     //  Wait a short while before polling the sensor again.
     task_wait(context->sensor->info.poll_interval);
+
+    context = (SensorContext *) task_get_data();
   }
 
   task_close();  //  End of the task. Should never come here.
 }
 
-uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
+uint8_t receive_sensor_data(float *dest, uint8_t destSize, const float *src, uint8_t srcSize ) {
   //  Copy the received sensor data array into the provided data buffer.
   //  Return the number of floats copied.
-  //// debug(F("receive_sensor_data")); ////
   uint8_t i;
   //  Copy the floats safely: Don't exceed the array size provided by caller.
   //  Also don't exceed the number of available sensor data items.
-  for (i = 0; i < size && i < sensorDataSize && i < MAX_SENSOR_DATA_SIZE; i++) {
-    data[i] = sensorDataArray[i];
+  for (i = 0; i < destSize && i < srcSize && i < MAX_SENSOR_DATA_SIZE; i++) {
+    dest[i] = src[i];
   }
   return i;  //  Return the number of floats copied.
 }
@@ -130,4 +114,3 @@ Sensor::Sensor(
   control(init_sensor_func, next_channel_func, prev_channel_func) {
 }
 
-#endif  //  SENSOR_DATA

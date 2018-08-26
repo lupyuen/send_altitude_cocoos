@@ -46,7 +46,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   //// sensorData[0] = 12.3 + rand() % 10;
 
   //  Copy the received sensor data and return the number of floats copied.
-  return receive_sensor_data(sensorData, sensorDataSize, data, size);
+  return receive_sensor_data(data, size, sensorData, sensorDataSize);
 }
 
 SensorContext *setup_temp_sensor(
