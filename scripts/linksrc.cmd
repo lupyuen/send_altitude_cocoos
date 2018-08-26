@@ -6,7 +6,7 @@ mkdir lib
 mklink libraries lib
 mkdir src
 cd src
-FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
+FOR %%f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %%~nf%%~xf ..\%%~nf%%~xf
 cd ..
 
 :: Remove the default cocoOS config and link to our version.
