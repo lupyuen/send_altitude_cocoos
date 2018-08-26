@@ -133,42 +133,6 @@ And comment the `uno` line (by inserting `;` in front):
 ; env_default = uno
 ```
 
-### Install GDB ARM Debugger
-
-- For Windows:
-
-  1. Install ARM Cross-Compiler and Linker from the ARM Developer Website: <br>
-    https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
-
-  1. Scroll down the page till you find <br>
-    `Windows 32-bit File: gcc-arm-none-eabi-…-win32.exe` <br>
-    Click `Download` <br>
-
-  1. Select the _"Add path to environment variable"_ option at the last install step
-
-- For Mac: Install `arm-none-eabi-gdb` (TODO)
-
-- For Ubuntu: (`arm-none-eabi-gdb` is obsolete)
-
-  ```bash
-  sudo apt install gdb-multiarch
-  sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
-  ```
-
-### Check GDB ARM Debugger Installation
-
-1. Open a __new__  Windows, Mac or Ubuntu command prompt (not Windows Bash) and enter
-
-    ```bash
-    arm-none-eabi-gdb -v
-    ```
-
-1. You should see something like `version 5.4.1 20160919 (release)`
-
-1. If you see no errors, close the command prompt.
-
-1. If you see an error, update your PATH environment variable so that it  includes the folder for the ARM ".exe" files.
-
 ### Install OpenOCD For Displaying Debug Log
 
 - For Windows:
@@ -200,33 +164,41 @@ And comment the `uno` line (by inserting `;` in front):
 
 1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
 
-### Display STM32 Blue Pill Debug Log
+### Install GDB ARM Debugger (for Restart Blue Pill command)
 
-- For Windows: Open each command in a separate window:
+- For Windows:
 
-  ```cmd
-  c:\openocd\bin\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg
-  
-  arm-none-eabi-gdb -x loader.gdb
-  ```
+  1. Install ARM Cross-Compiler and Linker from the ARM Developer Website: <br>
+    https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
 
-- For Mac: Open each command in a separate window:
+  1. Scroll down the page till you find <br>
+    `Windows 32-bit File: gcc-arm-none-eabi-…-win32.exe` <br>
+    Click `Download` <br>
 
-  ```bash
-  openocd -f interface/stlink-v2.cfg -f stm32f1x.cfg
+  1. Select the _"Add path to environment variable"_ option at the last install step
 
-  arm-none-eabi-gdb -x loader.gdb
-  ```
+- For Mac: Install `arm-none-eabi-gdb` (TODO)
 
-- For Ubuntu: Open each command in a separate window:
+- For Ubuntu: (`arm-none-eabi-gdb` is obsolete)
 
   ```bash
-  openocd -f interface/stlink-v2.cfg -f stm32f1x.cfg
-  
-  arm-none-eabi-gdb -x loader.gdb
+  sudo apt install gdb-multiarch
+  sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
   ```
 
-- Both `openocd` and `gdb` windows should be closed before using the PlatformIO Upload (Flash) command
+### Check GDB ARM Debugger Installation (for Restart Blue Pill command)
+
+1. Open a __new__  Windows, Mac or Ubuntu command prompt (not Windows Bash) and enter
+
+    ```bash
+    arm-none-eabi-gdb -v
+    ```
+
+1. You should see something like `version 5.4.1 20160919 (release)`
+
+1. If you see no errors, close the command prompt.
+
+1. If you see an error, update your PATH environment variable so that it  includes the folder for the ARM ".exe" files.
 
 -----
 ## Source Files
@@ -271,13 +243,15 @@ And comment the `uno` line (by inserting `;` in front):
 
 [`stm32`](stm32): Platform-specific code for STM32 Blue Pill
 
-[`stm32/porting`](stm32/porting): Library for porting Arduino code to STM32
+[`stm32/bluepill`](stm32/bluepill): STM32 Blue Pill common functions
 
 [`stm32/logger`](stm32/logger): Debugger logging library based on ARM Semihosting
 
-[`stm32/i2cint`](stm32/i2cint): I2C Interface
+[`stm32/i2cint`](stm32/i2cint): I2C Interface. Simulates BME280 sensor.
 
-[`stm32/uartint`](stm32/uartint): UART Interface
+[`stm32/uartint`](stm32/uartint): UART Interface. Simulates Wisol Sigfox transceiver.
+
+[`stm32/porting`](stm32/porting): Library for porting Arduino code to STM32
 
 -----
 ### Build and Configuration Files
