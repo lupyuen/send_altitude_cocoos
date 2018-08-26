@@ -28,17 +28,15 @@ should be symbolically linked into the folder `src`
 -----
 ### For Windows
 
-Open a Command Prompt with __Normal Permissions__. Run the following:
+Open a Command Prompt. Run the following:
 
 ```cmd
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
 ```
 
-Close the Command Prompt.
-
 Using Windows Explorer: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
-Open a Command Prompt with __Admin Permissions__. Run the following:
+At the Command Prompt, run the following:
 
 ```cmd
 cd send_altitude_cocoos
@@ -56,7 +54,7 @@ git clone https://github.com/lupyuen/send_altitude_cocoos.git
 
 Using Mac Finder: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
-Open a Command Prompt. Run the following:
+At the Command Prompt, run the following:
 
 ```bash
 cd send_altitude_cocoos

@@ -1,5 +1,4 @@
 :: Set up the symbolic links for source files and for cocoOS config file.
-:: Must be run with Administrator Permissions because only admins are allowed to create symbolic links.
 
 :: To compile the project under PlatformIO in Visual Studio Code, 
 :: the source files should be symbolically linked into the folder "src"
