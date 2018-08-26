@@ -5,28 +5,47 @@
     "version": "2.0.0",
     "tasks": [
         {
-            //  Connect to the Blue Pill via OpenOCD, to be used for debugging.
-            //  Note: You must kill this task before flashing an app.
             "label": "🔗 Connect To STM32 Blue Pill",
             "type": "shell",
             "windows": {
-                "command": "c:\\openocd\\bin\\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+                "command": "c:\\openocd\\bin\\openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
             },
             "osx": {
-                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
             },
             "linux": {
-                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg",
+                "command": "openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg"
             },
-            "problemMatcher": []
+            "problemMatcher": [],
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         },
         {
-            //  Restart the Blue Pill, which will show output log for debug() commands.
-            //  Close the window after restarting.
-            "label": "💬 Restart STM32 Blue Pill",
+            "label": "⭕️ Restart STM32 Blue Pill",
             "type": "shell",
             "command": "arm-none-eabi-gdb -x loader.gdb",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "group": "test",
+            "presentation": {
+                "reveal": "never",
+                "panel": "shared"
+            }
         },
+        {
+            "label": "💬 Show Log (STM32 Blue Pill)",
+            "dependsOn": [
+                "🔗 Connect To STM32 Blue Pill",
+                "⭕️ Restart STM32 Blue Pill"
+            ],
+            "problemMatcher": [],
+            "group": "test",
+            "presentation": {
+                "reveal": "never",
+                "panel": "shared"
+            }
+        }
     ]
 }
