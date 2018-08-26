@@ -1,5 +1,6 @@
-# GDB script for loading and running programs in STM32 Blue Pill.
-# This file used to be .gdbinit, which could not be autoloaded due to autoloading security in GDB.
+# GDB script for restarting STM32 Blue Pill.  This script sends
+# commands to an OpenOCD process that's already running to control
+# the Blue Pill.
 
 # Set architecture to ARM 32-bit. Needed for gdb-multiarch on Ubuntu.
 set architecture arm
@@ -36,6 +37,6 @@ set print asm-demangle on
 # Enable ARM semihosting to show debug console output in OpenOCD console.
 monitor arm semihosting enable
 
-# Reset the device.
-monitor reset
+# Restart the device.
+monitor reset run
 quit

@@ -27,7 +27,7 @@
         {
             "label": "⭕️ Restart STM32 Blue Pill",
             "type": "shell",
-            "command": "arm-none-eabi-gdb -x scripts/loader.gdb",
+            "command": "arm-none-eabi-gdb -x scripts/restart.gdb",
             "problemMatcher": [],
             "group": "test",
             "presentation": {
