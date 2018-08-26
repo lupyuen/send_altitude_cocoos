@@ -24,6 +24,7 @@
                 "panel": "dedicated"
             }
         },
+        /*
         {
             "label": "⭕️ Restart STM32 Blue Pill",
             "type": "shell",
@@ -35,5 +36,6 @@
                 "panel": "shared"
             }
         },
+        */
     ]
 }

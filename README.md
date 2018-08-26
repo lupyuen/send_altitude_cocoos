@@ -164,42 +164,6 @@ And comment the `uno` line (by inserting `;` in front):
 
 1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
 
-### Install GDB ARM Debugger (for Restart Blue Pill command)
-
-- For Windows:
-
-  1. Install ARM Cross-Compiler and Linker from the ARM Developer Website: <br>
-    https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
-
-  1. Scroll down the page till you find <br>
-    `Windows 32-bit File: gcc-arm-none-eabi-…-win32.exe` <br>
-    Click `Download` <br>
-
-  1. Select the _"Add path to environment variable"_ option at the last install step
-
-- For Mac: Install `arm-none-eabi-gdb` (TODO)
-
-- For Ubuntu: (`arm-none-eabi-gdb` is obsolete)
-
-  ```bash
-  sudo apt install gdb-multiarch
-  sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb
-  ```
-
-### Check GDB ARM Debugger Installation (for Restart Blue Pill command)
-
-1. Open a __new__  Windows, Mac or Ubuntu command prompt (not Windows Bash) and enter
-
-    ```bash
-    arm-none-eabi-gdb -v
-    ```
-
-1. You should see something like `version 5.4.1 20160919 (release)`
-
-1. If you see no errors, close the command prompt.
-
-1. If you see an error, update your PATH environment variable so that it  includes the folder for the ARM ".exe" files.
-
 -----
 ## Source Files
 
