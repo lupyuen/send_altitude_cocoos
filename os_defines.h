@@ -38,6 +38,9 @@
 #define _os_defs
 
 /** @file os_defines.h cocoOS user configuration */
+//  For send_altitude_cocoos we reduced the number of allowed
+//  tasks, semaphores and events so they can fit in the Arduino Uno.
+//  For STM32 Blue Pill you may wish to increase the limits.
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,30 +50,26 @@ extern "C" {
 
 /** Max number of used tasks
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-//// #define N_TASKS             10
+//  Reduced N_TASKS from default 10 to:
 #define N_TASKS             5
 
 /** Max number of used message queues
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
 #define N_QUEUES            2
 
-
 /** Max number of used semaphores
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-//// #define N_SEMAPHORES        50
+//  Reduced N_SEMAPHORES from default 50 to:
 #define N_SEMAPHORES        10
-
 
 /** Max number of used events
 * @remarks Must be defined. @n Allowed range: 0-254. Value must not be exceeded */
-//// #define N_EVENTS            50
+//  Reduced N_EVENTS from default 50 to:
 #define N_EVENTS            5
-
 
 /** Round Robin scheduling
 * @remarks If defined, tasks will be scheduled ignoring the priorities */
 //#define ROUND_ROBIN
-
 
 /** Memory size
  * @remarks Should be set to the size of address pointer */

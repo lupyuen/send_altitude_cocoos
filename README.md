@@ -28,32 +28,19 @@ should be symbolically linked into the folder `src`
 -----
 ### For Windows
 
-Open a Command Prompt with Admin permissions. Run the following:
+Open a Command Prompt with __Admin permissions__. Run the following:
 
 ```cmd
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
-cd send_altitude_cocoos
-mkdir lib
-mklink libraries lib
-mkdir src
-cd src
-FOR %f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %~nf%~xf ..\%~nf%~xf
-cd ..
 ```
 
-Using Windows Explorer:
+Using Windows Explorer: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
-1. Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
-
-2. Copy `BME280` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/BME280/src`.
-
-Then link `os_defines.h` like this:
+Open a Command Prompt with __Admin permissions__. Run the following:
 
 ```cmd
-cd lib\cocoOS_5.0.2\src
-del os_defines.h
-mklink os_defines.h ..\..\..\os_defines.h
-cd ..\..\..
+cd send_altitude_cocoos
+scripts\linksrc.cmd
 ```
 
 -----
@@ -63,43 +50,25 @@ Open a Command Prompt. Run the following:
 
 ```bash
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
-cd send_altitude_cocoos
-mkdir lib
-ln -s lib libraries
-mkdir src
-cd src
-ln -s ../*.ino ../*.cpp ../*.h .
-cd ..
 ```
 
-Using Mac Finder: 
+Using Mac Finder: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
 
-1. Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
-
-2. Copy `BME280` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/BME280/src`.
-
-Then link `os_defines.h` like this:
+Open a Command Prompt. Run the following:
 
 ```bash
-cd lib/cocoOS_5.0.2/src
-rm os_defines.h
-ln -s ../../../os_defines.h .
-cd ../../..
+cd send_altitude_cocoos
+chmod +x scripts/*.sh
+scripts/linksrc.sh
 ```
 
-To allow Arduino IDE and PlatformIO to share the same cocoOS library:
+To allow Arduino IDE and PlatformIO to share the same cocoOS library `cocoOS_5.0.2`:
 
 ```bash
 ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.2/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.2
 ```
 
-Arduino IDE does not compile if send_altitude_cocoos/src contains any files. Remove the links before compiling in Arduino IDE.
-
-Or use these 2 helper scripts:
-
-- `scripts/linksrc.sh`: Links the source files to `src` folder and launches Visual Studio Code
-
-- `scripts/unlinksrc.sh`: Unlinks the source files from `src` folder and launches Arduino IDE
+Arduino IDE does not compile if `send_altitude_cocoos/src` contains any files. Run `scripts/unlinksrc.sh` to remove the links before compiling in Arduino IDE.
 
 -----
 ## Downlink Server Support
