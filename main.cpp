@@ -35,8 +35,9 @@ Sem_t i2cSemaphore;
 static char radioResponse[MAX_RADIO_RESPONSE_MSG_SIZE + 1];
 
 // Task contexts
+static AggregateContext aggregateContext;
 static RadioContext radioContext;
-static NetworkContext networkContext;
+//static NetworkContext networkContext;
 
 // Pool of UART messages for the UART Tasks message queue.
 static RadioMsg radioMsgPool[RADIO_MSG_POOL_SIZE];
@@ -54,7 +55,7 @@ int main(void) {
   os_init();
 
   //  Erase the aggregated sensor data.
-  setup_aggregate();
+  //setup_aggregate();
 
   //  Start the network task to send and receive network messages.
   uint8_t task_id = network_setup();
@@ -105,23 +106,18 @@ static uint8_t network_setup(void) {
     RADIO_MSG_POOL_SIZE,     //  Size of queue pool.
     sizeof(RadioMsg));       //  Size of queue message.
 
-  //  Start the Network Task for receiving sensor data and transmitting to UART Task.
-  setup_wisol(
-    &networkContext,
-    &radioContext,
-    radioTaskID,
-    COUNTRY_SE,
-    false);
+  //  Start the Aggregate Task for receiving sensor data and transmitting to radio Task.
+  setup_aggregate(&aggregateContext, radioTaskID);
 
-  uint8_t networkTaskID = task_create(
-      network_task,   //  Task will run this function.
-      &networkContext,  //  task_get_data() will be set to the display object.
+  uint8_t aggregateTaskId = task_create(
+      aggregate_task,   //  Task will run this function.
+      &aggregateContext,  //  task_get_data() will be set to the display object.
       20,             //  Priority 20 = lower priority than UART task
       (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
       NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
       sizeof(SensorMsg));   //  Size of queue message.
     
-  return networkTaskID;
+  return aggregateTaskId;
 }
 
 #ifdef SENSOR_DATA  //  Use real not simulated sensors.

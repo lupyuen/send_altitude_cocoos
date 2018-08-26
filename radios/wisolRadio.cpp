@@ -5,7 +5,8 @@
 
 static bool getID(RadioContext *context, const char *response);
 static bool getPAC(RadioContext *context, const char *response);
-
+static bool getDownlink(RadioContext *context, const char *response0);
+static bool checkChannel(RadioContext *context, const char *response);
 
 
 WisolRadio::WisolRadio(UartSerial *serial):
@@ -147,65 +148,66 @@ int WisolRadio::getCmdIndex(NetworkCmd list[], int listSize) {
   }
   return i;
 }
-//void getStepSend(
-//  NetworkContext *context,
-//  NetworkCmd list[],
-//  int listSize,
-//  const char *payload,
-//  bool enableDownlink) {
-//  //  Return the list of Wisol AT commands for the Send Step, to send the payload.
-//  //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
-//  //  We prefix with AT$SF= and send to the transceiver.  If enableDownlink is true, we append the
-//  //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
-//  //  The downlink response message from Sigfox will be returned in the response parameter.
-//  //  Warning: This may take up to 1 min to run.
-//  //  debug(F(" - wisol.getStepSend")); ////
-//  //  Set the output power for the zone.
-//  getStepPowerChannel(context, list, listSize);
-//
-//  //  Compose the payload sending command.
-//  uint8_t markers = 1;  //  Wait for 1 line of response.
-//  bool (*processFunc)(NetworkContext *context, const char *response) = NULL;  //  Function to process result.
-//  const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
-//
-//  // If no downlink: Send CMD_SEND_MESSAGE + payload
-//  if (enableDownlink) {
-//    //  For downlink mode: send CMD_SEND_MESSAGE + payload + CMD_SEND_MESSAGE_RESPONSE
-//    markers++;  //  Wait for one more response line.
-//    processFunc = getDownlink;  //  Process the downlink message.
-//    sendData2 = F(CMD_SEND_MESSAGE_RESPONSE);  //  Append suffix to payload.
-//  }
-//  addCmd(list, listSize, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
-//}
-//
-//static void getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize) {
-//  //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
-//  //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
-//  //  debug(F(" - wisol.getStepPowerChannel")); ////
-//  switch(context->zone) {
-//    case RCZ1:
-//    case RCZ3:
-//      //  Set the transceiver output power.
-//      addCmd(list, listSize, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
-//      break;
-//    case RCZ2:
-//    case RCZ4: {
-//      //  Get the current and next macro channel usage. Returns X,Y:
-//      //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
-//      //  Y: number of micro channel available for next TX request in current macro channel.
-//      //  Call checkChannel() to check the response.
-//      addCmd(list, listSize, { F(CMD_GET_CHANNEL), 1, checkChannel, NULL, NULL });
-//
-//      //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
-//      //  Note: Don't use with a duty cycle less than 20 seconds.
-//      //  Note: checkChannel() will change this command to CMD_NONE if not required.
-//      addCmd(list, listSize, { F(CMD_RESET_CHANNEL), 1, NULL, NULL, NULL });
-//      break;
-//    }
-//  }
-//}
 
-bool getDownlink(RadioContext *context, const char *response0) {
+unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int listSize, char *payload, bool enableDownlink) {
+
+  //  Return the list of Wisol AT commands for the Send Step, to send the payload.
+  //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
+  //  We prefix with AT$SF= and send to the transceiver.  If enableDownlink is true, we append the
+  //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
+  //  The downlink response message from Sigfox will be returned in the response parameter.
+  //  Warning: This may take up to 1 min to run.
+  //  debug(F(" - wisol.getStepSend")); ////
+
+  nCommands = 0;
+
+  //  Set the output power for the zone.
+  getStepPowerChannel(context, list, listSize);
+
+  //  Compose the payload sending command.
+  uint8_t markers = 1;  //  Wait for 1 line of response.
+  bool (*processFunc)(RadioContext *context, const char *response) = NULL;  //  Function to process result.
+  const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
+
+  // If no downlink: Send CMD_SEND_MESSAGE + payload
+  if (enableDownlink) {
+    //  For downlink mode: send CMD_SEND_MESSAGE + payload + CMD_SEND_MESSAGE_RESPONSE
+    markers++;  //  Wait for one more response line.
+    processFunc = getDownlink;  //  Process the downlink message.
+    sendData2 = F(CMD_SEND_MESSAGE_RESPONSE);  //  Append suffix to payload.
+  }
+  addCmd(list, listSize, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
+  return nCommands;
+}
+
+void WisolRadio::getStepPowerChannel(RadioContext *context, NetworkCmd list[], int listSize) {
+  //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
+  //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
+  //  debug(F(" - wisol.getStepPowerChannel")); ////
+  switch(context->zone) {
+    case RCZ1:
+    case RCZ3:
+      //  Set the transceiver output power.
+      addCmd(list, listSize, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
+      break;
+    case RCZ2:
+    case RCZ4: {
+      //  Get the current and next macro channel usage. Returns X,Y:
+      //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
+      //  Y: number of micro channel available for next TX request in current macro channel.
+      //  Call checkChannel() to check the response.
+      addCmd(list, listSize, { F(CMD_GET_CHANNEL), 1, checkChannel, NULL, NULL });
+
+      //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
+      //  Note: Don't use with a duty cycle less than 20 seconds.
+      //  Note: checkChannel() will change this command to CMD_NONE if not required.
+      addCmd(list, listSize, { F(CMD_RESET_CHANNEL), 1, NULL, NULL, NULL });
+      break;
+    }
+  }
+}
+
+static bool getDownlink(RadioContext *context, const char *response0) {
   //  Extract the downlink message and write into the context response.
   //  context response will be returned as an 8-byte hex string, e.g. "0123456789ABCDEF"
   //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
@@ -279,44 +281,39 @@ static bool getPAC(RadioContext *context, const char *response) {
   return true;
 }
 
-//bool checkChannel(NetworkContext *context, const char *response) {
-//  //  Parse the CMD_GET_CHANNEL response "X,Y" to determine if we need to send the CMD_RESET_CHANNEL command.
-//  //  If not needed, change the next command to CMD_NONE.
-//
-//  //  CMD_GET_CHANNEL gets the current and next macro channel usage. Returns X,Y:
-//  //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
-//  //  Y: number of micro channel available for next TX request in current macro channel.
-//
-//  //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
-//  //  Note: Don't use with a duty cycle less than 20 seconds.
-//  //  debug(F("checkChannel: "), response);
-//  if (strlen(response) < 3) {  //  If too short, return error.
-//    debug(F("***** wisol.checkChannel Error: Unknown response "), response);
-//    return false;  //  Failure
-//  }
-//  //  Change chars to numbers.
-//  int x = response[0] - '0';
-//  int y = response[2] - '0';
-//  if (x != 0 && y >= 3) {
-//    //  No need to reset channel. We change CMD_RESET_CHANNEL to CMD_NONE.
-//    //  debug(F(" - wisol.checkChannel: Continue channel"));
-//    int cmdIndex = context->cmdIndex;  //  Current index.
-//    cmdIndex++;  //  Next index, to be updated.
-//    if (cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) {
-//      debug(F("***** wisol.checkChannel Error: Cmd overflow"));  //  List is full.
-//      return false;  //  Failure
-//    }
-//    if (context->cmdList[cmdIndex].sendData == NULL) {
-//      debug(F("***** wisol.checkChannel Error: Empty cmd"));  //  Not supposed to be empty.
-//      return false;  //  Failure
-//    }
-//    context->cmdList[cmdIndex].sendData = F(CMD_NONE);
-//  } else {
-//    //  Continue to send CMD_RESET_CHANNEL
-//    //  debug(F(" - wisol.checkChannel: Reset channel"));
-//  }
-//  return true;  //  Success
-//}
+static bool checkChannel(RadioContext *context, const char *response) {
+  //  Parse the CMD_GET_CHANNEL response "X,Y" to determine if we need to send the CMD_RESET_CHANNEL command.
+  //  If not needed, change the next command to CMD_NONE.
+
+  //  CMD_GET_CHANNEL gets the current and next macro channel usage. Returns X,Y:
+  //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
+  //  Y: number of micro channel available for next TX request in current macro channel.
+
+  //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
+  //  Note: Don't use with a duty cycle less than 20 seconds.
+  //  debug(F("checkChannel: "), response);
+  if (strlen(response) < 3) {  //  If too short, return error.
+    return false;  //  Failure
+  }
+  //  Change chars to numbers.
+  int x = response[0] - '0';
+  int y = response[2] - '0';
+  if (x != 0 && y >= 3) {
+    //  No need to reset channel. We change CMD_RESET_CHANNEL to CMD_NONE.
+    //  debug(F(" - wisol.checkChannel: Continue channel"));
+    if (context->nCommands >= MAX_NETWORK_CMD_LIST_SIZE) {
+      return false;  //  Failure
+    }
+    if (context->cmd->sendData == NULL) {
+      return false;  //  Failure
+    }
+    context->cmd->sendData = F(CMD_NONE);
+  } else {
+    //  Continue to send CMD_RESET_CHANNEL
+    //  debug(F(" - wisol.checkChannel: Reset channel"));
+  }
+  return true;  //  Success
+}
 
 
 

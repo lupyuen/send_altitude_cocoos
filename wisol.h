@@ -59,13 +59,7 @@ struct NetworkContext {
 
 extern NetworkCmd endOfList; //  Command to indicate end of command list.
 
-void setup_wisol(
-  NetworkContext *context,
-  RadioContext *radioContext,
-  int8_t uartTaskID, 
-  Country country0, 
-  bool useEmulator0);
-void network_task(void);
+
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

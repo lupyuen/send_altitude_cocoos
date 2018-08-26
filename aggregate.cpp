@@ -1,9 +1,12 @@
 //  Aggregate sensor data and decide whether to send to network now.
 #include <string.h>
 #include "sensor.h"
-#include "wisol.h"
 #include "aggregate.h"
+#include "sigfox.h"
+#include "radio.h"
 
+static void createRadioPayload(char *buf);
+static void saveSensorData(const SensorMsg *msg);
 static SensorMsg *recallSensor(uint8_t id);
 static void copySensorData(SensorMsg *dest, const SensorMsg *src);
 static void addToPayload(int data);
@@ -11,14 +14,70 @@ static void addToPayload(int data);
 //  Remember the last sensor value of each sensor.
 static SensorMsg sensorData[MAX_SENSOR_COUNT];
 
+//  Send a message to radio every 20,000 milliseconds = 20 seconds.
+#define SEND_INTERVAL ((unsigned long) 20 * 1000)
+
 //  Buffer for constructing the message payload to be sent, in hex digits, plus terminating null.
 #define PAYLOAD_SIZE (1 + MAX_MESSAGE_SIZE * 2)  //  Each byte takes 2 hex digits. Add 1 for terminating null.
 static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
 
 #define NO_SENSOR 0xff
 
+//static Sem_t sendSemaphore;
 
-void aggregate_saveSensorData(const SensorMsg *msg) {
+static SensorMsg sensorMsg;   //  Incoming sensor data message.
+static SensorMsg periodicMsg; // Sent periodically to itself to trigger a radio transmission
+static RadioMsg  radioMsg;    //  Outgoing radio msg with aggregated sensor readings in the payload
+
+void setup_aggregate(AggregateContext *context, uint8_t radioTaskId) {
+
+  context->radioTaskID = radioTaskId;
+
+  //  Clear the aggregated sensor data.
+  for (int i = 0; i < MAX_SENSOR_COUNT; i++) {
+      sensorData[i].sensorId = NO_SENSOR;
+      sensorData[i].count = 0;  //  Clear the values.
+  }
+}
+
+void aggregate_task(void) {
+  //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
+  //  Note: Declare task variables here before the task but don't populate them here
+  //  unless they are not supposed to change.
+  //  Because the coroutine will execute this code repeatedly and repopulate the values.
+  AggregateContext *context;
+
+  task_open();
+  periodicMsg.super.signal = TRANSMIT_SIG;
+  msg_post_every(os_get_running_tid(), periodicMsg, SEND_INTERVAL);
+
+  context = (AggregateContext *) task_get_data();
+
+  for (;;) {
+
+    // Wait for message: it could be a sensor message or the periodic Send message
+    msg_receive(os_get_running_tid(), &sensorMsg);
+
+    context = (AggregateContext *) task_get_data();
+
+    if (sensorMsg.super.signal == TRANSMIT_SIG) {
+      // fetch latest sensor data
+      createRadioPayload(&radioMsg.sensorData[0]);
+
+      radioMsg.sendData = &radioMsg.sensorData[0];
+      // send it to the radio
+      msg_post_async(context->radioTaskID, radioMsg);
+    }
+    else if (sensorMsg.super.signal == SENSOR_DATA_SIG) {
+      // save the received sensor data
+      saveSensorData(&sensorMsg);
+    }
+  }
+
+  task_close();  //  End of the task. Should not come here.
+}
+
+static void saveSensorData(const SensorMsg *msg) {
   //  Aggregate the sensor data.  Here we just save the last value for each sensor.
   SensorMsg *savedSensor = recallSensor(msg->sensorId);
 
@@ -27,7 +86,7 @@ void aggregate_saveSensorData(const SensorMsg *msg) {
   }
 }
 
-void aggregate_getSensorData(char *buf) {
+static void createRadioPayload(char *buf) {
   //  Create a new Sigfox message. Add a running sequence number to the message.
   payload[0] = 0;
   static int sequenceNumber = 0;
@@ -111,10 +170,4 @@ static SensorMsg *recallSensor(uint8_t id) {
     return &sensorData[emptyIndex];
 }
 
-void setup_aggregate(void) {
-    //  Clear the aggregated sensor data.
-    for (int i = 0; i < MAX_SENSOR_COUNT; i++) {
-        sensorData[i].sensorId = NO_SENSOR;
-        sensorData[i].count = 0;  //  Clear the values.
-    }
-}
+

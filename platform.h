@@ -19,7 +19,7 @@
 #define TRANSMIT_SIG 67
 #define SENSOR_DATA_SIG 68
 
-#define NULL nullptr
+//#define NULL nullptr
 //  Wrap function and global variable declarations with BEGIN_EXTERN_C ... END_EXTERN_C so that
 //  the functions and global variables may be used in both C and C++ code.
 #ifdef __cplusplus

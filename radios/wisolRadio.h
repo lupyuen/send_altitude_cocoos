@@ -5,6 +5,7 @@
 
 #include "radioDevice.h"
 #include "uartSerial.h"
+#include "radio.h"
 
 
 
@@ -16,6 +17,8 @@ public:
 
   // returns number of commands in list[]
   unsigned getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) override;
+
+  unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, char *payload, bool enableDownlink) override;
 
   // send a data buffer to the radio
   bool send(const uint8_t *data, uint8_t len) override;
@@ -35,6 +38,7 @@ public:
 private:
   void addCmd(NetworkCmd list[], int listSize, NetworkCmd cmd);
   int getCmdIndex(NetworkCmd list[], int listSize);
+  void getStepPowerChannel(RadioContext *context, NetworkCmd list[], int listSize);
 
   UartSerial *dev;
   uint8_t rxbuf[128];

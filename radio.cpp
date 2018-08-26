@@ -51,6 +51,7 @@ void radio_task(void) {
     }
     else {
       // ELSE -> perform step send
+      context->nCommands = context->radio->getStepSend(context, cmdList, MAX_NETWORK_CMD_LIST_SIZE, &msg.sensorData[0], false);
     }
     //
 
