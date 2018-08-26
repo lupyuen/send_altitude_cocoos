@@ -11,7 +11,7 @@ init
 # Enable ARM semihosting to show debug console output in OpenOCD console.
 arm semihosting enable
 
-echo "NOTE: Trash this window before uploading a new image to the Blue Pill"
+echo "NOTE: Trash this window before uploading a program to the Blue Pill"
 
 # Restart the device.
 echo "Restarting the Blue Pill..."
