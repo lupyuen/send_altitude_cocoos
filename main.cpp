@@ -42,8 +42,8 @@ int main(void) {
   //  The application starts here. We create the tasks to read and send sensor data 
   //  and start the task scheduler. Note: Arduino's setup() and loop() will not be called since main() is defined.
 
-  enable_debug();  //  Allow display of debug messages.
-  //  disable_debug();  //  Disable display of debug messages.
+  enable_debug();  //  Allow display of debug messages. NOTE: This will hang if no debugger is attached.
+  //  disable_debug();  //  Disable display of debug messages.  For use in production.
 
   //  Init the system and OS for cocoOS.
   system_setup();
@@ -56,17 +56,16 @@ int main(void) {
   uint8_t task_id = display_setup();  //  Start the display task that displays sensor data.
 #endif  //  SENSOR_DISPLAY
 
-  //  Start the network task to send and receive network messages.
+  //  Start the Network Task and UART Task to send and receive network messages.
   uint8_t task_id = network_setup();
   
-  //  Start the sensor tasks for each sensor to read sensor data and send
-  //  to the Network Task or Display Task.
+  //  Start the Sensor Task for each sensor to read sensor data and send to the Network Task or Display Task.
   sensor_setup(task_id);
 
   //  Start the Arduino or STM32 timer to generate ticks for cocoOS to switch tasks.
   platform_start_timer(os_tick);
 
-  //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
+  //  Start cocoOS task scheduler, which runs the Sensor Tasks, Network Task and UART Task.
   os_start();  //  Never returns.  
 	return EXIT_SUCCESS;
 }
