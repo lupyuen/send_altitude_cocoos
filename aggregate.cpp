@@ -23,10 +23,9 @@ static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
 
 #define NO_SENSOR 0xff
 
-//static Sem_t sendSemaphore;
 
 static SensorMsg sensorMsg;   //  Incoming sensor data message.
-static SensorMsg periodicMsg; // Sent periodically to itself to trigger a radio transmission
+static SensorMsg periodicMsg; //  Sent periodically to itself to trigger a radio transmission
 static RadioMsg  radioMsg;    //  Outgoing radio msg with aggregated sensor readings in the payload
 
 void setup_aggregate(AggregateContext *context, uint8_t radioTaskId) {
@@ -49,6 +48,7 @@ void aggregate_task(void) {
 
   task_open();
   periodicMsg.super.signal = TRANSMIT_SIG;
+
   msg_post_every(os_get_running_tid(), periodicMsg, SEND_INTERVAL);
 
   context = (AggregateContext *) task_get_data();
@@ -64,7 +64,8 @@ void aggregate_task(void) {
       // fetch latest sensor data
       createRadioPayload(&radioMsg.sensorData[0]);
 
-      radioMsg.sendData = &radioMsg.sensorData[0];
+      //radioMsg.sendData = &radioMsg.sensorData[0];
+
       // send it to the radio
       msg_post_async(context->radioTaskID, radioMsg);
     }

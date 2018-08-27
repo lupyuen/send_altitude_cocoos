@@ -48,6 +48,7 @@ private:
   unsigned expectedMarkerCount;
   unsigned receivedMarkers;
   unsigned nCommands;
+  bool sending;
 };
 
 #endif /* WISOL_RADIO_H_ */

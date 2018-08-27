@@ -10,7 +10,7 @@ static uint8_t debug[DEBUG_BUF_SZ];
 
 UartSerial::cfg_t debugUartCfg =    {   USART2,
                                 {
-                                    115200,
+                                    9600,
                                     USART_WordLength_8b,
                                     USART_StopBits_1,
                                     USART_Parity_No,

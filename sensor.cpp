@@ -48,7 +48,7 @@ void sensor_task(void) {
     //  We have to fetch the context pointer again after the wait.
     context = (SensorContext *) task_get_data();
 
-    //  Poll for the sensor data and copy into the display message.
+    //  Poll for the sensor data and copy into the message.
     context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.

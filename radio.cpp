@@ -9,6 +9,7 @@
 
 static void serialize(NetworkCmd *cmd, char *buf);
 static void processResponse(RadioContext *context);
+
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 NetworkCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
 
@@ -34,7 +35,7 @@ void radio_task(void) {
   context->rxDoneEvent = event_create();
   context->radio->setDoneEvent(context->rxDoneEvent);
 
-  context->msg = &msg;
+  //context->msg = &msg;
 
   for (;;) {
     msg_receive(os_get_running_tid(), &msg);

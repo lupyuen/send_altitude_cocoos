@@ -16,11 +16,13 @@ WisolRadio::WisolRadio(UartSerial *serial):
   rxDoneEvt(NO_EVENT),
   expectedMarkerCount(0),
   receivedMarkers(0),
-  nCommands(0) {
+  nCommands(0),
+  sending(false) {
   dev->registerReader(this);
 }
 
 bool WisolRadio::send(const uint8_t *data, uint8_t len) {
+  sending = true;
   return dev->write(data, len);
 }
 
@@ -34,7 +36,7 @@ uint8_t WisolRadio::receive(uint8_t *buf) {
         while(cnt < expectedMarkerCount) {
             *buf++ = *data;
             nbytes++;
-            if (*data == '\n') {
+            if (*data == '\r') {
                 cnt++;
             }
             data++;
@@ -54,20 +56,24 @@ void WisolRadio::setMarkerCount(unsigned count) {
 }
 
 void WisolRadio::update(uint8_t data) {
-  rxbuf[writepos] = data;
+  if (sending) {
+    rxbuf[writepos] = data;
 
-  if ((data == '\n') && (++receivedMarkers == expectedMarkerCount)){
+    if ((data == '\r') && (++receivedMarkers == expectedMarkerCount)){
 
-    // we have received a full message, signal upper layer
-    if (NO_EVENT != rxDoneEvt) {
-      event_ISR_signal(rxDoneEvt);
+      sending = false;
+
+      // we have received a full message, signal upper layer
+      if (NO_EVENT != rxDoneEvt) {
+        event_ISR_signal(rxDoneEvt);
+      }
+      // We just hope that the message is read before new data arrives
+      // TODO: put received data in a thread safe circular buffer
+      writepos = 0;
     }
-    // We just hope that the message is read before new data arrives
-    // TODO: put received data in a thread safe circular buffer
-    writepos = 0;
-  }
-  else {
-    writepos = (writepos+1) % 128;
+    else {
+      writepos = (writepos+1) % 128;
+    }
   }
 }
 
