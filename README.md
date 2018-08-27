@@ -8,17 +8,21 @@ Read the tutorials:
 - Part 2: _Juggling Sigfox Downlink And Arduino Sensors With cocoOS_<br>
     https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
 
+- Part 3: _Juggling STM32 Blue Pill For Arduino Jugglers_<br>
+    https://medium.com/@ly.lee/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
+
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
-- `BME280`: Download the `BME280` library by Tyler Glenn from Arduino Library Manager
-
-- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html, <br>
+- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html. <br>
+    For Arduino IDE and Arduino Web Editor: <br>
     Unzip and move all files in inc and src to top level. <br>
     Replace os_defines.h by our custom cocoOS settings: <br>
     https://github.com/lupyuen/send_altitude_cocoos/blob/master/os_defines.h <br>
     Zip up and add to Arduino IDE or Arduino Web Editor as a library.
 
-Tested with Arduino Uno.
+- `BME280` (for Arduino IDE and Arduino Web Editor only): Download the `BME280` library by Tyler Glenn from Arduino Library Manager
+
+Tested with Arduino Uno and STM32 Blue Pill.
 
 ## Create Source File Links For PlatformIO
 
@@ -71,6 +75,52 @@ ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.2/src/ ~/Documents/Arduino/libraries
 Arduino IDE does not compile if `send_altitude_cocoos/src` contains any files. Run `scripts/unlinksrc.sh` to remove the links before compiling in Arduino IDE.
 
 -----
+## Build for STM32 Blue Pill with PlatformIO
+
+To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the `bluepill_f103c8` line (by removing `;` in front):
+
+```ini
+env_default = bluepill_f103c8
+```
+
+And comment the `uno` line (by inserting `;` in front):
+
+```ini
+; env_default = uno
+```
+
+### Install OpenOCD For Displaying Debug Log
+
+- For Windows:
+
+  1. Download OpenOCD (for debugging the Blue Pill) from the unofficial OpenOCD release website: <br>
+    https://github.com/gnu-mcu-eclipse/openocd/releases <br>
+    Look for `gnu-mcu-eclipse-openocd-…-win64.zip`
+
+  1. Unzip the OpenOCD download and copy the OpenOCD files into `c:\openocd` such that `opencd.exe` is located in the folder `c:\openocd\bin`
+
+- For Mac:
+
+  ```bash
+  brew install openocd
+  ```
+
+- For Ubuntu:
+
+  ```bash
+  sudo apt install openocd
+  ```
+
+### For Windows only: Install ST-Link USB Driver
+
+1. For Windows only: Download the ST-Link USB driver from the ST-Link Driver Website (email registration required): <br>
+  http://www.st.com/en/embedded-software/stsw-link009.html
+
+1. Scroll down and click the `Get Software` button
+
+1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
+
+-----
 ## Downlink Server Support
 
 (From https://backend.sigfox.com/apidocs/callback)
@@ -119,52 +169,6 @@ Note: Only the first 4 downlinks per day are guaranteed.  You may send more down
 requests but they are not guaranteed.
 
 -----
-## Build for STM32 Blue Pill with PlatformIO
-
-To build for STM32 Blue Pill on Visual Studio Code and PlatformIO, edit `platformio.ini` and uncomment the `bluepill_f103c8` line (by removing `;` in front):
-
-```ini
-env_default = bluepill_f103c8
-```
-
-And comment the `uno` line (by inserting `;` in front):
-
-```ini
-; env_default = uno
-```
-
-### Install OpenOCD For Displaying Debug Log
-
-- For Windows:
-
-  1. Download OpenOCD (for debugging the Blue Pill) from the unofficial OpenOCD release website: <br>
-    https://github.com/gnu-mcu-eclipse/openocd/releases <br>
-    Look for `gnu-mcu-eclipse-openocd-…-win64.zip`
-
-  1. Unzip the OpenOCD download and copy the OpenOCD files into `c:\openocd` such that `opencd.exe` is located in the folder `c:\openocd\bin`
-
-- For Mac:
-
-  ```bash
-  brew install openocd
-  ```
-
-- For Ubuntu:
-
-  ```bash
-  sudo apt install openocd
-  ```
-
-### For Windows only: Install ST-Link USB Driver
-
-1. For Windows only: Download the ST-Link USB driver from the ST-Link Driver Website (email registration required): <br>
-  http://www.st.com/en/embedded-software/stsw-link009.html
-
-1. Scroll down and click the `Get Software` button
-
-1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
-
------
 ## Source Files
 
 [`main.cpp`](main.cpp): Main program. The Arduino application starts here in function `main()`
@@ -202,6 +206,8 @@ And comment the `uno` line (by inserting `;` in front):
 
 [`display.cpp`](display.cpp), [`display.h`](display.h): Display Task to display sensor data
 
+[`scripts/connect.ocd`](scripts/connect.ocd): OpenOCD script to connect to Blue Pill via ST-Link debugger, restart the Blue Pill and display the debug log (Arm Semihosting).  Called by the `Connect To STM32 Blue Pill` task.
+
 -----
 ### STM32 Code
 
@@ -225,6 +231,8 @@ And comment the `uno` line (by inserting `;` in front):
 [`.travis.yml`](.travis.yml): Travis CI file (outdated)
 
 [`.vscode`](.vscode): Configuration files for Visual Studio Code
+
+[`.vscode/tasks.json`](.vscode/tasks.json): Defines the `Connect To STM32 Blue Pill` task for displaying the Blue Pill log via OpenOCD
 
 [`platformio.ini`](platformio.ini): Configuration file for PlatformIO
 
