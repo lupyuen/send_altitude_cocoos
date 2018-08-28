@@ -15,7 +15,7 @@ rm os_defines.h
 ln -s ../../../os_defines.h .
 cd ../../..
 
-# Launch Visual Studio Code.  Sometimes the Code Helper is hung.  Kill it.
+# Launch our Visual Studio Code workspace.  Sometimes the Code Helper is hung, kill it.
 pkill "Visual Studio Code"
 pkill "Code Helper"
-open -a "Visual Studio Code"
+open workspace.code-workspace
