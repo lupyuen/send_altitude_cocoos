@@ -107,7 +107,9 @@ static uint8_t network_setup(void) {
     sizeof(RadioMsg));       //  Size of queue message.
 
   //  Start the Aggregate Task for receiving sensor data and transmitting to radio Task.
-  setup_aggregate(&aggregateContext, radioTaskID);
+  aggregateContext.radioTaskID = radioTaskID;
+  aggregateContext.sendPeriodInSeconds = 900;
+  setup_aggregate();
 
   uint8_t aggregateTaskId = task_create(
       aggregate_task,   //  Task will run this function.

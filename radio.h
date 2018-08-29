@@ -18,7 +18,6 @@ struct SensorMsg;  //  Forward declaration
 //  Radio Task accepts messages of this format for sending data.
 struct RadioMsg {
   Msg_t super;                  //  Required for all cocoOS messages.
-  char markerChar;              //  End-of-command marker character that we should count e.g. '\r'
   char sensorData[MAX_SENSOR_DATA_SIZE25];
 };
 

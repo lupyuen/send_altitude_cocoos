@@ -4,22 +4,17 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
-//  Uncomment to use real sensor data instead of simulated data.
-////#ifndef SENSOR_DATA
 #define SENSOR_DATA
-////#endif  //  !SENSOR_DATA
-//  Uncomment to use simulated sensor data instead of real data.
-//  #define SIMULATED_DATA
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
 #define MAX_RADIO_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_RADIO_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 #define MAX_SENSOR_DATA_SIZE25 25
+#define TICKS_PER_S  1000
 
 #define TRANSMIT_SIG 67
 #define SENSOR_DATA_SIG 68
 
-//#define NULL nullptr
 //  Wrap function and global variable declarations with BEGIN_EXTERN_C ... END_EXTERN_C so that
 //  the functions and global variables may be used in both C and C++ code.
 #ifdef __cplusplus
@@ -34,15 +29,7 @@
 #define STM32  //  For STM32 platforms
 #endif
 
-#ifdef ARDUINO  //  For Arduino only
-//  Reduce the Serial buffer size from 64 to 16 to reduce RAM usage.
-//  #define SERIAL_TX_BUFFER_SIZE 16
-//  #define SERIAL_RX_BUFFER_SIZE 16
-//  Reduce SoftwareSerial buffer size from 64 to max response length.
-//  #define _SS_MAX_RX_BUFF MAX_UART_RESPONSE_MSG_SIZE
-//  Define the Serial class.
-#include <Arduino.h>
-#endif  //  ARDUINO
+
 
 #ifdef STM32  //  For STM32 only
 
