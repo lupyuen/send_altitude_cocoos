@@ -13,7 +13,7 @@ Read the tutorials:
 
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
-- `cocoOS_5.0.2`: Download from http://www.cocoos.net/download.html. <br>
+- `cocoOS_5.0.3`: Download from http://www.cocoos.net/download.html. <br>
     For Arduino IDE and Arduino Web Editor: <br>
     Unzip and move all files in inc and src to top level. <br>
     Replace os_defines.h by our custom cocoOS settings: <br>
@@ -29,47 +29,40 @@ Tested with Arduino Uno and STM32 Blue Pill.
 To compile the project under PlatformIO in Visual Studio Code, the source files
 should be symbolically linked into the folder `src`
 
------
-### For Windows
+Open a Windows, Mac or Ubuntu command prompt and enter:
 
-Open a Command Prompt. Run the following:
-
-```cmd
+```bash
 git clone https://github.com/lupyuen/send_altitude_cocoos.git
+cd send_altitude_cocoos
 ```
 
-Using Windows Explorer: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
+Download cocoOS_5.0.3 from http://www.cocoos.net/download.html
 
-At the Command Prompt, run the following:
+Copy the cocoOS_5.0.3 source files (`inc/*.h, src/*.c`) into send_altitude_cocoos at this subfolder:
+
+`lib/cocoOS_5.0.3/src`
+
+There should not be any folders inside `lib/cocoOS_5.0.3/src`
+
+Then enter the following into the command prompt…
+
+### For Windows
 
 ```cmd
-cd send_altitude_cocoos
 scripts\linksrc.cmd
 ```
 
------
 ### For MacOS and Linux
 
-Open a Command Prompt. Run the following:
-
 ```bash
-git clone https://github.com/lupyuen/send_altitude_cocoos.git
-```
-
-Using Mac Finder: Copy `cocoOS_5.0.2` source files (`*.h, *.c`) into `send_altitude_cocoos/lib/cocoOS_5.0.2/src`.
-
-At the Command Prompt, run the following:
-
-```bash
-cd send_altitude_cocoos
 chmod +x scripts/*.sh
 scripts/linksrc.sh
 ```
 
-To allow Arduino IDE and PlatformIO to share the same cocoOS library `cocoOS_5.0.2`:
+To allow Arduino IDE and PlatformIO to share the same cocoOS library `cocoOS_5.0.3`:
 
 ```bash
-ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.2/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.2
+ln -s ~/send_altitude_cocoos/lib/cocoOS_5.0.3/src/ ~/Documents/Arduino/libraries/cocoOS_5.0.3
 ```
 
 Arduino IDE does not compile if `send_altitude_cocoos/src` contains any files. Run `scripts/unlinksrc.sh` to remove the links before compiling in Arduino IDE.
