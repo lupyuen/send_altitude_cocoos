@@ -1,6 +1,6 @@
 send_altitude_cocoos
 src/*
-lib/cocoOS_5.0.2/*
+lib/cocoOS_*/*
 libraries
 output.map
 .DS_Store
