@@ -2,7 +2,6 @@
 //  Demonstrates how we may return multiple float values as sensor data.
 #include "platform.h"
 #include <string.h>
-// #include <stdio.h>
 #include <stdlib.h>
 #include <cocoos.h>
 #include "display.h"

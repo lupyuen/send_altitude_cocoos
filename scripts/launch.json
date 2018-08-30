@@ -1,0 +1,55 @@
+// AUTOMATICALLY GENERATED FILE. PLEASE DO NOT MODIFY IT MANUALLY
+
+// PIO Unified Debugger
+//
+// Documentation: https://docs.platformio.org/page/plus/debugging.html
+// Configuration: https://docs.platformio.org/page/projectconf/section_env_debug.html
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            //  Debug the STM32 Blue Pill program.
+            "name": "Debug (STM32 Blue Pill Rust)",
+            "type": "gdb",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+
+            //  This target setting is mandatory but redundant because it's specified in loader.gdb.
+            "target": "c:/send-altitude-cocoos/.pioenvs/bluepill_f103c8/firmware.elf",
+
+            //  Start arm-none-eabi-gdb with the loader.gdb script.  Connects to OpenOCD to send commands to ST-Link USB dongle.
+            "gdbpath": "arm-none-eabi-gdb",
+            "debugger_args": [
+                "-x",
+                "scripts/debug.gdb"
+            ],
+
+            //  For debugger display, don't interpret values returned by gdb.
+            "valuesFormatting": "disabled",
+
+            //  Enable debug output.
+            "printCalls": true,
+            "showDevDebugOutput": true,
+        },
+        {
+            "type": "platformio-debug",
+            "request": "launch",
+            "name": "PIO Debug",
+            "executable": "c:/send-altitude-cocoos/.pioenvs/bluepill_f103c8/firmware.elf",
+            "toolchainBinDir": "C:/Users/guppy/.platformio/packages/toolchain-gccarmnoneeabi/bin",
+            "svdPath": "C:/Users/guppy/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd",
+            "preLaunchTask": "PlatformIO: Pre-Debug",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "type": "platformio-debug",
+            "request": "launch",
+            "name": "PIO Debug (Skip Pre-Debug)",
+            "executable": "c:/send-altitude-cocoos/.pioenvs/bluepill_f103c8/firmware.elf",
+            "toolchainBinDir": "C:/Users/guppy/.platformio/packages/toolchain-gccarmnoneeabi/bin",
+            "svdPath": "C:/Users/guppy/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd",
+            "internalConsoleOptions": "openOnSessionStart"
+        }
+    ]
+}
