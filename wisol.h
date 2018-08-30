@@ -1,3 +1,6 @@
+//  Functions to send and receive messages to/from Sigfox network via 
+//  Wisol modules WSSFM10R1AT, WSSFM10R2AT, WSSFM10R3AT and WSSFM10R4AT
+//  for Sigfox zones RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
 #ifndef WISOL_H_
 #define WISOL_H_
 
