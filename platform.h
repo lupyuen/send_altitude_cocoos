@@ -27,8 +27,8 @@
 #define STM32  //  For STM32 platforms
 #endif
 
-#ifdef ARDUINO  //  For Arduino only
-#include <Arduino.h>        //  Every platform should define the common functions below plus millis()...
+//  Every platform should define the common functions below plus millis()...
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 void enable_debug(void);    //  Enable display of debug messages.
 void disable_debug(void);   //  Disable display of debug messages.
 void platform_setup(void);  //  Initialise the Arduino platform.
@@ -39,11 +39,24 @@ void led_on(void);      //  Switch the onboard LED on.
 void led_off(void);     //  Switch the onboard LED off.
 void led_toggle(void);  //  Toggle the onboard LED on or off.
 void led_wait(void);    //  Delay a while before updating the LED state.
+END_EXTERN_C  //  End of extern C scope.
+
+#ifdef ARDUINO  //  For Arduino only
+#include <Arduino.h>  //  Which already defines millis()
+
+#else  //  For STM32 and other platforms
+#include <stdint.h>  //  For uint32_t
+//  No need for flash memory helpers on STM32.
+#define __FlashStringHelper char
+#define F(x) x
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
+uint32_t millis(void);  //  Number of elapsed millisecond ticks. Compatible with Arduino.
+END_EXTERN_C  //  End of extern C scope.
 #endif  //  ARDUINO
 
 #ifdef STM32  //  For STM32 only
-#include <bluepill.h>  //  For platform, timer, millis(), debug and LED functions
-#include <flash.h>     //  For flash helper
+//  We include the STM32 declarations to ensure they are consistent with above platform declarations.
+#include <bluepill.h>
 #endif  //  STM32
 
 #endif  //  PLATFORM_H_

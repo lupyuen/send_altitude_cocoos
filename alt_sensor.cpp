@@ -1,5 +1,6 @@
-//  Implements the altitude sensor for BME280. Caller must use a semaphore to
-//  prevent concurrent access to BME280 module, which runs on a single I2C Bus.
+//  Instance of Sensor that reads the altitude sensor in BME280 I2C.
+//  Caller must use a semaphore to prevent concurrent access to BME280 
+//  module, which runs on a single I2C Bus.
 #include "platform.h"
 #include <stdlib.h>
 #include <string.h>

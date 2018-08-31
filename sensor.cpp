@@ -1,4 +1,9 @@
-//  Common code for all sensors.
+//  Defines the common Sensor base class.  Every Sensor is assumed to have a name comprising
+//  3 lowercase letters and digits, e.g. "tmp".  The Sensor is capable of producing
+//  one, two or three float values as sensor data, in a single sample.  The Sensor instance
+//  for specific sensor (e.g. temp_sensor) will provide the function to poll the actual sensor.
+//  Every Sensor will also post a SensorMsg to the Network Task or Display Task for
+//  aggregation/transmission or for display.
 #define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>

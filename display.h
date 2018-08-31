@@ -14,6 +14,7 @@
 
 #if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
 
+//  Don't show debug log.
 #define debug(p1, p2) {}
 #define debug_begin(p1) {}
 #define debug_write(p1) {}
@@ -21,8 +22,9 @@
 #define debug_println(p1) {}
 #define debug_flush() {}
 
-#elif defined(ARDUINO)  //  Use Serial object to print.
+#elif defined(ARDUINO)  //  For Arduino...
 
+//  Use Serial object to print. This conserves memory.
 #ifdef __cplusplus  //  Serial class for C++ only.
 #define debug_begin(x) Serial.begin(x)
 #define debug_write(x) Serial.write(x)
@@ -31,9 +33,36 @@
 #define debug_flush() Serial.flush()
 #endif  //  __cplusplus
 
-#elif defined(STM32)  //  Use logger functions defined in logger library.
+#else  //  For STM32 and other platforms...
+
+//  Use logger functions defined in STM32 logger library.
+#include <stdlib.h>  //  For size_t
+BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
+void debug_begin(uint16_t bps);     //  Open the debug console at the specified bits per second.
+void debug_write(uint8_t ch);       //  Write a character to the buffered debug log.
+void debug_print(const char *s);    //  Write a string to the buffered debug log.
+void debug_println(const char *s);  //  Write a string plus newline to the buffered debug log.
+void debug_flush(void);             //  Flush the buffer of the debug log so that buffered data will appear.
+END_EXTERN_C  //  End of extern C scope.
+
+#ifdef __cplusplus  //  Overloaded debug functions for C++ only
+//  Write an int / size_t / char / float to the buffered debug log.
+void debug_print(int i);
+void debug_print(size_t l);
+void debug_print(char ch);
+void debug_print(float f);  //  Note: Always prints with 2 decimal places.
+
+//  Write an int / size_t / char / float plus newline to the buffered debug log.
+void debug_println(int i);
+void debug_println(size_t l);
+void debug_println(char ch);
+void debug_println(float f);  //  Note: Always prints with 2 decimal places.
+#endif  //  __cplusplus
+
+#ifdef STM32  //  Include the STM32 logger declarations to confirm they confirm to above declarations.
 #include "logger.h"
-#endif
+#endif  //  STM32
+#endif  //  DISABLE_DEBUG_LOG, ARDUINO
 
 #ifndef DISABLE_DEBUG_LOG  //  If debug logging is enabled...
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
@@ -46,7 +75,7 @@ void debug(
     = 0  //  Second parameter may be omitted.
   #endif
   );
-END_EXTERN_C
+END_EXTERN_C  //  End of extern C scope.
 
 #if defined(__cplusplus) && defined(ARDUINO)  //  Overloaded Flash functions for C++ only, not C.
 void debug(const __FlashStringHelper *s1); //  String in flash memory e.g. F("the string")
