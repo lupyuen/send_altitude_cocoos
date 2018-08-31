@@ -1,5 +1,5 @@
 -- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
--- cabal install clang-pure lens
+-- sudo apt install llvm ; cabal install clang-pure lens
 -- ghci send_altitude_cocoos/scripts/ListStructs.hs
 -- :main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
 -- :quit
