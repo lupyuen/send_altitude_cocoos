@@ -1,6 +1,6 @@
 -- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
 -- cabal install clang-pure lens
--- ghci ListTypes.hs
+-- ghci send_altitude_cocoos/scripts/ListTypes.hs
 -- :main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
 -- :quit
 {-# LANGUAGE TypeApplications #-}
