@@ -7,26 +7,28 @@
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
-void enable_log(void);
-void disable_log(void);
-void debug_begin(uint16_t bps);
-void debug_write(uint8_t ch);
-void debug_print(const char *s);
-void debug_println(const char *s);
-void debug_flush(void);
+void enable_log(void);   //  Enable the debug log.
+void disable_log(void);  //  Disable the debug log.
+void debug_begin(uint16_t bps);     //  Open the debug console at the specified bits per second.
+void debug_write(uint8_t ch);       //  Write a character to the buffered debug log.
+void debug_print(const char *s);    //  Write a string to the buffered debug log.
+void debug_println(const char *s);  //  Write a string plus newline to the buffered debug log.
+void debug_flush(void);             //  Flush the buffer of the debug log so that buffered data will appear.
 #ifdef __cplusplus
 }  //  End of extern C scope.
 #endif
 
-#ifdef __cplusplus  //  Overload for C++
+#ifdef __cplusplus  //  Overloaded debug functions for C++ only
+//  Write an int / size_t / char / float to the buffered debug log.
 void debug_print(int i);
 void debug_print(size_t l);
 void debug_print(char ch);
-void debug_print(float f);
+void debug_print(float f);  //  Note: Always prints with 2 decimal places.
 
+//  Write an int / size_t / char / float plus newline to the buffered debug log.
 void debug_println(int i);
 void debug_println(size_t l);
 void debug_println(char ch);
-void debug_println(float f);
+void debug_println(float f);  //  Note: Always prints with 2 decimal places.
 #endif  //  __cplusplus
 #endif  //  LOGGER_H_
