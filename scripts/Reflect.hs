@@ -41,6 +41,7 @@ data CStruct = CStruct
 
 data CExtract = CExtract
   { cExtractCursor :: Cursor
+  , cExtractOffset :: Either TypeLayoutError Word64
   } deriving (Show)
 
 -- toCType :: Type -> CType
@@ -63,8 +64,6 @@ toCType tp = let canonicalType = typeCanonicalType tp
                         , cCanonicalType = canonicalType
                         , cSize = size
                         }
-
-
 
 main :: IO ()
 main = do
@@ -102,6 +101,7 @@ main = do
           -- return 
           return CExtract
             { cExtractCursor = cursor
+            , cExtractOffset = offsetOfField cursor
             }
 
       let cStructs =
