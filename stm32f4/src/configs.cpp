@@ -8,7 +8,7 @@
 // data will be copied into this buffer when performing a uart::write() call
 static uint8_t debug[DEBUG_BUF_SZ];
 
-UartSerial::cfg_t debugUartCfg =    {   USART2,
+UartSerial::cfg_t wisolUartCfg =    {   USART2,
                                 {
                                     9600,
                                     USART_WordLength_8b,
@@ -27,7 +27,7 @@ UartSerial::cfg_t debugUartCfg =    {   USART2,
                                 DEBUG_BUF_SZ
                             };
 
-const UartSerial::cfg_t *UartSerial::settings[] = { &debugUartCfg };
+const UartSerial::cfg_t *UartSerial::settings[] = { &wisolUartCfg };
 const uint16_t UartSerial::n_configured_usarts = 1;
 
 

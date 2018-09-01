@@ -12,7 +12,7 @@ public:
   RadioDevice() = default;
   virtual ~RadioDevice() = default;
   virtual unsigned getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) = 0;
-  virtual unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, char *payload, bool enableDownlink) = 0;
+  virtual unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) = 0;
   virtual bool send(const uint8_t *data, uint8_t len) = 0;
   virtual uint8_t receive(uint8_t *buf) = 0;
   virtual void update(uint8_t data) = 0;

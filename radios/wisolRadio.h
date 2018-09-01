@@ -18,7 +18,7 @@ public:
   // returns number of commands in list[]
   unsigned getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) override;
 
-  unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, char *payload, bool enableDownlink) override;
+  unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) override;
 
   // send a data buffer to the radio
   bool send(const uint8_t *data, uint8_t len) override;

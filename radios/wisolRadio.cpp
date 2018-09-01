@@ -2,12 +2,15 @@
 #include "wisolRadio.h"
 #include "radio.h"
 #include "string.h"
+#include "utils.h"
 
 static bool getID(RadioContext *context, const char *response);
 static bool getPAC(RadioContext *context, const char *response);
 static bool getDownlink(RadioContext *context, const char *response0);
 static bool checkChannel(RadioContext *context, const char *response);
 
+#define MAX_OUTPUT_SIZE N_SENSORS * SENSOR_DATA_SIZE * 4 * 2 + 1
+static char output[MAX_OUTPUT_SIZE];
 
 WisolRadio::WisolRadio(UartSerial *serial):
   dev(serial),
@@ -118,14 +121,27 @@ void WisolRadio::update(uint8_t data) {
 //  Function e.g. getID(), getPAC().  The function is called with the response text
 //  generated from the Wisol AT Command.
 
+//unsigned WisolRadio::getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) {
+//  //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
+//  nCommands = 0;
+//
+//  addCmd(list, listSize, { useEmulator ? F(CMD_EMULATOR_ENABLE) : F(CMD_EMULATOR_DISABLE), 1, NULL, NULL, NULL });
+//
+//  //  Get Sigfox device ID and PAC.
+//  addCmd(list, listSize, { F(CMD_GET_ID), 1, getID, NULL, NULL });
+//  addCmd(list, listSize, { F(CMD_GET_PAC), 1, getPAC, NULL, NULL });
+//  return nCommands;
+//}
+
 unsigned WisolRadio::getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) {
   //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
   nCommands = 0;
-  addCmd(list, listSize, { useEmulator ? F(CMD_EMULATOR_ENABLE) : F(CMD_EMULATOR_DISABLE), 1, NULL, NULL, NULL });
+
+  addCmd(list, listSize, {useEmulator ? F(CMD_EMULATOR_ENABLE) : F(CMD_EMULATOR_DISABLE), NULL, NULL, NULL, 1});
 
   //  Get Sigfox device ID and PAC.
-  addCmd(list, listSize, { F(CMD_GET_ID), 1, getID, NULL, NULL });
-  addCmd(list, listSize, { F(CMD_GET_PAC), 1, getPAC, NULL, NULL });
+  addCmd(list, listSize, {F(CMD_GET_ID), getID, NULL, NULL, 1 });
+  addCmd(list, listSize, {F(CMD_GET_PAC), getPAC, NULL, NULL, 1});
   return nCommands;
 }
 
@@ -155,7 +171,7 @@ int WisolRadio::getCmdIndex(NetworkCmd list[], int listSize) {
   return i;
 }
 
-unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int listSize, char *payload, bool enableDownlink) {
+unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) {
 
   //  Return the list of Wisol AT commands for the Send Step, to send the payload.
   //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
@@ -182,7 +198,22 @@ unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int l
     processFunc = getDownlink;  //  Process the downlink message.
     sendData2 = F(CMD_SEND_MESSAGE_RESPONSE);  //  Append suffix to payload.
   }
-  addCmd(list, listSize, { F(CMD_SEND_MESSAGE), markers, processFunc, payload, sendData2 });
+
+  // convert each float in the payload to a string
+  NetworkCmd cmd;
+  char *out = &output[0];
+
+  for (int i = 0; i < N_SENSORS; i++) {
+    for (int j = 0; j < SENSOR_DATA_SIZE; j++) {
+      uint32_t tmp = payload[i*N_SENSORS + j] * 10000000;
+      uint32ToStringBase16(out, tmp);
+      out += 8;
+    }
+  }
+
+  *out = '\0';
+
+  addCmd(list, listSize, {CMD_SEND_MESSAGE, processFunc, output, sendData2, markers});
   return nCommands;
 }
 
@@ -190,11 +221,13 @@ void WisolRadio::getStepPowerChannel(RadioContext *context, NetworkCmd list[], i
   //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
   //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
   //  debug(F(" - wisol.getStepPowerChannel")); ////
+  NetworkCmd cmd;
   switch(context->zone) {
     case RCZ1:
     case RCZ3:
       //  Set the transceiver output power.
-      addCmd(list, listSize, { F(CMD_OUTPUT_POWER_MAX), 1, NULL, NULL, NULL });
+
+      addCmd(list, listSize, {F(CMD_OUTPUT_POWER_MAX), NULL, NULL, NULL, 1});
       break;
     case RCZ2:
     case RCZ4: {
@@ -202,12 +235,12 @@ void WisolRadio::getStepPowerChannel(RadioContext *context, NetworkCmd list[], i
       //  X: boolean value, indicating previous TX macro channel was in the Sigfox default channel
       //  Y: number of micro channel available for next TX request in current macro channel.
       //  Call checkChannel() to check the response.
-      addCmd(list, listSize, { F(CMD_GET_CHANNEL), 1, checkChannel, NULL, NULL });
+        addCmd(list, listSize, {F(CMD_GET_CHANNEL), checkChannel, NULL, NULL, 1});
 
       //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
       //  Note: Don't use with a duty cycle less than 20 seconds.
       //  Note: checkChannel() will change this command to CMD_NONE if not required.
-      addCmd(list, listSize, { F(CMD_RESET_CHANNEL), 1, NULL, NULL, NULL });
+      addCmd(list, listSize, {F(CMD_RESET_CHANNEL), NULL, NULL, NULL,1});
       break;
     }
   }

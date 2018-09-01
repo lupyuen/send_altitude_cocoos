@@ -27,7 +27,8 @@ struct pin::cfg_t {
 
 /*=====================  USART CONFIGURATION  =====================*/
 
-#define DEBUG_USART_ID  0
+#define DEBUG_USART_ID  1
+#define WISOL_USART_ID  0
 
 struct UartSerial::cfg_t {
     USART_TypeDef* usart;

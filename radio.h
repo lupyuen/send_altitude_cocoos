@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <cocoos.h>
+#include "platform.h"
 
 #include "radioDevice.h"
 
@@ -11,14 +12,13 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 #define MODEM_BITS_PER_SECOND 9600  //  Connect to modem at this bps.
-#define RADIO_MSG_POOL_SIZE 2  //  Should not allow concurrent UART messages.  Hangs if <2.
+#define RADIO_MSG_POOL_SIZE 2       //  Should not allow concurrent UART messages.  Hangs if <2.
 
-struct SensorMsg;  //  Forward declaration
 
 //  Radio Task accepts messages of this format for sending data.
 struct RadioMsg {
   Msg_t super;                  //  Required for all cocoOS messages.
-  char sensorData[MAX_SENSOR_DATA_SIZE25];
+  float sensorData[SENSOR_DATA_SIZE * N_SENSORS]; // Collection of sensor readings
 };
 
 //  Radio Task maintains this context in the task data.

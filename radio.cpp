@@ -5,37 +5,34 @@
 #include "radio.h"
 #include "sensor.h"
 #include "downlink.h"
+#include "utils.h"
 
 
 static void serialize(NetworkCmd *cmd, char *buf);
 static void processResponse(RadioContext *context);
 
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
-NetworkCmd endOfList = { NULL, 0, NULL, NULL, NULL };  //  Command to indicate end of command list.
+NetworkCmd endOfList = { NULL, NULL, NULL, NULL, 0 };  //  Command to indicate end of command list.
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
 void radio_task(void) {
-  //  This task loops and waits for an incoming message containing UART data to be sent.
-  //  sendData contains a string of ASCII chars to be sent to the UART port.
-  //  We send the sendData to the port.  expectedMarkerCount is the number of
-  //  end-of-command markers '\r' we expect to see.  actualMarkerCount
-  //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
-  //  depending on success/failure sending the data.  Response is recorded in the
-  //  "response" variable of the context, for the caller to retrieve.
+  //  This task loops and waits for an incoming message containing sensor data to be sent.
+  //  The sensorData array contains float values of sensor readings which are converted to
+  //  a string of hex digits and is added to a string of commands.
+  //  We send the resulting string to the radio. The radio is setup to generate an rxDone
+  //  event when the expected count of markers ('\r') has been received.
 
   RadioContext *context;     //  The context for the task.
   static RadioMsg msg;       //  The received message.
-  static char radioData[MAX_RADIO_SEND_MSG_SIZE + 1]; // will contain serialized command data to be sent
+  static char radioData[MAX_RADIO_SEND_MSG_SIZE + 1]; // will contain serialized command data to be sent, contains commands and sensor readings
 
   task_open();
 
   context = (RadioContext *) task_get_data();
   context->rxDoneEvent = event_create();
   context->radio->setDoneEvent(context->rxDoneEvent);
-
-  //context->msg = &msg;
 
   for (;;) {
     msg_receive(os_get_running_tid(), &msg);
@@ -47,19 +44,19 @@ void radio_task(void) {
     context->cmd = &cmdList[0];
     cmdList[0] = endOfList;
 
+    // Fetch the commands to send from the radio driver implementation
     if (!context->initialized) {
       context->nCommands = context->radio->getStepBegin(cmdList, MAX_NETWORK_CMD_LIST_SIZE, false);
     }
     else {
-      // ELSE -> perform step send
+      // perform step send
       context->nCommands = context->radio->getStepSend(context, cmdList, MAX_NETWORK_CMD_LIST_SIZE, &msg.sensorData[0], false);
     }
-    //
 
     //  Assume the return status will be successful.
     context->status = true;
 
-    //  Send each Wisol AT command in the list.
+    //  Send each AT command in the list.
     while (context->nCommands) {
       context = (RadioContext *) task_get_data();  //  Must get context to be safe.
 
@@ -132,6 +129,7 @@ static void serialize(NetworkCmd *cmd, char *buf) {
   strncat(buf, CMD_END, MAX_RADIO_SEND_MSG_SIZE - strlen(buf));
   buf[MAX_RADIO_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
 }
+
 
 static void processResponse(RadioContext *context) {
   //  Process the response from the Wisol AT Command by calling the

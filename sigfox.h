@@ -7,6 +7,10 @@
 #define MAX_MESSAGE_SIZE 12  //  Sigfox supports up to 12 bytes per message.
 #define SEND_DELAY ((unsigned long) 10 * 60 * 1000)  //  According to regulation, messages should be sent only every 10 minutes.
 
+#define MAX_RADIO_SEND_MSG_SIZE     35  // Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
+#define MAX_RADIO_RESPONSE_MSG_SIZE 36  // Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
+#define MAX_SENSOR_DATA_SIZE25      25  // Max sensor buffer size after serialization, in bytes
+
 //  Define multiple timeouts for better multitasking.  Uplink to network is slower than normal
 //  commands.  Downlink is slowest, up to 1 minute.
 //  COMMAND_TIMEOUT < UPLINK_TIMEOUT < DOWNLINK_TIMEOUT

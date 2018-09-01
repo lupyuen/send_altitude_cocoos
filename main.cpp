@@ -1,7 +1,7 @@
 //  Sample application demonstrating multitasking of multiple IoT sensors and
 //  network transmission on discoveryF4 with cocoOS.
 
-//  Based on https://github.com/lupyuen/cocoOSExample-arduino
+//  Based on https://github.com/lupyuen/send_altitude_cocoos
 
 #include "platform.h"
 #include <string.h>
@@ -18,14 +18,13 @@
 #include "radio.h"
 #include "radios/wisolRadio.h"
 #include "uartSerial.h"
-#ifdef GYRO_SENSOR
-#include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
-#endif
+
 
 static void system_setup(void);
-static void sensor_setup(uint8_t display_task_id);
+static void sensor_setup(uint8_t sensor_receiver_task_id);
 static uint8_t network_setup(void);
 static UartSerial::ptr createDebugConsole();
+static UartSerial::ptr createRadioUartConnection();
 
 
 // Global semaphore for preventing concurrent access to the single shared I2C Bus
@@ -37,7 +36,6 @@ static char radioResponse[MAX_RADIO_RESPONSE_MSG_SIZE + 1];
 // Task contexts
 static AggregateContext aggregateContext;
 static RadioContext radioContext;
-//static NetworkContext networkContext;
 
 // Pool of UART messages for the UART Tasks message queue.
 static RadioMsg radioMsgPool[RADIO_MSG_POOL_SIZE];
@@ -53,9 +51,6 @@ int main(void) {
   //  Init the system and OS for cocoOS.
   system_setup();
   os_init();
-
-  //  Erase the aggregated sensor data.
-  //setup_aggregate();
 
   //  Start the network task to send and receive network messages.
   uint8_t task_id = network_setup();
@@ -88,11 +83,16 @@ static UartSerial::ptr createDebugConsole() {
   return &console;
 }
 
+static UartSerial::ptr createRadioUartConnection() {
+  static UartSerial radioUart(WISOL_USART_ID);
+  return &radioUart;
+}
+
 static uint8_t network_setup(void) {
   //  Start the network task to send and receive network messages.
   //  Start the Radio Task for transmitting data to the Wisol module.
 
-  static WisolRadio radio(createDebugConsole());
+  static WisolRadio radio(createRadioUartConnection());
 
   radioContext.response = radioResponse;
   radioContext.radio = &radio;
@@ -122,37 +122,20 @@ static uint8_t network_setup(void) {
   return aggregateTaskId;
 }
 
-#ifdef SENSOR_DATA  //  Use real not simulated sensors.
-static void sensor_setup(uint8_t task_id) {
-  //  Start the sensor tasks for each sensor to read and process sensor data.
-  //  Sensor data will be sent to the message queue at the given task ID,
-  //  which is the Network Task or Display Task.
+static void sensor_setup(uint8_t sensor_receiver_task_id) {
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
-  SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
-  SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
-  SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
-#ifdef GYRO_SENSOR
-  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
-#endif  //  GYRO_SENSOR
 
-  //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
-  //  "0, 0, 0" means that the tasks may not receive any message queue data.
-  //// debug(F("task_create")); ////
-  task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
-    0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, humidContext, 120,  //  Priority 120
-    0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, altContext, 130,  //  Priority 130
-    0, 0, 0);  //  Will not receive message queue data.
-#ifdef GYRO_SENSOR
-  task_create(sensor_task, gyroContext, 140,   //  Priority 140
-    0, 0, 0);  //  Will not receive message queue data.
-#endif  //  GYRO_SENSOR
+  SensorContext *tempContext  = setup_temp_sensor(pollInterval, sensor_receiver_task_id);
+  //SensorContext *humidContext = setup_humid_sensor(pollInterval, sensor_receiver_task_id);
+  //SensorContext *altContext   = setup_alt_sensor(pollInterval, sensor_receiver_task_id);
+
+  task_create(sensor_task, tempContext, 100,0, 0, 0);
+  //task_create(sensor_task, humidContext, 120, 0, 0, 0);
+  //task_create(sensor_task, altContext, 130, 0, 0, 0);
 }
-#endif  //  SENSOR_DATA
 
 
 volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.

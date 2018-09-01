@@ -6,7 +6,7 @@
 #include <cocoos.h>
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
-#define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
+#define MAX_SENSOR_DATA_SIZE SENSOR_DATA_SIZE  //  Max number of floats that can be returned as sensor data for a single sensor.
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
 
 //  Messages sent by Sensor Task containing sensor data will be in this format.
@@ -72,7 +72,7 @@ struct Sensor {
 struct SensorContext {
   Sensor *sensor;           //  The sensor for the context.
   SensorMsg msg;
-  uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
+  uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, (the aggregate task)
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus
