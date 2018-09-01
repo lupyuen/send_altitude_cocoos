@@ -1,5 +1,5 @@
 {- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
-sudo apt install llvm ; cabal install clang-pure lens
+sudo apt install llvm ; cabal install clang-pure lens pretty-simple
 ghci send_altitude_cocoos/scripts/Reflect.hs
 :main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
 :quit
@@ -15,6 +15,8 @@ import qualified Data.ByteString.Char8 as BS
 import           Data.Maybe
 import           Data.Word
 import           System.Environment
+import           Debug.Trace
+-- import           Text.Pretty.Simple (pPrint)
 
 data CType =
   CArrayType  { cType :: Type
@@ -37,6 +39,33 @@ data CStruct = CStruct
   , cStructFields :: [ CField ]
   } deriving (Show)
 
+data CExtract = CExtract
+  { cExtractCursor :: Cursor
+  } deriving (Show)
+
+-- toCType :: Type -> CType
+toCType tp = let canonicalType = typeCanonicalType tp
+                  in case typeKind canonicalType of
+                    ConstantArray -> do
+                      elementType <- toCType . fromJust . typeElementType $ canonicalType
+                      size <- typeSizeOf tp
+                      pure $ CArrayType
+                        { cType = tp
+                        , cCanonicalType = canonicalType
+                        , cElementType = elementType
+                        , cArraySize = fromJust (typeArraySize canonicalType)
+                        , cSize = size
+                        }
+                    _ -> do
+                      size <- typeSizeOf tp
+                      pure $ CScalarType
+                        { cType = tp
+                        , cCanonicalType = canonicalType
+                        , cSize = size
+                        }
+
+
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -44,26 +73,6 @@ main = do
     path : clangArgs -> do
       idx <- createIndex
       tu <- parseTranslationUnit idx path clangArgs
-
-      let toCType tp = let canonicalType = typeCanonicalType tp
-                       in case typeKind canonicalType of
-            ConstantArray -> do
-              elementType <- toCType . fromJust . typeElementType $ canonicalType
-              size <- typeSizeOf tp
-              pure $ CArrayType
-                { cType = tp
-                , cCanonicalType = canonicalType
-                , cElementType = elementType
-                , cArraySize = fromJust (typeArraySize canonicalType)
-                , cSize = size
-                }
-            _ -> do
-              size <- typeSizeOf tp
-              pure $ CScalarType
-                { cType = tp
-                , cCanonicalType = canonicalType
-                , cSize = size
-                }
 
       let toCField fieldDecC = do
             fieldOffset <- offsetOfField fieldDecC
@@ -85,17 +94,25 @@ main = do
               , cStructFields = cFields
               }
 
-      let processUnit unit = do
-            return unit
+      -- transformCursor :: Cursor -> CExtract
+      let transformCursor cursor = do
+          -- let result = [cursor, (cursorExtent cursor), (cursorType cursor), (offsetOfField cursor)]
+          -- let result = cursor
+          -- return result
+          -- return 
+          return CExtract
+            { cExtractCursor = cursor
+            }
 
       let cStructs =
             translationUnitCursor tu
               ^.. cursorDescendantsF
                 -- . folding (matchKind @'StructDecl)
                 -- . to toCStruct
-                . to processUnit
+                . to transformCursor
                 . _Right
 
+      -- pPrint cStructs
       mapM_ print cStructs
       -- print "OK\n"
 
