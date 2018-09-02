@@ -10,20 +10,12 @@ TODO: -- stack --resolver lts-12.8 script --package clang-pure,lens
 module Main where
 
 import qualified Data.ByteString as BS
-import           Data.List
-import qualified Data.HashMap.Strict as HMS
-import           Data.Hashable
+import           Data.Word
 import           Language.C.Clang  --  stack install clang-pure
 import           Language.C.Clang.Cursor
 import           Control.Lens
-import           Data.Traversable
-import           Data.Maybe
-import           GHC.Generics (Generic)
 import           System.Environment
 import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
-
-deriving instance Generic CursorKind
-instance Hashable CursorKind
 
 -- Return the [ start, end ] location of the cursor.
 getLocation :: Cursor -> [Location]
@@ -36,10 +28,24 @@ getLocation cursor =
         , spellingLocation (rangeEnd ext)
         ]
 
-findChildren :: Cursor -> [( CursorKind, BS.ByteString, [Location] )]
+getOffset :: Cursor -> [Word64]
+getOffset cursor =
+  let offset = offsetOfField cursor
+    in case offset of
+      Left _ -> []
+      Right os -> [os]
+
+{-
+getOffset cursor
+        | (offset == TypeLayoutErrorInvalid ) = []
+        | otherwise                   = [offset]
+  where offset = offsetOfField cursor
+-}
+
+findChildren :: Cursor -> [( CursorKind, BS.ByteString, [Word64], [Location] )]
 findChildren root = root 
   ^.. cursorDescendantsF 
-    . to (\c -> ( cursorKind c, cursorSpelling c, getLocation c ) )
+    . to (\c -> ( cursorKind c, cursorSpelling c, getOffset c, getLocation c ) )
 
 main :: IO ()
 main = do
@@ -54,5 +60,5 @@ main = do
       tu <- parseTranslationUnit idx path options
       let root = translationUnitCursor tu
       let childList = findChildren root
-      pPrint childList
-      -- mapM_ print childList
+      -- pPrint childList
+      mapM_ print childList
