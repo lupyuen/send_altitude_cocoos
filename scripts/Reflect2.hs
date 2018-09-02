@@ -28,24 +28,24 @@ getLocation cursor =
         , spellingLocation (rangeEnd ext)
         ]
 
+-- Return the offset of this member in the parent struct.
 getOffset :: Cursor -> [Word64]
 getOffset cursor =
   let offset = offsetOfField cursor
     in case offset of
-      Left _ -> []
+      Left _ -> []  -- TypeLayoutError
       Right os -> [os]
 
-{-
-getOffset cursor
-        | (offset == TypeLayoutErrorInvalid ) = []
-        | otherwise                   = [offset]
-  where offset = offsetOfField cursor
--}
-
-findChildren :: Cursor -> [( CursorKind, BS.ByteString, [Word64], [Location] )]
+findChildren :: Cursor -> [( CursorKind, BS.ByteString, BS.ByteString, [Word64], [Location] )]
 findChildren root = root 
   ^.. cursorDescendantsF 
-    . to (\c -> ( cursorKind c, cursorSpelling c, getOffset c, getLocation c ) )
+    . to (\c -> 
+      ( cursorKind c
+      , cursorSpelling c
+      , cursorUSR c
+      , getOffset c
+      , getLocation c 
+      ) )
 
 main :: IO ()
 main = do
