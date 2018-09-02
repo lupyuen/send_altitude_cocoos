@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
-stack scripts/Reflect2.hs main.cpp 
+stack scripts/Reflect2.hs main.cpp -Ilib/cocoOS_5.0.2/src
 TODO: -- stack --resolver lts-12.8 script --package clang-pure,lens
 -}
 
@@ -25,76 +25,34 @@ import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 deriving instance Generic CursorKind
 instance Hashable CursorKind
 
-data HasClass = HasClass
-  { combineResults :: Bool -> Bool -> Bool
-  , predicate :: Cursor -> Bool
-  }
+-- Return the [ start, end ] location of the cursor.
+getLocation :: Cursor -> [Location]
+getLocation cursor =
+  let extent = cursorExtent cursor
+    in case extent of
+      Nothing -> []
+      Just ext -> 
+        [ spellingLocation (rangeStart ext)
+        , spellingLocation (rangeEnd ext)
+        ]
 
-classes :: HMS.HashMap String HasClass
-classes = HMS.fromList
-  [ -- ( "HasType",     HasClass (&&) (isJust . cursorType)            )
-  -- , ( "HasChildren", HasClass (||) (notNullOf cursorChildrenF)      )
-  ( "HasExtent",   HasClass (&&) (isJust . cursorExtent)          )
-  -- , ( "HasSpelling", HasClass (&&) (not . BS.null . cursorSpelling) )
-  ]
+findChildren :: Cursor -> [( CursorKind, BS.ByteString, [Location] )]
+findChildren root = root 
+  ^.. cursorDescendantsF 
+    . to (\c -> ( cursorKind c, cursorSpelling c, getLocation c ) )
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [] -> putStrLn "usage: find-classes file1 [file2] [fileN...]"
+    [] -> putStrLn "usage: find-classes file.cpp [clang opts]"
 
     paths -> do
       idx <- createIndex
-      let path = paths !! 0
-      tu <- parseTranslationUnit idx path [ "-Ilib/cocoOS_5.0.2/src", "-Ilib/cocoOS_5.0.3/src" ]
+      let path = head paths
+      let options = tail paths
+      tu <- parseTranslationUnit idx path options
       let root = translationUnitCursor tu
       let childList = findChildren root
       pPrint childList
-
-    {-
-    paths -> do
-      idx <- createIndex
-
-      pathClassResults <- for paths $ \path -> do
-        tu <- parseTranslationUnit idx path 
-          [ "-Ilib/cocoOS_5.0.2/src"
-          , "-Ilib/cocoOS_5.0.3/src"
-          ]
-        let root = translationUnitCursor tu
-        return $ HMS.fromList
-          [ ( className, findClass predicate root )
-          | ( className, predicate ) <- HMS.toList classes
-          ]
-
-      {- 
-      let classResults = foldl1' (HMS.unionWithKey $ \className -> HMS.unionWith 
-            (combineResults (classes HMS.! className))) pathClassResults
-
-      let allInstances =
-            intercalate "\n"
-              [ instances
-              | ( className, kindResults ) <- HMS.toList classResults
-              , let sortedNames = sort [ show kind | ( kind, matches ) <- HMS.toList kindResults, matches ]
-              , let instances = unlines $ map (\kindName -> "instance " ++ className ++ " '" ++ kindName) sortedNames
-              ]
-      -}
-
-      -- mapM_ pPrint findCursors (translationUnitCursor tu)
-      -- pPrint pathClassResults
-      -- putStrLn allInstances
-    -}
-
-findChildren :: Cursor -> [(Cursor, CursorKind, BS.ByteString)]
-findChildren root = root 
-  ^.. cursorDescendantsF 
-    . to (\c -> ( c, cursorKind c, cursorSpelling c ) )
-
-{-
-findClass :: HasClass -> Cursor -> HMS.HashMap CursorKind Bool
-findClass HasClass {..} root = HMS.fromListWith combineResults kindResults
-  where
-    kindResults = root 
-      ^.. cursorDescendantsF 
-        . to (\c -> ( cursorKind c, predicate c ) )
--}
+      -- mapM_ print childList
