@@ -1,11 +1,11 @@
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
 -- sudo apt install llvm ; cabal install clang-pure lens
 -- ghci send_altitude_cocoos/scripts/ListTypes.hs
 -- :main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
 -- :quit
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 import           Language.C.Clang
 import           Language.C.Clang.Cursor.Typed

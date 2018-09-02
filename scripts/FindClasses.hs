@@ -1,12 +1,12 @@
-{- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
-sudo apt install llvm ; cabal install clang-pure lens pretty-simple
-ghci send_altitude_cocoos/scripts/FindClasses.hs
-:main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
-:quit
--}
+#!/usr/bin/env stack
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
+stack scripts/FindClasses.hs main.cpp 
+-Ilib/cocoOS_5.0.2/src
+TODO: -- stack --resolver lts-12.8 script --package clang-pure,lens
+-}
 
 module Main where
 
@@ -48,7 +48,10 @@ main = do
       idx <- createIndex
 
       pathClassResults <- for paths $ \path -> do
-        tu <- parseTranslationUnit idx path []
+        tu <- parseTranslationUnit idx path 
+          [ "-Ilib/cocoOS_5.0.2/src"
+          , "-Ilib/cocoOS_5.0.3/src"
+          ]
         let root = translationUnitCursor tu
         return $ HMS.fromList
           [ ( className, findClass predicate root )
