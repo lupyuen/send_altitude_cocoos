@@ -35,6 +35,8 @@ getTokens cursor =
           CXXBoolLiteralExpr {} -> tokenList
           BinaryOperator {} -> tokenList
           FirstExpr {} -> tokenList
+          DeclStmt {} -> tokenList
+          CompoundStmt {} -> tokenList
           _ -> []
 
 -- Return the [ start, end ] location of the cursor.
