@@ -17,6 +17,26 @@ import           Control.Lens
 import           System.Environment
 import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 
+-- Return the tokens for specific literals.
+getTokens :: Cursor -> [BS.ByteString]
+getTokens cursor =
+  let kind = cursorKind cursor
+      extent = cursorExtent cursor
+    in case extent of
+      Nothing -> []
+      Just ext -> -- Only cursors with extents
+        let tokenSet = tokenize ext
+            tokens = tokenSetTokens tokenSet
+            tokenList = take 10 (map tokenSpelling tokens) -- Limit to 10 tokens
+        in case kind of
+          IntegerLiteral {} -> tokenList
+          FloatingLiteral {} -> tokenList
+          CharacterLiteral {} -> tokenList
+          CXXBoolLiteralExpr {} -> tokenList
+          BinaryOperator {} -> tokenList
+          FirstExpr {} -> tokenList
+          _ -> []
+
 -- Return the [ start, end ] location of the cursor.
 getLocation :: Cursor -> [Location]
 getLocation cursor =
@@ -36,12 +56,21 @@ getOffset cursor =
       Left _ -> []  -- TypeLayoutError
       Right os -> [os]
 
-findChildren :: Cursor -> [( CursorKind, BS.ByteString, BS.ByteString, [Word64], [Location] )]
+-- Recursively find all child cursors and process them.
+findChildren :: Cursor -> [
+  ( CursorKind     -- Kind
+  , BS.ByteString  -- Spelling
+  , [BS.ByteString] -- Tokens
+  , BS.ByteString  -- USR
+  , [Word64]       -- Offset
+  , [Location]     -- Location
+  )]
 findChildren root = root 
   ^.. cursorDescendantsF 
     . to (\c -> 
       ( cursorKind c
       , cursorSpelling c
+      , getTokens c
       , cursorUSR c
       , getOffset c
       , getLocation c 
