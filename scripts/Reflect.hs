@@ -17,11 +17,18 @@ import           Control.Lens
 import           System.Environment
 import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 
+-- Convert the cursor into a text array pattern for matching.
 getPattern :: Cursor -> [BS.ByteString]
 getPattern cursor =
   let kind = cursorKind cursor
   in case kind of
-    DeclStmt {} -> [cursorSpelling cursor]
+    DeclStmt {} -> [ cursorSpelling cursor ]  -- uint8_t task_id = task_create(...)
+    CallExpr {} -> [ cursorSpelling cursor ] -- task_create(...)
+    VarDecl {} -> [ cursorSpelling cursor ]
+
+    IntegerLiteral {} -> [ cursorSpelling cursor ]
+    FloatingLiteral {} -> [ cursorSpelling cursor ]
+    CharacterLiteral {} -> [ cursorSpelling cursor ]
     _ -> []
 
 -- Return the tokens for specific literals.
@@ -70,20 +77,34 @@ getOffset cursor =
     Left _ -> []  -- TypeLayoutError
     Right os -> [os]
 
+-- Recursively find all child cursors for specific lines and generate a text array pattern for matching.
+getChildrenPattern :: Cursor -> [[BS.ByteString]]
+getChildrenPattern root = 
+  let patterns = root 
+        ^.. cursorDescendantsF 
+        . to (\c -> getPattern c)
+      kind = cursorKind root
+  in case kind of
+    DeclStmt {} -> patterns -- uint8_t task_id = task_create(...)
+    CallExpr {} -> patterns  -- task_create(...)
+    _ -> []
+
 -- Recursively find all child cursors and process them.
-findChildren :: Cursor -> [
+getChildren :: Cursor -> [
   ( CursorKind     -- Kind
   , BS.ByteString  -- Spelling
+  , [[BS.ByteString]] -- Pattern
   , [BS.ByteString] -- Tokens
   , BS.ByteString  -- USR
   , [Word64]       -- Offset
   , [Location]     -- Location
   )]
-findChildren root = root 
+getChildren root = root 
   ^.. cursorDescendantsF 
     . to (\c -> 
       ( cursorKind c
       , cursorSpelling c
+      , getChildrenPattern c
       , getTokens c
       , cursorUSR c
       , getOffset c
@@ -102,6 +123,6 @@ main = do
       let options = tail paths
       tu <- parseTranslationUnit idx path options
       let root = translationUnitCursor tu
-      let childList = findChildren root
+      let childList = getChildren root
       -- pPrint childList
       mapM_ print childList
