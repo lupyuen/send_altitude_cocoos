@@ -18,8 +18,6 @@ import           System.Environment
 import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 
 -- Convert the cursor into a text array pattern for matching.
--- uint8_t task_id = task_create(task_func, ...) ->
--- task_create(task_func, ...) ->
 getPattern :: Cursor -> BS.ByteString
 getPattern cursor =
   let kind = cursorKind cursor
@@ -104,6 +102,8 @@ getOffset cursor =
     Right os -> [os]
 
 -- Recursively find all child cursors for specific lines and generate a text array pattern for matching.
+-- uint8_t task_id = task_create(task_func, ...) -> [ task_id, task_create, task_func, ... ]
+-- task_create(task_func, ...) -> [ task_create, task_func, ... ]
 getChildrenPattern :: Cursor -> [BS.ByteString]
 getChildrenPattern root = 
   let patterns = root 
