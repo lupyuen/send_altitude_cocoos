@@ -1,12 +1,11 @@
-{- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
-sudo apt install llvm ; cabal install clang-pure lens pretty-simple
-ghci send_altitude_cocoos/scripts/Reflect.hs
-:main "send_altitude_cocoos/main.cpp" "-IcocoOS_5.0.3/inc/"
-:quit
--}
+#!/usr/bin/env stack
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{- Code Reflection from https://github.com/chpatrick/clang-pure/tree/master/examples
+stack scripts/Reflect.hs main.cpp -Ilib/cocoOS_5.0.2/src
+TODO: -- stack --resolver lts-12.8 script --package clang-pure,lens
+-}
 
 import           Language.C.Clang
 import           Language.C.Clang.Cursor.Typed
@@ -41,7 +40,7 @@ data CStruct = CStruct
 
 data CExtract = CExtract
   { cExtractCursor :: Cursor
-  , cExtractOffset :: Either TypeLayoutError Word64
+  -- , cExtractOffset :: Either TypeLayoutError Word64
   } deriving (Show)
 
 -- toCType :: Type -> CType
@@ -96,13 +95,11 @@ main = do
       -- transformCursor :: Cursor -> CExtract
       let transformCursor cursor = do
           -- let result = [cursor, (cursorExtent cursor), (cursorType cursor), (offsetOfField cursor)]
-          -- let result = cursor
-          -- return result
-          -- return 
-          return CExtract
-            { cExtractCursor = cursor
-            , cExtractOffset = offsetOfField cursor
-            }
+          return cursor
+          -- return CExtract
+            -- { cExtractCursor = cursor
+            -- , cExtractOffset = offsetOfField cursor
+            -- }
 
       let cStructs =
             translationUnitCursor tu
