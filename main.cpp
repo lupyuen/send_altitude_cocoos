@@ -24,7 +24,7 @@
 static void system_setup(void);  //  Initialise the system.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
-#ifdef SENSOR_DISPLAY  //  If we are display sensor data instead of send to network...
+#ifdef SENSOR_DISPLAY  //  If we are displaying sensor data instead of sending to network...
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 #endif  //  SENSOR_DISPLAY
 
@@ -34,7 +34,7 @@ static UARTContext uartContext;
 static NetworkContext wisolContext;
 static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART Tasks message queue.
 static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];  //  Pool of sensor data messages for the Network Task message queue.
-#ifdef SENSOR_DISPLAY
+#ifdef SENSOR_DISPLAY  //  If we are displaying sensor data instead of sending to network...
 static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
 
