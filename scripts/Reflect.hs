@@ -18,17 +18,22 @@ import           System.Environment
 import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 
 -- Convert the cursor into a text array pattern for matching.
+-- uint8_t task_id = task_create(task_func, ...) ->
+-- task_create(task_func, ...) ->
 getPattern :: Cursor -> [BS.ByteString]
 getPattern cursor =
   let kind = cursorKind cursor
   in case kind of
-    DeclStmt {} -> [ cursorSpelling cursor ]  -- uint8_t task_id = task_create(...)
-    CallExpr {} -> [ cursorSpelling cursor ] -- task_create(...)
-    VarDecl {} -> [ cursorSpelling cursor ]
+    VarDecl {} -> [ cursorSpelling cursor ]  -- task_id
+    CallExpr {} -> [] -- task_create
 
-    IntegerLiteral {} -> [ cursorSpelling cursor ]
-    FloatingLiteral {} -> [ cursorSpelling cursor ]
-    CharacterLiteral {} -> [ cursorSpelling cursor ]
+    TypeRef {} -> [ cursorSpelling cursor ]  -- uint8_t
+    FirstExpr {} -> getTokens cursor  --  task_func,
+
+    -- DeclRefExpr {} -> [ cursorSpelling cursor ]  -- task_func
+    -- IntegerLiteral {} -> getTokens cursor
+    -- FloatingLiteral {} -> getTokens cursor
+    -- CharacterLiteral {} -> getTokens cursor
     _ -> []
 
 -- Return the tokens for specific literals.
@@ -85,9 +90,9 @@ getChildrenPattern root =
         . to (\c -> getPattern c)
       kind = cursorKind root
   in case kind of
-    DeclStmt {} -> patterns -- uint8_t task_id = task_create(...)
+    VarDecl {} -> patterns   -- uint8_t task_id = task_create(...)
     CallExpr {} -> patterns  -- task_create(...)
-    _ -> []
+    _ -> [ getPattern root ] -- Show the pattern for debugging
 
 -- Recursively find all child cursors and process them.
 getChildren :: Cursor -> [
