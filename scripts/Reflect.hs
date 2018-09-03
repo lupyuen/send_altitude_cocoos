@@ -36,32 +36,6 @@ getPattern cursor =
     -- CharacterLiteral {} -> getTokens cursor
     _ -> BS.empty
 
--- Remove the last item in a list of tokens if it is a ',' or '('
-removeLast :: [BS.ByteString] -> [BS.ByteString]
-removeLast tokens =
-  if null tokens
-    then tokens
-    else let tokenLength = length tokens
-             lastToken = last tokens
-        in if lastToken == (packStr "(") || lastToken == (packStr ",")
-          then take (tokenLength - 1) tokens
-          else tokens
-
-{-
--- Return the text for the cursor.
-getText :: Cursor -> BS.ByteString
-getText cursor =
-  let kind = cursorKind cursor
-      extent = cursorExtent cursor
-  in case extent of
-    Nothing -> []
-    Just ext -> -- Only cursors with extents
-      let tokenSet = tokenize ext
-          tokens = tokenSetTokens tokenSet
-          tokenList = take 10 (map tokenSpelling tokens) -- Limit to 10 tokens
-      in 
--}
-
 -- Return the tokens for specific literals.
 getTokens :: Cursor -> [BS.ByteString]
 getTokens cursor =
@@ -180,6 +154,20 @@ isCursorFromMainFile cursor =
     Nothing -> False
     Just ext -> isFromMainFile (rangeStart ext)
       
+-- Remove the last item in a list of tokens if it is a ',' or '(' or ')'
+removeLast :: [BS.ByteString] -> [BS.ByteString]
+removeLast tokens =
+  if null tokens
+    then tokens
+    else 
+      let tokenLength = length tokens
+          lastToken = last tokens
+      in if lastToken == (packStr ",") 
+        || lastToken == (packStr "(")
+        || lastToken == (packStr ")")
+        then take (tokenLength - 1) tokens
+        else tokens
+
 --  Convert string to bytestring.
 packStr :: String -> BS.ByteString
 packStr = encodeUtf8 . T.pack
