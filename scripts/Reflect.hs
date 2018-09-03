@@ -10,6 +10,8 @@ TODO: -- stack --resolver lts-12.8 script --package clang-pure,lens
 module Main where
 
 import qualified Data.ByteString as BS
+import qualified Data.Text as T
+import           Data.Text.Encoding (encodeUtf8)
 import           Data.Word
 import           Language.C.Clang  --  stack install clang-pure
 import           Language.C.Clang.Cursor
@@ -34,11 +36,16 @@ getPattern cursor =
     -- CharacterLiteral {} -> getTokens cursor
     _ -> BS.empty
 
--- Remove the last item in a list of tokens
+-- Remove the last item in a list of tokens if it is a ',' or '('
 removeLast :: [BS.ByteString] -> [BS.ByteString]
-removeLast tokens = tokens
-  -- let tokenLength = length tokens
-  -- in take (tokenLength - 1) tokens
+removeLast tokens =
+  if null tokens
+    then tokens
+    else let tokenLength = length tokens
+             lastToken = last tokens
+        in if lastToken == (packStr "(") || lastToken == (packStr ",")
+          then take (tokenLength - 1) tokens
+          else tokens
 
 {-
 -- Return the text for the cursor.
@@ -102,24 +109,35 @@ getOffset cursor =
     Right os -> [os]
 
 -- Recursively find all child cursors for specific lines and generate a text array pattern for matching.
--- uint8_t task_id = task_create(task_func, ...) -> [ task_id, task_create, task_func, ... ]
--- task_create(task_func, ...) -> [ task_create, task_func, ... ]
-getChildrenPattern :: Cursor -> [BS.ByteString]
+-- uint8_t task_id = task_create(task_func, ...) -> ( task_id, uint8_t, [ task_create, task_func, ... ] )
+-- task_create(task_func, ...) -> ( "", "", [ task_create, task_func, ... ] )
+getChildrenPattern :: Cursor -> ( BS.ByteString, BS.ByteString, [BS.ByteString] )
 getChildrenPattern root = 
-  let patterns = root 
-        ^.. cursorDescendantsF 
-        . to (\c -> getPattern c)
-      kind = cursorKind root
-  in case kind of
-    VarDecl {} -> filter (\bs -> not (BS.null bs)) patterns   -- uint8_t task_id = task_create(...)
-    CallExpr {} -> filter (\bs -> not (BS.null bs)) patterns  -- task_create(...)
-    _ -> [ getPattern root ] -- Show the pattern for debugging
+  if not (isCursorFromMainFile root)
+    then (BS.empty, BS.empty, [])  -- Skip declarations that don't come from our main file.
+    else
+      let patterns = root 
+            ^.. cursorDescendantsF . to (\c -> getPattern c)
+          filteredPatterns = filter (\bs -> not (BS.null bs)) patterns -- Skip empty strings
+          kind = cursorKind root
+      in case kind of
+        -- If: uint8_t task_id = task_create(...)
+        VarDecl {} ->
+          if length filteredPatterns > 2
+            then (filteredPatterns !! 0, filteredPatterns !! 1, drop 2 filteredPatterns)
+            else (BS.empty, BS.empty, filteredPatterns)
+        -- If: task_create(...)
+        CallExpr {} ->  
+          (BS.empty, BS.empty, filteredPatterns)
+        -- Else show the pattern for debugging
+        _ -> 
+          (BS.empty, BS.empty, [ getPattern root ]) 
 
 -- Recursively find all child cursors and process them.
 getChildren :: Cursor -> [
   ( CursorKind     -- Kind
   , BS.ByteString  -- Spelling
-  , [BS.ByteString] -- Pattern
+  , ( BS.ByteString, BS.ByteString, [BS.ByteString] ) -- Pattern: (var, type, func)
   , [BS.ByteString] -- Tokens
   , BS.ByteString  -- USR
   , [Word64]       -- Offset
@@ -131,7 +149,7 @@ getChildren root = root
     . to (\c -> 
       ( cursorKind c
       , cursorSpelling c
-      , getChildrenPattern c
+      , getChildrenPattern c -- Returns (var, type, func)
       , getTokens c
       , cursorUSR c
       , getOffset c
@@ -153,3 +171,15 @@ main = do
       let childList = getChildren root
       -- pPrint childList
       mapM_ print childList
+
+--  Return true if the cursor is from main source file 
+isCursorFromMainFile :: Cursor -> Bool
+isCursorFromMainFile cursor = 
+  let extent = cursorExtent cursor
+  in case extent of
+    Nothing -> False
+    Just ext -> isFromMainFile (rangeStart ext)
+      
+--  Convert string to bytestring.
+packStr :: String -> BS.ByteString
+packStr = encodeUtf8 . T.pack
