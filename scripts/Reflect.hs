@@ -20,21 +20,42 @@ import           Text.Pretty.Simple (pPrint)  -- stack install pretty-simple
 -- Convert the cursor into a text array pattern for matching.
 -- uint8_t task_id = task_create(task_func, ...) ->
 -- task_create(task_func, ...) ->
-getPattern :: Cursor -> [BS.ByteString]
+getPattern :: Cursor -> BS.ByteString
 getPattern cursor =
   let kind = cursorKind cursor
   in case kind of
-    VarDecl {} -> [ cursorSpelling cursor ]  -- task_id
-    CallExpr {} -> [] -- task_create
+    VarDecl {} -> ( cursorSpelling cursor ) -- task_id
+    CallExpr {} -> BS.empty -- task_create
 
-    TypeRef {} -> [ cursorSpelling cursor ]  -- uint8_t
-    FirstExpr {} -> getTokens cursor  --  task_func,
+    TypeRef {} -> ( cursorSpelling cursor )  -- uint8_t
+    FirstExpr {} -> BS.concat ( removeLast (getTokens cursor) )  --  task_func,
 
     -- DeclRefExpr {} -> [ cursorSpelling cursor ]  -- task_func
     -- IntegerLiteral {} -> getTokens cursor
     -- FloatingLiteral {} -> getTokens cursor
     -- CharacterLiteral {} -> getTokens cursor
-    _ -> []
+    _ -> BS.empty
+
+-- Remove the last item in a list of tokens
+removeLast :: [BS.ByteString] -> [BS.ByteString]
+removeLast tokens = 
+  let tokenLength = length tokens
+  in take (tokenLength - 1) tokens
+
+{-
+-- Return the text for the cursor.
+getText :: Cursor -> BS.ByteString
+getText cursor =
+  let kind = cursorKind cursor
+      extent = cursorExtent cursor
+  in case extent of
+    Nothing -> []
+    Just ext -> -- Only cursors with extents
+      let tokenSet = tokenize ext
+          tokens = tokenSetTokens tokenSet
+          tokenList = take 10 (map tokenSpelling tokens) -- Limit to 10 tokens
+      in 
+-}
 
 -- Return the tokens for specific literals.
 getTokens :: Cursor -> [BS.ByteString]
@@ -83,7 +104,7 @@ getOffset cursor =
     Right os -> [os]
 
 -- Recursively find all child cursors for specific lines and generate a text array pattern for matching.
-getChildrenPattern :: Cursor -> [[BS.ByteString]]
+getChildrenPattern :: Cursor -> [BS.ByteString]
 getChildrenPattern root = 
   let patterns = root 
         ^.. cursorDescendantsF 
@@ -98,7 +119,7 @@ getChildrenPattern root =
 getChildren :: Cursor -> [
   ( CursorKind     -- Kind
   , BS.ByteString  -- Spelling
-  , [[BS.ByteString]] -- Pattern
+  , [BS.ByteString] -- Pattern
   , [BS.ByteString] -- Tokens
   , BS.ByteString  -- USR
   , [Word64]       -- Offset
@@ -106,6 +127,7 @@ getChildren :: Cursor -> [
   )]
 getChildren root = root 
   ^.. cursorDescendantsF 
+    -- . filtered (isFromMainFile)
     . to (\c -> 
       ( cursorKind c
       , cursorSpelling c
