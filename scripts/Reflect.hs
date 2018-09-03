@@ -38,9 +38,9 @@ getPattern cursor =
 
 -- Remove the last item in a list of tokens
 removeLast :: [BS.ByteString] -> [BS.ByteString]
-removeLast tokens = 
-  let tokenLength = length tokens
-  in take (tokenLength - 1) tokens
+removeLast tokens = tokens
+  -- let tokenLength = length tokens
+  -- in take (tokenLength - 1) tokens
 
 {-
 -- Return the text for the cursor.
@@ -111,8 +111,8 @@ getChildrenPattern root =
         . to (\c -> getPattern c)
       kind = cursorKind root
   in case kind of
-    VarDecl {} -> patterns   -- uint8_t task_id = task_create(...)
-    CallExpr {} -> patterns  -- task_create(...)
+    VarDecl {} -> filter (\bs -> not (BS.null bs)) patterns   -- uint8_t task_id = task_create(...)
+    CallExpr {} -> filter (\bs -> not (BS.null bs)) patterns  -- task_create(...)
     _ -> [ getPattern root ] -- Show the pattern for debugging
 
 -- Recursively find all child cursors and process them.
