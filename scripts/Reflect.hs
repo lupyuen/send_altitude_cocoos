@@ -116,6 +116,7 @@ getChildren :: Cursor -> [
   , BS.ByteString  -- USR
   , [Word64]       -- Offset
   , [Location]     -- Location
+  , Cursor         -- Cursor
   )]
 getChildren root = root 
   ^.. cursorDescendantsF 
@@ -127,9 +128,11 @@ getChildren root = root
       , getTokens c
       , cursorUSR c
       , getOffset c
-      , getLocation c 
+      , getLocation c
+      , c 
       ) )
 
+-- Main function reads a C++ source file and parses the file plus dependencies.
 main :: IO ()
 main = do
   args <- getArgs
