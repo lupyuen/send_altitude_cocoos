@@ -12,7 +12,7 @@
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 #ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
-//  We support only USART Port 2, i.e.
+//  We support only USART Port 2:
 //  RX2 = Pin PA3
 //  TX2 = Pin PA2
 #include <libopencm3/stm32/rcc.h>
@@ -29,38 +29,36 @@ static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_R
 static void clock_setup(void) {
     //  Enable the USART2 clock.
 
-    //  Moved to bluepill.cpp.
+    //  Moved to platform_setup() in bluepill.cpp.
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
-
-	/* Enable GPIOA clock. */
+	//  Enable GPIOA clock.
 	rcc_periph_clock_enable(RCC_GPIOA);
-
-	/* Enable USART2 clock. */
+	//  Enable USART2 clock.
 	rcc_periph_clock_enable(RCC_USART2);
 }
 
 static void usart_setup(uint16_t bps) {
-    //  Configure the USART2 port.
+    //  Configure the USART2 port for "bps" bits per second,
+    //  8 data bits, No parity, 1 stop bit.  Port is not enabled
+    //  until listen() is called.
 
-	/* Setup GPIO pin GPIO_USART2_RE_TX on GPIO port A for transmit. */
+	//  Setup GPIO pin GPIO_USART2_RE_TX on GPIO port A for transmit.
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
 		      GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
-
-	/* Setup GPIO pin GPIO_USART2_RE_RX on GPIO port A for receive. */
+	//  Setup GPIO pin GPIO_USART2_RE_RX on GPIO port A for receive.
 	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
 		      GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
-
-	/* Setup UART parameters. */
+	//  Setup UART parameters.
 	usart_set_baudrate(USART2, bps);
 	usart_set_databits(USART2, 8);
-	usart_set_stopbits(USART2, USART_STOPBITS_1);
 	usart_set_parity(USART2, USART_PARITY_NONE);
+	usart_set_stopbits(USART2, USART_STOPBITS_1);
 	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
 	usart_set_mode(USART2, USART_MODE_TX_RX);
 }
 
 void usart2_isr(void) {
-    //  Interrupt service routine for USART2.
+    //  Interrupt service routine for USART2. We enqueue each byte received.
 	//  Check if we were called because of received data (RXNE). */
 	if (((USART_CR1(USART2) & USART_CR1_RXNEIE) != 0) &&
 	    ((USART_SR(USART2) & USART_SR_RXNE) != 0)) {
@@ -85,16 +83,14 @@ void UARTInterface::begin(uint16_t bps) {
 }
 
 void UARTInterface::listen() {
-    //  Listen to incoming data from the UART port.  Set up the receive interrupt.
+    //  Start receiving incoming data from the UART port.  Set up the receive interrupt.
     //  debug_println("uart_listen"); debug_flush();
-    
-	/* Enable the USART2 interrupt. */
+
+	//  Enable the USART2 interrupt.
 	nvic_enable_irq(NVIC_USART2_IRQ);
-
-	/* Enable USART2 Receive interrupt so we are notified when a byte is received. */
+	//  Enable USART2 Receive (RXNE) interrupt so we are notified when a byte is received.
 	USART_CR1(USART2) |= USART_CR1_RXNEIE;
-
-	/* Finally enable the USART. */
+	//  Finally enable the USART.
 	usart_enable(USART2);
 }
 
