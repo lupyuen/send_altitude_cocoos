@@ -12,6 +12,9 @@
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 #ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
+//  We support only USART Port 2, i.e.
+//  RX2 = Pin PA3
+//  TX2 = Pin PA2
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
@@ -25,6 +28,8 @@ static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_S
 static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
 
 static void clock_setup(void) {
+    //  Enable the USART2 clock.
+
     //  Moved to bluepill.cpp.
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
 
@@ -36,6 +41,8 @@ static void clock_setup(void) {
 }
 
 static void usart_setup(uint16_t bps) {
+    //  Configure the USART2 port and enable the send and receive interrupts.
+
 	/* Enable the USART2 interrupt. */
 	nvic_enable_irq(NVIC_USART2_IRQ);
 
