@@ -1,3 +1,5 @@
+::  Download the Boost libraries into the lib folder and create the "src" links.
+
 call :download_boost assert
 call :download_boost config
 call :download_boost core
@@ -17,7 +19,7 @@ goto :EOF
 if not exist lib mkdir lib
 if not exist lib\boost_%1 mkdir lib\boost_%1
 cd lib\boost_%1
-if not exist $1 git clone https://github.com/boostorg/%1.git
+if not exist %1 git clone https://github.com/boostorg/%1.git
 if not exist src mkdir src
 cd src
 if not exist boost_%1.hpp echo //  Force boost_%1 library to be included. >boost_%1.hpp

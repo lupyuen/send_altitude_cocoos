@@ -1,7 +1,7 @@
 //  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
 
-#define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
+//  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
