@@ -145,8 +145,7 @@ void UARTInterface::write(uint8_t ch) {
         command[commandLength] = 0;  //  Terminate the string.
         return;
     }
-    //  End of command found. Process it.
-    //  TODO: Insert delay for response.
+    //  End of command found. Process it and respond after a delay.
     simulateCommand(command);
     command[0] = 0;  //  Erase the command.
 }
