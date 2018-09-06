@@ -60,7 +60,7 @@ int main(void) {
   uint8_t task_id = network_setup();
   
   //  Start the Sensor Task for each sensor to read sensor data and send to the Network Task or Display Task.
-  //// sensor_setup(task_id);
+  sensor_setup(task_id);
 
   //  Start the Arduino or STM32 timer to generate ticks for cocoOS to switch tasks.
   platform_start_timer(os_tick);

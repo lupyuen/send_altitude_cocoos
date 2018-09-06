@@ -2,7 +2,7 @@
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/i2c_stts75_sensor.c
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/stts75.c
 
-//  #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
+#define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
 #include <logger.h>
 #include "i2cint.h"
 
