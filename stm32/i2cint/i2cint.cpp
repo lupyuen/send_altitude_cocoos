@@ -2,7 +2,7 @@
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/i2c_stts75_sensor.c
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/stts75.c
 
-#define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
+//  #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
 #include <logger.h>
 #include "i2cint.h"
 
@@ -62,6 +62,7 @@ static void i2c_setup(void) {
 	i2c_peripheral_enable(I2C2);
 }
 
+#ifdef NOTUSED
 uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 {
 	uint32_t reg32 __attribute__((unused));
@@ -86,6 +87,7 @@ uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 	while (!(I2C_SR1(i2c) & I2C_SR1_ADDR));
 
 	// Wire.endTransmission();
+
 	// Wire.requestFrom(m_bme_280_addr, length);
 	// while(Wire.available()) { data[ord++] = Wire.read(); }
 	// return ord == length;
@@ -142,7 +144,6 @@ uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 	return temperature;
 }
 
-#ifdef NOTUSED
 bool BME280I2C::WriteRegister
 (
   uint8_t addr,
@@ -215,41 +216,102 @@ int OLDmain(void) {
 }
 #endif  //  NOTUSED
 
+static uint32_t i2cAddr = 0;
+
 I2CInterface::I2CInterface() {
-    //  TODO
-}
-void I2CInterface::begin() {  //  Used by bme280.cpp
-    //  TODO
-}
-void I2CInterface::beginTransmission(uint8_t addr) {  //  Used by BME280I2C.cpp
-    //  TODO
-}
-uint8_t I2CInterface::endTransmission(void) {  //  Used by BME280I2C.cpp
-    //  TODO
-    return 1;
+    //  Init the I2C interface.  This constructor is called before platform_setup(),
+    //  so we don't do any setup yet till later.
 }
 
-size_t I2CInterface::write(uint8_t dataRegister0) {  //  Used by BME280I2C.cpp
+void I2CInterface::begin() {  //  Used by bme280.cpp
+	i2c_setup();
+}
+
+void I2CInterface::beginTransmission(uint8_t i2c) {  //  Used by BME280I2C.cpp
+	i2cAddr = i2c;
+
+	/* Send START condition. */
+	i2c_send_start(i2c);
+
+	/* Waiting for START is send and switched to master mode. */
+	while (!((I2C_SR1(i2c) & I2C_SR1_SB)
+		& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
+
+	/* Cleaning ADDR condition sequence. */
+	uint32_t reg32 __attribute__((unused));	
+	reg32 = I2C_SR2(i2c);
+}
+
+uint8_t I2CInterface::endTransmission(void) {  //  Used by BME280I2C.cpp
+	/* Send STOP condition. */
+	uint32_t i2c = i2cAddr;
+	i2c_send_stop(i2c);
+	return 1;
+}
+
+size_t I2CInterface::write(uint8_t sensor) {  //  Used by BME280I2C.cpp
     //  Simulate the handling of a request to read a register at "dataRegister0".
     //  debug_print("i2c_write reg: "); debug_println(dataRegister0);
+	uint32_t i2c = i2cAddr;
+
+	/* Say to what address we want to talk to. */
+	// i2c_send_7bit_address(i2c, sensor, I2C_WRITE);
+	// i2c_send_7bit_address(i2c, sensor, I2C_READ);
+
+	/* Waiting for address is transferred. */
+	// while (!(I2C_SR1(i2c) & I2C_SR1_ADDR));
+	
+	//  Send data.
+	i2c_send_data(i2c, sensor);
+	while (!(I2C_SR1(i2c) & (I2C_SR1_BTF | I2C_SR1_TxE)));
+
     return 1;
 }
 
-uint8_t I2CInterface::requestFrom(uint8_t addr, uint8_t length) {  //  Used by BME280I2C.cpp
+static uint8_t i2cRequestLength = 0;
+
+uint8_t I2CInterface::requestFrom(uint8_t i2c, uint8_t length) {  //  Used by BME280I2C.cpp
     //  Simulate the handling of a request to read "length" number of bytes from the register at "dataRegister".
     //  debug_print("i2c_request reg: "); debug_println(dataRegister);
+	i2cAddr = i2c;
+	i2cRequestLength = length;
+
+	/* Cleaning ADDR condition sequence. */
+	uint32_t reg32 __attribute__((unused));
+	reg32 = I2C_SR2(i2c);
+
+	/* Cleaning I2C_SR1_ACK. */
+	I2C_CR1(i2c) &= ~I2C_CR1_ACK;
+
+	/* Now the slave should begin to send us the first byte. Await BTF. */
+	while (!(I2C_SR1(i2c) & I2C_SR1_BTF));
+
     return 0;
 }
 
 int I2CInterface::available(void) {  //  Used by BME280I2C.cpp
     //  Return the number of simulated bytes to be read from the I2C address.
-    return 0;
+    return i2cRequestLength;
 }
 
 int I2CInterface::read(void) {  //  Used by BME280I2C.cpp
     //  Return the next simulated byte to be read from the I2C address.
     //  debug_println("i2c_read");
-    return -1;
+	uint32_t i2c = i2cAddr;
+	if (i2cRequestLength <= 0) { return -1; }
+
+	/*
+	 * Yes they mean it: we have to generate the STOP condition before
+	 * saving the 1st byte.
+	 */
+	if (i2cRequestLength == 0) I2C_CR1(i2c) |= I2C_CR1_STOP;
+	int b = I2C_DR(i2c);
+
+	/* Original state. */
+	if (i2cRequestLength == 0) I2C_CR1(i2c) &= ~I2C_CR1_POS;
+	i2cRequestLength--;
+	
+    return b;
 }
 #endif  //  !SIMULATE_BME280
 
