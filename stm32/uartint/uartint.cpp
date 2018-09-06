@@ -1,4 +1,4 @@
-//  UART Interface for STM32 UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
+//  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
 
 //  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
@@ -12,7 +12,7 @@
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 #ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
-//  We support only USART Port 2:
+//  We support only Blue Pill USART Port 2:
 //  RX2 = Pin PA3
 //  TX2 = Pin PA2
 #include <libopencm3/stm32/rcc.h>
@@ -22,8 +22,8 @@
 #include <libopencm3/cm3/scb.h>
 #include <boost/lockfree/spsc_queue.hpp>
 
-//  Allocate a fixed size lockfree circular ringbuffers for receiving data.
-//  UART interrupts may happen anytime, so we need lockfree way to access the buffer safely.
+//  Allocate the response queue, a fixed size lockfree circular ringbuffer for receiving data.
+//  UART interrupts may happen anytime, so we need a lockfree way to access the buffer safely.
 static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
 
 static void clock_setup(void) {

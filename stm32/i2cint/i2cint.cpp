@@ -1,4 +1,4 @@
-//  I2C Interface for STM32. Compatible with Arduino's Wire I2C interface.  Based on:
+//  I2C Interface for STM32 Blue Pill. Compatible with Arduino's Wire I2C interface.  Based on:
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/i2c_stts75_sensor.c
 //  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/other/i2c_stts75_sensor/stts75.c
 
@@ -7,7 +7,7 @@
 #include "i2cint.h"
 
 #ifndef SIMULATE_BME280  //  Implement a real I2C interface.
-//  We support only I2C Port 2, i.e.
+//  We support only Blue Pill I2C Port 2:
 //  SDA2 = Pin PB11
 //  SCL2 = Pin PB10
 #include <libopencm3/stm32/rcc.h>
@@ -67,6 +67,8 @@ uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 	uint32_t reg32 __attribute__((unused));
 	uint16_t temperature;
 
+	// Wire.beginTransmission(m_bme_280_addr);
+	
 	/* Send START condition. */
 	i2c_send_start(i2c);
 
@@ -74,12 +76,19 @@ uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 	while (!((I2C_SR1(i2c) & I2C_SR1_SB)
 		& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
 
+	// Wire.write(addr);
+	
 	/* Say to what address we want to talk to. */
 	/* Yes, WRITE is correct - for selecting register in STTS75. */
 	i2c_send_7bit_address(i2c, sensor, I2C_WRITE);
 
 	/* Waiting for address is transferred. */
 	while (!(I2C_SR1(i2c) & I2C_SR1_ADDR));
+
+	// Wire.endTransmission();
+	// Wire.requestFrom(m_bme_280_addr, length);
+	// while(Wire.available()) { data[ord++] = Wire.read(); }
+	// return ord == length;
 
 	/* Cleaning ADDR condition sequence. */
 	reg32 = I2C_SR2(i2c);
@@ -134,6 +143,35 @@ uint16_t stts75_read_temperature(uint32_t i2c, uint8_t sensor)
 }
 
 #ifdef NOTUSED
+bool BME280I2C::WriteRegister
+(
+  uint8_t addr,
+  uint8_t data
+)
+{
+  Wire.beginTransmission(m_bme_280_addr);
+  Wire.write(addr);
+  Wire.write(data);
+  Wire.endTransmission();
+  return true; // TODO: Chech return values from wire calls.
+}
+
+bool BME280I2C::ReadRegister
+(
+  uint8_t addr,
+  uint8_t data[],
+  uint8_t length
+)
+{
+  uint8_t ord(0);
+  Wire.beginTransmission(m_bme_280_addr);
+  Wire.write(addr);
+  Wire.endTransmission();
+  Wire.requestFrom(m_bme_280_addr, length);
+  while(Wire.available()) { data[ord++] = Wire.read(); }
+  return ord == length;
+}
+
 int OLDmain(void) {
 	int i = 0;
 	uint16_t temperature;
