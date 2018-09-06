@@ -4,6 +4,7 @@
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
+#include <boost_lockfree.hpp>  //  Force boost_lockfree library to be included.
 #include <uartint.h>  //  For UARTInterface
 #endif  //  ARDUINO
 #include <cocoos.h>
@@ -70,7 +71,7 @@ void uart_task(void) {
     msg_receive(os_get_running_tid(), &msg);
     context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
     context->msg = &msg;  //  Remember the message until it's sent via UART.
-    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0);
+    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0); debug_flush();
     //  log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.

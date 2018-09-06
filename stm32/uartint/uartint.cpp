@@ -1,17 +1,132 @@
-//  UART Interface for STM32 UART port. Compatible with Arduino's SoftwareSerial.
-#define SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
+//  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
+//  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
+
+#define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
 #include "uartint.h"
 
-//  TODO: Implement a real UART interface with interrupts based on
-//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
-
-#ifdef SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 //  Message limits from https://github.com/lupyuen/send_altitude_cocoos/blob/master/platform.h
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
+
+#ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
+//  We support only Blue Pill USART Port 2:
+//  RX2 = Pin PA3
+//  TX2 = Pin PA2
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/usart.h>
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
+#include <boost/lockfree/spsc_queue.hpp>
+
+//  Allocate the response queue, a fixed size lockfree circular ringbuffer for receiving data.
+//  UART interrupts may happen anytime, so we need a lockfree way to access the buffer safely.
+static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
+
+static void clock_setup(void) {
+    //  Enable the USART2 clock.
+
+    //  Moved to platform_setup() in bluepill.cpp.
+	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
+	//  Enable GPIOA clock.
+	rcc_periph_clock_enable(RCC_GPIOA);
+	//  Enable USART2 clock.
+	rcc_periph_clock_enable(RCC_USART2);
+}
+
+static void usart_setup(uint16_t bps) {
+    //  Configure the USART2 port for "bps" bits per second,
+    //  8 data bits, No parity, 1 stop bit.  Port is not enabled
+    //  until listen() is called.
+
+	//  Setup GPIO pin GPIO_USART2_RE_TX on GPIO port A for transmit.
+	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+		      GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
+	//  Setup GPIO pin GPIO_USART2_RE_RX on GPIO port A for receive.
+	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
+		      GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
+	//  Setup UART parameters.
+	usart_set_baudrate(USART2, bps);
+	usart_set_databits(USART2, 8);
+	usart_set_parity(USART2, USART_PARITY_NONE);
+	usart_set_stopbits(USART2, USART_STOPBITS_1);
+	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+	usart_set_mode(USART2, USART_MODE_TX_RX);
+}
+
+void usart2_isr(void) {
+    //  Interrupt service routine for USART2. We enqueue each byte received.
+	//  Check if we were called because of received data (RXNE). */
+	if (((USART_CR1(USART2) & USART_CR1_RXNEIE) != 0) &&
+	    ((USART_SR(USART2) & USART_SR_RXNE) != 0)) {
+		//  Read the next received byte and add to response queue.
+		uint8_t ch = usart_recv(USART2);
+        responseQueue.push(ch);
+	}
+}
+
+UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
+    //  Init the UART interface.  This constructor is called before platform_setup(),
+    //  so we don't do any setup yet till later.
+}
+
+void UARTInterface::begin(uint16_t bps) {
+    //  Init the buffer.
+    debug_println("uart_begin"); debug_flush();
+    responseQueue.reset();
+    //  Open the UART port.
+    clock_setup();
+    usart_setup(bps);
+}
+
+void UARTInterface::listen() {
+    //  Start receiving incoming data from the UART port.  Set up the receive interrupt.
+    //  debug_println("uart_listen"); debug_flush();
+
+	//  Enable the USART2 interrupt.
+	nvic_enable_irq(NVIC_USART2_IRQ);
+	//  Enable USART2 Receive (RXNE) interrupt so we are notified when a byte is received.
+	USART_CR1(USART2) |= USART_CR1_RXNEIE;
+	//  Finally enable the USART.
+	usart_enable(USART2);
+}
+
+void UARTInterface::end() {
+    //  Close the UART port.  Disable interrupts.
+    debug_println("uart_end"); debug_flush();
+    //  Disable USART2 Transmit (TXE) interrupt.
+	USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+    //  Disable USART2 Receive (RXNE) interrupt.
+	USART_CR1(USART2) &= ~USART_CR1_RXNEIE;
+    //  Disable the USART.
+	usart_disable(USART2);
+}
+
+int UARTInterface::available() { 
+    //  Return the number of bytes to be read from the UART port.
+    return responseQueue.read_available();
+}
+
+int UARTInterface::read() { 
+    //  Return the next byte read from the UART port. Or return -1 if none.
+    //  debug_println("uart_read");
+    uint8_t ch;
+    if (responseQueue.pop(ch)) { return ch; }
+    return -1;  //  Nothing in response queue.
+}
+
+void UARTInterface::write(uint8_t ch) {
+    //  Send the byte to the UART port.
+    //  debug_println("uart_write"); debug_flush();
+    usart_send(USART2, ch);
+}
+
+#endif  //  !SIMULATE_WISOL
+
+#ifdef SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 
 //  Command timeouts from https://github.com/lupyuen/send_altitude_cocoos/blob/master/sigfox.h
 #define COMMAND_TIMEOUT ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
@@ -150,8 +265,6 @@ void UARTInterface::write(uint8_t ch) {
     command[0] = 0;  //  Erase the command.
 }
 
-#endif  // SIMULATE_WISOL
-
 UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
     //  TODO: Init the UART port connected to the receive/transmit pins.
 }
@@ -163,3 +276,6 @@ void UARTInterface::listen() {
 void UARTInterface::end() {
     //  TODO: Close the UART port.
 }
+
+#endif  // SIMULATE_WISOL
+
