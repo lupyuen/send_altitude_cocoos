@@ -1,9 +1,3 @@
-goto install
-
-:install
-call :download_boost predef
-goto :EOF
-
 call :download_boost assert
 call :download_boost config
 call :download_boost core
@@ -17,16 +11,16 @@ call :download_boost preprocessor
 call :download_boost static_assert
 call :download_boost type_traits
 call :download_boost utility
-
-pause
+goto :EOF
 
 :download_boost %1
-mkdir lib\boost_%1
+if not exist lib mkdir lib
+if not exist lib\boost_%1 mkdir lib\boost_%1
 cd lib\boost_%1
-git clone https://github.com/boostorg/%1.git
-mkdir src
+if not exist $1 git clone https://github.com/boostorg/%1.git
+if not exist src mkdir src
 cd src
-echo //  Force boost_%1 library to be included. >boost_%1.hpp
-mklink /d boost ..\%1\include\boost
+if not exist boost_%1.hpp echo //  Force boost_%1 library to be included. >boost_%1.hpp
+if not exist boost mklink /d boost ..\%1\include\boost
 cd ..\..\..
 goto :EOF

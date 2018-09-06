@@ -21,8 +21,8 @@
 
 //  Allocate 2 fixed size lockfree circular ringbuffers for sending and receiving data.
 //  UART interrupts may happen anytime, so we need lockfree way to access the buffers safely.
-boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_SEND_MSG_SIZE + 1> > sendQueue;
-boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
+static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_SEND_MSG_SIZE + 1> > sendQueue;
+static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
 
 static void clock_setup(void) {
     //  Moved to bluepill.cpp.
@@ -55,10 +55,10 @@ static void usart_setup(uint16_t bps) {
 	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
 	usart_set_mode(USART2, USART_MODE_TX_RX);
 
-	/* Enable USART2 Receive interrupt. */
+	/* Enable USART2 Receive interrupt so we are notified when a byte is received. */
 	USART_CR1(USART2) |= USART_CR1_RXNEIE;
 
-    /* Enable transmit interrupt so it sends back the data. */
+    /* Enable USART2 Transmit interrupt so we are notified when a byte is sent. */
     USART_CR1(USART2) |= USART_CR1_TXEIE;
 
 	/* Finally enable the USART. */
@@ -66,34 +66,20 @@ static void usart_setup(uint16_t bps) {
 }
 
 void usart2_isr(void) {
-	static uint8_t data = 'A';
-
-	/* Check if we were called because of RXNE. */
+    //  Interrupt service routine for USART2.
+	//  Check if we were called because of received data (RXNE). */
 	if (((USART_CR1(USART2) & USART_CR1_RXNEIE) != 0) &&
 	    ((USART_SR(USART2) & USART_SR_RXNE) != 0)) {
-
-		/* Indicate that we got data. */
-		// gpio_toggle(GPIOA, GPIO5);
-
-		/* Retrieve the data from the peripheral. */
-		data = usart_recv(USART2);
-
-		/* Enable transmit interrupt so it sends back the data. */
-		// TODO: USART_CR1(USART2) |= USART_CR1_TXEIE;
+		//  Read the next received byte and add to response queue.
+		uint8_t ch = usart_recv(USART2);
+        responseQueue.push(ch);
 	}
-
-	/* Check if we were called because of TXE. */
+	//  Check if we were called because of sending complete (TXE).
 	if (((USART_CR1(USART2) & USART_CR1_TXEIE) != 0) &&
 	    ((USART_SR(USART2) & USART_SR_TXE) != 0)) {
-
-		/* Indicate that we are sending out data. */
-		// gpio_toggle(GPIOA, GPIO5);
-
-		/* Put data into the transmit register. */
-		usart_send(USART2, data);
-
-		/* Disable the TXE interrupt as we don't need it anymore. */
-		// TODO: USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+        //  Send the next byte in send queue, if any.
+        uint8_t ch2;
+        if (sendQueue.pop(ch2)) { usart_send(USART2, ch2); }
 	}
 }
 
@@ -130,10 +116,19 @@ void UARTInterface::listen() {
 }
 
 void UARTInterface::end() {
-    //  TODO: Close the UART port.
+    //  TODO: Close the UART port.  Disable interrupts.
+
+    /* Disable USART2 TXE interrupt as we don't need it anymore. */
+	// TODO: USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+
+    /* Disable USART2 Receive interrupt. */
+	// TODO: USART_CR1(USART2) &= ~USART_CR1_RXNEIE;
 }
 
 void UARTInterface::begin(uint16_t bps) {
+    //  Init the buffers.
+    sendQueue.reset();
+    responseQueue.reset();
     //  Open the UART port.
     clock_setup();
     usart_setup(bps);
@@ -141,19 +136,26 @@ void UARTInterface::begin(uint16_t bps) {
 
 int UARTInterface::available() { 
     //  Return the number of bytes to be read from the UART port.
-    return 0;  //  TODO
+    return responseQueue.read_available();
 }
 
 int UARTInterface::read() { 
-    //  Return the next simulated byte to be read from the UART port. Or return -1 if none.
+    //  Return the next byte read from the UART port. Or return -1 if none.
     //  debug_println("uart_read");
-    if (available() == 0) { return -1; }  //  No data or not ready.
-    return -1;  // TODO
+    uint8_t ch;
+    if (responseQueue.pop(ch)) { return ch; }
+    return -1;  //  Nothing in response queue.
 }
 
 void UARTInterface::write(uint8_t ch) {
-    //  Simulate the handling of a command char sent to the Wisol module via the UART port.
+    //  Send the byte to the UART port.
     //  debug_println("uart_write");
+    sendQueue.push(ch);
+    if (sendQueue.read_available() == 1) {
+        //  If this is the only byte in the send queue, send now.  The rest will be sent via interrupt.
+        uint8_t ch2;
+        if (sendQueue.pop(ch2)) { usart_send(USART2, ch2); }
+    }
 }
 
 #endif  //  !SIMULATE_WISOL

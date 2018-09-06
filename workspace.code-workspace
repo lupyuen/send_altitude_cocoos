@@ -12,5 +12,19 @@
 		{
 			"path": "../stm32f103c8t6"
 		}
-	]
+	],
+	"settings": {
+		"files.associations": {
+			"random": "cpp",
+			"queue": "cpp",
+			"bitset": "cpp",
+			"chrono": "cpp",
+			"xhash": "cpp",
+			"xtree": "cpp",
+			"xutility": "cpp",
+			"array": "cpp",
+			"vector": "cpp",
+			"xstring": "cpp"
+		}
+	}
 }
