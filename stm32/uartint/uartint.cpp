@@ -36,7 +36,7 @@ static void clock_setup(void) {
 	/* Enable GPIOA clock. */
 	rcc_periph_clock_enable(RCC_GPIOA);
 
-	/* Enable clocks for GPIO port A (for LED GPIO_USART2_TX) and USART2. */
+	/* Enable USART2 clock. */
 	rcc_periph_clock_enable(RCC_USART2);
 }
 
@@ -123,13 +123,13 @@ void UARTInterface::listen() {
 }
 
 void UARTInterface::end() {
-    //  TODO: Close the UART port.  Disable interrupts.
-
-    /* Disable USART2 TXE interrupt as we don't need it anymore. */
-	// TODO: USART_CR1(USART2) &= ~USART_CR1_TXEIE;
-
-    /* Disable USART2 Receive interrupt. */
-	// TODO: USART_CR1(USART2) &= ~USART_CR1_RXNEIE;
+    //  Close the UART port.  Disable interrupts.
+    //  Disable USART2 Transmit (TXE) interrupt.
+	USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+    //  Disable USART2 Receive (RXNE) interrupt.
+	USART_CR1(USART2) &= ~USART_CR1_RXNEIE;
+    //  Disable the USART.
+	usart_disable(USART2);
 }
 
 void UARTInterface::begin(uint16_t bps) {

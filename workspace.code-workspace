@@ -24,7 +24,8 @@
 			"xutility": "cpp",
 			"array": "cpp",
 			"vector": "cpp",
-			"xstring": "cpp"
+			"xstring": "cpp",
+			"istream": "cpp"
 		}
 	}
 }
