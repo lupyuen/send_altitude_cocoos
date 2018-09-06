@@ -1,17 +1,57 @@
 //  UART Interface for STM32 UART port. Compatible with Arduino's SoftwareSerial.
-#define SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
+//  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
+
+//  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
 #include "uartint.h"
 
-//  TODO: Implement a real UART interface with interrupts based on
-//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
-
-#ifdef SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 //  Message limits from https://github.com/lupyuen/send_altitude_cocoos/blob/master/platform.h
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
+
+#ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
+#include <boost/lockfree/spsc_queue.hpp>
+boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_SEND_MSG_SIZE + 1> > sendQueue;
+boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
+
+UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
+    //  TODO: Init the UART port connected to the receive/transmit pins.
+}
+
+void UARTInterface::listen() {
+    //  TODO: Listen to incoming data from the UART port.
+}
+
+void UARTInterface::end() {
+    //  TODO: Close the UART port.
+}
+
+void UARTInterface::begin(uint16_t bps) {
+    //  Erase the command buffer.
+}
+
+int UARTInterface::available() { 
+    //  Return the number of simulated bytes to be read from the UART port.
+    return 0;  //  TODO
+}
+
+int UARTInterface::read() { 
+    //  Return the next simulated byte to be read from the UART port. Or return -1 if none.
+    //  debug_println("uart_read");
+    if (available() == 0) { return -1; }  //  No data or not ready.
+    return -1;  // TODO
+}
+
+void UARTInterface::write(uint8_t ch) {
+    //  Simulate the handling of a command char sent to the Wisol module via the UART port.
+    //  debug_println("uart_write");
+}
+
+#endif  //  !SIMULATE_WISOL
+
+#ifdef SIMULATE_WISOL //  Simulate a Wisol Sigfox module connected to UART.
 
 //  Command timeouts from https://github.com/lupyuen/send_altitude_cocoos/blob/master/sigfox.h
 #define COMMAND_TIMEOUT ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
@@ -150,8 +190,6 @@ void UARTInterface::write(uint8_t ch) {
     command[0] = 0;  //  Erase the command.
 }
 
-#endif  // SIMULATE_WISOL
-
 UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
     //  TODO: Init the UART port connected to the receive/transmit pins.
 }
@@ -163,3 +201,6 @@ void UARTInterface::listen() {
 void UARTInterface::end() {
     //  TODO: Close the UART port.
 }
+
+#endif  // SIMULATE_WISOL
+
