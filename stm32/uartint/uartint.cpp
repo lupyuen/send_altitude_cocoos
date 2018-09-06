@@ -1,4 +1,4 @@
-//  UART Interface for STM32 UART port. Compatible with Arduino's SoftwareSerial.
+//  UART Interface for STM32 UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
 
 //  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
@@ -12,9 +12,114 @@
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 #ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/usart.h>
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
 #include <boost/lockfree/spsc_queue.hpp>
+
+//  Allocate 2 fixed size lockfree circular ringbuffers for sending and receiving data.
+//  UART interrupts may happen anytime, so we need lockfree way to access the buffers safely.
 boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_SEND_MSG_SIZE + 1> > sendQueue;
 boost::lockfree::spsc_queue<int, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
+
+static void clock_setup(void) {
+    //  Moved to bluepill.cpp.
+	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
+
+	/* Enable GPIOA clock. */
+	rcc_periph_clock_enable(RCC_GPIOA);
+
+	/* Enable clocks for GPIO port A (for LED GPIO_USART2_TX) and USART2. */
+	rcc_periph_clock_enable(RCC_USART2);
+}
+
+static void usart_setup(uint16_t bps) {
+	/* Enable the USART2 interrupt. */
+	nvic_enable_irq(NVIC_USART2_IRQ);
+
+	/* Setup GPIO pin GPIO_USART2_RE_TX on GPIO port A for transmit. */
+	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+		      GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
+
+	/* Setup GPIO pin GPIO_USART2_RE_RX on GPIO port A for receive. */
+	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
+		      GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
+
+	/* Setup UART parameters. */
+	usart_set_baudrate(USART2, bps);
+	usart_set_databits(USART2, 8);
+	usart_set_stopbits(USART2, USART_STOPBITS_1);
+	usart_set_parity(USART2, USART_PARITY_NONE);
+	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+	usart_set_mode(USART2, USART_MODE_TX_RX);
+
+	/* Enable USART2 Receive interrupt. */
+	USART_CR1(USART2) |= USART_CR1_RXNEIE;
+
+    /* Enable transmit interrupt so it sends back the data. */
+    USART_CR1(USART2) |= USART_CR1_TXEIE;
+
+	/* Finally enable the USART. */
+	usart_enable(USART2);
+}
+
+void usart2_isr(void) {
+	static uint8_t data = 'A';
+
+	/* Check if we were called because of RXNE. */
+	if (((USART_CR1(USART2) & USART_CR1_RXNEIE) != 0) &&
+	    ((USART_SR(USART2) & USART_SR_RXNE) != 0)) {
+
+		/* Indicate that we got data. */
+		// gpio_toggle(GPIOA, GPIO5);
+
+		/* Retrieve the data from the peripheral. */
+		data = usart_recv(USART2);
+
+		/* Enable transmit interrupt so it sends back the data. */
+		// TODO: USART_CR1(USART2) |= USART_CR1_TXEIE;
+	}
+
+	/* Check if we were called because of TXE. */
+	if (((USART_CR1(USART2) & USART_CR1_TXEIE) != 0) &&
+	    ((USART_SR(USART2) & USART_SR_TXE) != 0)) {
+
+		/* Indicate that we are sending out data. */
+		// gpio_toggle(GPIOA, GPIO5);
+
+		/* Put data into the transmit register. */
+		usart_send(USART2, data);
+
+		/* Disable the TXE interrupt as we don't need it anymore. */
+		// TODO: USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+	}
+}
+
+#ifdef NOTUSED
+static void gpio_setup(void) {
+	gpio_set(GPIOA, GPIO5);
+
+	/* Setup GPIO5 (in GPIO port A) for LED use. */
+	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);
+}
+
+int main(void) {
+	SCB_VTOR = (uint32_t) 0x08005000;  //  TODO
+
+	clock_setup();
+	gpio_setup();
+	usart_setup();
+
+	/* Wait forever and do nothing. */
+	while (1)
+		__asm__("nop");
+
+	return 0;
+}
+#endif
 
 UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
     //  TODO: Init the UART port connected to the receive/transmit pins.
@@ -29,11 +134,13 @@ void UARTInterface::end() {
 }
 
 void UARTInterface::begin(uint16_t bps) {
-    //  Erase the command buffer.
+    //  Open the UART port.
+    clock_setup();
+    usart_setup(bps);
 }
 
 int UARTInterface::available() { 
-    //  Return the number of simulated bytes to be read from the UART port.
+    //  Return the number of bytes to be read from the UART port.
     return 0;  //  TODO
 }
 
