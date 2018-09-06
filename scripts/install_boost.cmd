@@ -1,7 +1,7 @@
 goto install
 
 :install
-call :download_boost parameter
+call :download_boost predef
 goto :EOF
 
 call :download_boost assert
@@ -12,6 +12,7 @@ call :download_boost iterator
 call :download_boost lockfree
 call :download_boost mpl
 call :download_boost parameter
+call :download_boost predef
 call :download_boost preprocessor
 call :download_boost static_assert
 call :download_boost type_traits

@@ -6,3 +6,4 @@
 #include <boost_iterator.hpp>  //  Force boost_iterator library to be included.
 #include <boost_core.hpp>  //  Force boost_core library to be included.
 #include <boost_parameter.hpp>  //  Force boost_parameter library to be included.
+#include <boost_predef.hpp>  //  Force boost_predef library to be included.
