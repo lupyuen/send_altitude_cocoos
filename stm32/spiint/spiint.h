@@ -1,4 +1,9 @@
 //  SPI Interface for STM32. Compatible with Arduino's Wire SPI interface.
+//  We support only Blue Pill SPI Port 1:
+//  SS1   = Pin PA4
+//  SCK1  = Pin PA5
+//  MISO1 = Pin PA6
+//  MOSI1 = Pin PA7
 #ifndef SPIINT_H_
 #define SPIINT_H_
 #include <stdint.h>  //  For uint8_t

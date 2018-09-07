@@ -1,23 +1,5 @@
-/*
- * This file is part of the libopencm3 project.
- *
- * Copyright (C) 2009 Uwe Hermann <uwe@hermann-uwe.de>
- * Copyright (C) 2013 Stephen Dwyer <scdwyer@ualberta.ca>
- *
- * This library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */
-
+//  SPI Interface for STM32. Compatible with Arduino's Wire SPI interface.  Based on
+//  https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/lisa-m-2/spi/spi.c
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
@@ -26,12 +8,14 @@
 #include <libopencm3/stm32/spi.h>
 #include <stdio.h>
 #include <errno.h>
+#include "spiint.h"
 
 int _write(int file, char *ptr, int len);
 
 static void clock_setup(void)
 {
-	rcc_clock_setup_in_hse_12mhz_out_72mhz();
+	//  Moved to platform_setup() in bluepill.cpp.
+	//  rcc_clock_setup_in_hse_12mhz_out_72mhz();
 
 	/* Enable GPIOA, GPIOB, GPIOC clock. */
 	rcc_periph_clock_enable(RCC_GPIOA);
