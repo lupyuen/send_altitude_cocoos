@@ -27,7 +27,11 @@
 			"vector": "cpp",
 			"xstring": "cpp",
 			"istream": "cpp",
-			"complex": "cpp"
+			"complex": "cpp",
+			"__locale": "c",
+			"ios": "c",
+			"*.ipp": "cpp",
+			"string_view": "cpp"
 		}
 	}
 }
