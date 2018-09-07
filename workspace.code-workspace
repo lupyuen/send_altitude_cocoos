@@ -15,6 +15,7 @@
 	],
 	"settings": {
 		"files.associations": {
+			"limits": "cpp",
 			"random": "cpp",
 			"queue": "cpp",
 			"bitset": "cpp",
@@ -25,7 +26,8 @@
 			"array": "cpp",
 			"vector": "cpp",
 			"xstring": "cpp",
-			"istream": "cpp"
+			"istream": "cpp",
+			"complex": "cpp"
 		}
 	}
 }
