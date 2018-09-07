@@ -54,14 +54,14 @@ bool BME280I2C::WriteRegister
 )
 {
 #ifndef ARDUINO
-  debug_print("BME280I2C::WriteRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", data="); debug_println((int) data); debug_flush(); ////
+  //  debug_print("BME280I2C::WriteRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", data="); debug_println((int) data); debug_flush(); ////
 #endif  //  !ARDUINO
   Wire.beginTransmission(m_bme_280_addr);
   Wire.write(addr);
   Wire.write(data);
   Wire.endTransmission();
 #ifndef ARDUINO
-  debug_println("BME280I2C::WriteRegister done"); debug_flush(); ////
+  //  debug_println("BME280I2C::WriteRegister done"); debug_flush(); ////
 #endif  //  !ARDUINO
 
   return true; // TODO: Chech return values from wire calls.
@@ -79,7 +79,7 @@ bool BME280I2C::ReadRegister
   uint8_t ord(0);
 
 #ifndef ARDUINO
-  debug_print("BME280I2C::ReadRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", length="); debug_println((int) length); debug_flush(); ////
+  //  debug_print("BME280I2C::ReadRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", length="); debug_println((int) length); debug_flush(); ////
 #endif  //  !ARDUINO
   Wire.beginTransmission(m_bme_280_addr);
   Wire.write(addr);
@@ -91,6 +91,8 @@ bool BME280I2C::ReadRegister
   {
     data[ord++] = Wire.read();
   }
+
+#ifdef NOTUSED
 #ifndef ARDUINO
   debug_println("BME280I2C::ReadRegister result: ");
     for (int i = 0; i < ord; i++) {
@@ -98,6 +100,7 @@ bool BME280I2C::ReadRegister
   }
   debug_flush();
 #endif  //  !ARDUINO
+#endif  //  NOTUSED
 
 // #define TRACE_BME280  //  Trace the BME280 library.
 #ifdef TRACE_BME280
