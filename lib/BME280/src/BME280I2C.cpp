@@ -31,9 +31,9 @@ courtesy of Brian McNoldy at http://andrew.rsmas.miami.edu.
 #include <Wire.h>
 
 #include "BME280I2C.h"
-#ifdef STM32
+#ifndef ARDUINO
 #include <logger.h>
-#endif  //  STM32
+#endif  //  !ARDUINO
 
 
 /****************************************************************/
@@ -53,19 +53,16 @@ bool BME280I2C::WriteRegister
   uint8_t data
 )
 {
-#ifdef STM32
-  debug_print("BME280I2C::WriteRegister addr="); debug_print((int) addr); debug_print(", data="); debug_println((int) data); debug_flush(); ////
-#endif  //  STM32
+#ifndef ARDUINO
+  debug_print("BME280I2C::WriteRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", data="); debug_println((int) data); debug_flush(); ////
+#endif  //  !ARDUINO
   Wire.beginTransmission(m_bme_280_addr);
-#ifdef STM32
-  debug_println("BME280I2C::WriteRegister2"); debug_flush(); ////
-#endif  //  STM32
   Wire.write(addr);
   Wire.write(data);
   Wire.endTransmission();
-#ifdef STM32
-  debug_println("BME280I2C::WriteRegister3"); debug_flush(); ////
-#endif  //  STM32
+#ifndef ARDUINO
+  debug_println("BME280I2C::WriteRegister done"); debug_flush(); ////
+#endif  //  !ARDUINO
 
   return true; // TODO: Chech return values from wire calls.
 }
@@ -81,11 +78,10 @@ bool BME280I2C::ReadRegister
 {
   uint8_t ord(0);
 
-#ifdef STM32
-  debug_print("BME280I2C::ReadRegister addr="); debug_print((int) addr); debug_print(", length="); debug_println((int) length); debug_flush(); ////
-#endif  //  STM32
+#ifndef ARDUINO
+  debug_print("BME280I2C::ReadRegister addr="); debug_print((int) m_bme_280_addr); debug_print(", reg="); debug_print((int) addr); debug_print(", length="); debug_println((int) length); debug_flush(); ////
+#endif  //  !ARDUINO
   Wire.beginTransmission(m_bme_280_addr);
-  // debug_println("BME280I2C::ReadRegister2"); debug_flush(); ////
   Wire.write(addr);
   Wire.endTransmission();
 
@@ -95,6 +91,13 @@ bool BME280I2C::ReadRegister
   {
     data[ord++] = Wire.read();
   }
+#ifndef ARDUINO
+  debug_println("BME280I2C::ReadRegister result: ");
+    for (int i = 0; i < ord; i++) {
+    debug_println((int) data[i]);
+  }
+  debug_flush();
+#endif  //  !ARDUINO
 
 // #define TRACE_BME280  //  Trace the BME280 library.
 #ifdef TRACE_BME280

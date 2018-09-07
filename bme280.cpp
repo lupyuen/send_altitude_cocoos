@@ -27,10 +27,13 @@ void bme280_setup(void) {
 
   //  Scan each I2C address for the BME280 module.
   Wire.begin();
-  for (int i = 0; i < sizeof(i2cAddresses) / sizeof(uint8_t); i++) {
+  const int numAddresses = sizeof(i2cAddresses) / sizeof(uint8_t);
+  for (int i = 0; i < numAddresses; i++) {
     uint8_t addr = i2cAddresses[i];
     settings.bme280Addr = addr;
-    bme.setSettings(settings);
+    bme = BME280I2C(settings);
+    // bme.setSettings(settings);
+
     //  Not found at this address.  Try next address.
     if (!bme.begin()) { continue; }
     //  Get the model number.

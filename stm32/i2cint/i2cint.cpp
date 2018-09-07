@@ -288,9 +288,10 @@ I2CInterface::I2CInterface() {
 }
 
 void I2CInterface::begin() {  //  Used by bme280.cpp
+	//  Set up the timers and configure the I2C port.
 	debug_println("i2c_begin"); debug_flush();
 	i2c_setup();
-	i2c_configure(&i2c, I2C1, 20000);
+	i2c_configure(&i2c, I2C1, 1000);
 }
 
 void I2CInterface::beginTransmission(uint8_t addr) {  //  Used by BME280I2C.cpp
@@ -310,6 +311,11 @@ size_t I2CInterface::write(uint8_t registerIDOrValue) {  //  Used by BME280I2C.c
 	//  Wherever possible, use the two-parameter version of write() below.
 	//  Return the number of bytes written.
     debug_print("i2c_write: "); debug_println((int) registerIDOrValue);
+	if (i2c.failCode > 0) {
+		//  Skip the write if we had an error earlier.
+    	debug_println("i2c_write skipped due to earlier error"); debug_flush();
+		return 0;
+	}
 	if (!i2c.isRegSet) {
 		//  First write must be register ID.
 		i2c.reg = registerIDOrValue;
@@ -326,6 +332,11 @@ size_t I2CInterface::write(uint8_t registerID, uint8_t value) {
     //  Write a register ID then data value to the I2C Bus.
 	//  Return the number of bytes written.
     debug_print("i2c_write reg: "); debug_println((int) registerID);
+	if (i2c.failCode > 0) {
+		//  Skip the write if we had an error earlier.
+    	debug_println("i2c_write skipped due to earlier error"); debug_flush();
+		return 0;
+	}
 	i2c.reg = registerID;
 	i2c.isRegSet = true;
 	I2C_Fails fc = i2c_write(&i2c, registerID);
@@ -337,7 +348,12 @@ size_t I2CInterface::write(uint8_t registerID, uint8_t value) {
 
 uint8_t I2CInterface::endTransmission(void) {  //  Used by BME280I2C.cpp
 	//  End the write request to the I2C Bus.
-    debug_print("i2c_endtrans");
+    debug_println("i2c_endtrans");
+	if (i2c.failCode > 0) {
+		//  Skip the request if we had an error earlier.
+    	debug_println("i2c_endtrans skipped due to earlier error"); debug_flush();
+		return 0;
+	}
 	I2C_Fails fc = i2c_stop(&i2c);
 	if (fc > 0) { return 0; }
 	return 1;
@@ -345,7 +361,14 @@ uint8_t I2CInterface::endTransmission(void) {  //  Used by BME280I2C.cpp
 
 uint8_t I2CInterface::requestFrom(uint8_t addr, uint8_t length) {  //  Used by BME280I2C.cpp
     //  Begin an I2C request to read "length" number of bytes from the address at "addr".
-    debug_print("i2c_request reg: "); debug_println(i2c.reg);
+    debug_print("i2c_request addr: "); debug_print((int) addr); debug_print(", reg: "); debug_print((int) i2c.reg); debug_print(", length: "); debug_println(length);
+	if (i2c.failCode > 0) {
+		//  Skip the read if we had an error earlier.
+		i2c.addr = addr;
+		i2c.length = 0;
+    	debug_println("i2c_request skipped due to earlier error"); debug_flush();
+		return 0;
+	}
 	i2c.addr = addr;
 	i2c.length = length;
 	I2C_Fails fc = i2c_start_addr(&i2c, addr, Read);

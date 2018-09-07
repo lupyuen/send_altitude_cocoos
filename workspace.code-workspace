@@ -35,7 +35,11 @@
 			"xlocale": "cpp",
 			"xmemory0": "cpp",
 			"initializer_list": "cpp",
-			"xiosbase": "cpp"
+			"xiosbase": "cpp",
+			"deque": "cpp",
+			"forward_list": "cpp",
+			"list": "cpp",
+			"regex": "cpp"
 		}
 	}
 }

@@ -3,7 +3,6 @@
 #define I2CINT_H_
 #include <stdint.h>  //  For uint8_t
 #include <stdlib.h>  //  For size_t
-#include <setjmp.h>  //  For jmp_buf
 
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
