@@ -1,14 +1,11 @@
 //  I2C Interface for STM32 Blue Pill. Compatible with Arduino's Wire I2C interface.  Based on:
 //  https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC/tree/master/rtos/i2c-pcf8574
 
-// #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
+#define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
 #include <logger.h>
 #include "i2cint.h"
 
 #ifndef SIMULATE_BME280  //  Implement a real I2C interface.
-//  We support only Blue Pill I2C Port 1:
-//  SCL1 = Pin PB6
-//  SDA1 = Pin PB7
 #include <stdbool.h>
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>

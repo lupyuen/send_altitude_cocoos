@@ -1,4 +1,7 @@
 //  I2C Interface for STM32. Compatible with Arduino's Wire I2C interface.
+//  We support only Blue Pill I2C Port 1:
+//  SCL1 = Pin PB6
+//  SDA1 = Pin PB7
 #ifndef I2CINT_H_
 #define I2CINT_H_
 #include <stdint.h>  //  For uint8_t
