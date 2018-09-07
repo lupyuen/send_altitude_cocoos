@@ -12,9 +12,6 @@
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 #ifndef SIMULATE_WISOL  //  Implement a real UART interface with interrupts.
-//  We support only Blue Pill USART Port 2:
-//  RX2 = Pin PA3
-//  TX2 = Pin PA2
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>

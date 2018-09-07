@@ -27,7 +27,19 @@
 			"vector": "cpp",
 			"xstring": "cpp",
 			"istream": "cpp",
-			"complex": "cpp"
+			"complex": "cpp",
+			"__locale": "c",
+			"ios": "c",
+			"*.ipp": "cpp",
+			"string_view": "cpp",
+			"xlocale": "cpp",
+			"xmemory0": "cpp",
+			"initializer_list": "cpp",
+			"xiosbase": "cpp",
+			"deque": "cpp",
+			"forward_list": "cpp",
+			"list": "cpp",
+			"regex": "cpp"
 		}
 	}
 }

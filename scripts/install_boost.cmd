@@ -20,7 +20,7 @@ goto :EOF
 if not exist lib mkdir lib
 if not exist lib\boost_%1 mkdir lib\boost_%1
 cd lib\boost_%1
-if exist %1 rd /s %1
+if exist %1 rd /s /q %1
 if not exist %1 git clone https://github.com/boostorg/%1.git
 if not exist src mkdir src
 cd src
