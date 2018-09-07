@@ -31,6 +31,9 @@ courtesy of Brian McNoldy at http://andrew.rsmas.miami.edu.
 #include <Wire.h>
 
 #include "BME280I2C.h"
+#ifdef STM32
+#include <logger.h>
+#endif  //  STM32
 
 
 /****************************************************************/
@@ -50,10 +53,19 @@ bool BME280I2C::WriteRegister
   uint8_t data
 )
 {
+#ifdef STM32
+  debug_print("BME280I2C::WriteRegister addr="); debug_print((int) addr); debug_print(", data="); debug_println((int) data); debug_flush(); ////
+#endif  //  STM32
   Wire.beginTransmission(m_bme_280_addr);
+#ifdef STM32
+  debug_println("BME280I2C::WriteRegister2"); debug_flush(); ////
+#endif  //  STM32
   Wire.write(addr);
   Wire.write(data);
   Wire.endTransmission();
+#ifdef STM32
+  debug_println("BME280I2C::WriteRegister3"); debug_flush(); ////
+#endif  //  STM32
 
   return true; // TODO: Chech return values from wire calls.
 }
@@ -69,7 +81,11 @@ bool BME280I2C::ReadRegister
 {
   uint8_t ord(0);
 
+#ifdef STM32
+  debug_print("BME280I2C::ReadRegister addr="); debug_print((int) addr); debug_print(", length="); debug_println((int) length); debug_flush(); ////
+#endif  //  STM32
   Wire.beginTransmission(m_bme_280_addr);
+  // debug_println("BME280I2C::ReadRegister2"); debug_flush(); ////
   Wire.write(addr);
   Wire.endTransmission();
 

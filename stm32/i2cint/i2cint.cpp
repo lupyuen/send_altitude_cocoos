@@ -1,7 +1,7 @@
 //  I2C Interface for STM32 Blue Pill. Compatible with Arduino's Wire I2C interface.  Based on:
 //  https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC/tree/master/rtos/i2c-pcf8574
 
-//  #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
+// #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
 #include <logger.h>
 #include "i2cint.h"
 
@@ -16,16 +16,14 @@
 #include <libopencm3/stm32/timer.h>
 #include <bluepill.h>  //  For millis()
 
-jmp_buf i2c_exception;
-void i2c_stop(I2C_Control *dev) { i2c_send_stop(dev->device); }
-
 //  TODO: Update this when running under FreeRTOS.
-#define systicks	millis
+#define systicks millis
 typedef uint32_t TickType_t;
 static void taskYIELD(void) {}
 static void taskENTER_CRITICAL(void) {}
 static void taskEXIT_CRITICAL(void) {}
 
+//  Messages for each fail code.
 static const char *i2c_msg[] = {
 	"OK",
 	"Address timeout",
@@ -49,20 +47,27 @@ diff_ticks(TickType_t early,TickType_t later) {
  * Return a character string message for I2C_Fails code
  *********************************************************************/
 
-const char *
-i2c_error(I2C_Fails fcode) {
+const char *i2c_error(I2C_Fails fcode) {
 	int icode = (int)fcode;
 	if ( icode < 0 || icode > (int)I2C_Read_Timeout )
 		return "Bad I2C_Fails code";
 	return i2c_msg[icode];
 }
 
+static I2C_Fails showError(I2C_Control *dev, I2C_Fails fc) {
+	dev->failCode = fc;
+	debug_print("***** Error: I2C Failed ");
+	debug_print(fc); debug_print(" / ");
+	debug_println(i2c_error(fc));
+	debug_flush();
+	return fc;
+}
+
 /*********************************************************************
  * Peripheral setup:
  *********************************************************************/
 
-void
-i2c_setup(void) {
+I2C_Fails i2c_setup(void) {
 	//  Init the I2C clock and I2C pin levels.  Should be called once only.
 	
 	//  Moved to platform_setup() in bluepill.cpp:
@@ -78,21 +83,22 @@ i2c_setup(void) {
 	gpio_set(GPIOB,GPIO6|GPIO7);		// Idle high
 
 	// AFIO_MAPR_I2C1_REMAP=0, PB6+PB7
-	gpio_primary_remap(0,0); 
+	gpio_primary_remap(0,0);
+	return I2C_Ok;
 }
 
 /*********************************************************************
  * Configure I2C device for 100 kHz, 7-bit addresses
  *********************************************************************/
 
-void
-i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks) {
+I2C_Fails i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks) {
 	dev->device = i2c;
 	dev->addr = 0;
 	dev->reg = 0;
 	dev->isRegSet = false;
 	dev->length = 0;
 	dev->timeout = ticks;
+	dev->failCode = I2C_Ok;
 	i2c_peripheral_disable(dev->device);
 	i2c_reset(dev->device);
 	I2C_CR1(dev->device) &= ~I2C_CR1_STOP;	// Clear stop
@@ -103,37 +109,37 @@ i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks) {
 	i2c_set_ccr(dev->device,180);		// 100 kHz <= 180 * 1 /36M
 	i2c_set_own_7bit_slave_address(dev->device,0x23); // Necessary?
 	i2c_peripheral_enable(dev->device);
+	return I2C_Ok;
 }
 
 /*********************************************************************
  * Return when I2C is not busy
  *********************************************************************/
 
-void
-i2c_wait_busy(I2C_Control *dev) {
+I2C_Fails i2c_wait_busy(I2C_Control *dev) {
 	while ( I2C_SR2(dev->device) & I2C_SR2_BUSY )
 		taskYIELD();			// I2C Busy
+	return I2C_Ok;
 }
 
 /*********************************************************************
  * Start I2C Read/Write Transaction with indicated 7-bit address:
  *********************************************************************/
 
-void
-i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw) {
+I2C_Fails i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw) {
 	TickType_t t0 = systicks();
-	i2c_wait_busy(dev);			// Block until not busy
-	I2C_SR1(dev->device) &= ~I2C_SR1_AF;	// Clear Acknowledge failure
-	i2c_clear_stop(dev->device);		// Do not generate a Stop
+	i2c_wait_busy(dev);					 // Block until not busy
+	I2C_SR1(dev->device) &= ~I2C_SR1_AF; // Clear Acknowledge failure
+	i2c_clear_stop(dev->device);		 // Do not generate a Stop
 	if ( rw == Read )
 		i2c_enable_ack(dev->device);
-	i2c_send_start(dev->device);		// Generate a Start/Restart
+	i2c_send_start(dev->device);		 // Generate a Start/Restart
 
 	// Loop until ready:
-        while ( !((I2C_SR1(dev->device) & I2C_SR1_SB) 
+    while ( !((I2C_SR1(dev->device) & I2C_SR1_SB) 
 	  && (I2C_SR2(dev->device) & (I2C_SR2_MSL|I2C_SR2_BUSY))) ) {
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Addr_Timeout);
+			return showError(dev, I2C_Addr_Timeout);
 		taskYIELD();
 	}
 
@@ -149,39 +155,39 @@ i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw) {
 			(void)I2C_SR1(dev->device);
 			(void)I2C_SR2(dev->device); 	// Clear flags
 			// NAK Received (no ADDR flag will be set here)
-			longjmp(i2c_exception,I2C_Addr_NAK); 
+			return showError(dev, I2C_Addr_NAK); 
 		}
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Addr_Timeout); 
+			return showError(dev, I2C_Addr_Timeout); 
 		taskYIELD();
 	}
 
 	(void)I2C_SR2(dev->device);		// Clear flags
+	return I2C_Ok;
 }
 
 /*********************************************************************
  * Write one byte of data
  *********************************************************************/
 
-void
-i2c_write(I2C_Control *dev,uint8_t byte) {
+I2C_Fails i2c_write(I2C_Control *dev,uint8_t byte) {
 	TickType_t t0 = systicks();
 
 	i2c_send_data(dev->device,byte);
 	while ( !(I2C_SR1(dev->device) & (I2C_SR1_BTF)) ) {
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Write_Timeout);
+			return showError(dev, I2C_Write_Timeout);
 		taskYIELD();
 	}
+	return I2C_Ok;
 }
 
 /*********************************************************************
  * Read one byte of data. Set lastf=true, if this is the last/only
- * byte being read.
+ * byte being read. Return -1 in case of error.
  *********************************************************************/
 
-uint8_t
-i2c_read(I2C_Control *dev,bool lastf) {
+int i2c_read(I2C_Control *dev,bool lastf) {
 	TickType_t t0 = systicks();
 
 	if ( lastf )
@@ -189,7 +195,7 @@ i2c_read(I2C_Control *dev,bool lastf) {
 
 	while ( !(I2C_SR1(dev->device) & I2C_SR1_RxNE) ) {
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Read_Timeout);
+			{ showError(dev, I2C_Read_Timeout); return -1; }
 		taskYIELD();
 	}
 	
@@ -201,8 +207,7 @@ i2c_read(I2C_Control *dev,bool lastf) {
  * read to follow.
  *********************************************************************/
 
-void
-i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
+I2C_Fails i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
 	TickType_t t0 = systicks();
 
 	taskENTER_CRITICAL();
@@ -214,7 +219,7 @@ i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
 	// Wait for transmit to complete
 	while ( !(I2C_SR1(dev->device) & (I2C_SR1_BTF)) ) {
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Write_Timeout);
+			return showError(dev, I2C_Write_Timeout);
 		taskYIELD();
 	}
 
@@ -223,7 +228,7 @@ i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
     while ( !((I2C_SR1(dev->device) & I2C_SR1_SB) 
 	  && (I2C_SR2(dev->device) & (I2C_SR2_MSL|I2C_SR2_BUSY))) ) {
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Addr_Timeout);
+			return showError(dev, I2C_Addr_Timeout);
 		taskYIELD();
 	}
 
@@ -238,14 +243,21 @@ i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
 			(void)I2C_SR1(dev->device);
 			(void)I2C_SR2(dev->device); 	// Clear flags
 			// NAK Received (no ADDR flag will be set here)
-			longjmp(i2c_exception,I2C_Addr_NAK); 
+			return showError(dev, I2C_Addr_NAK); 
 		}
 		if ( diff_ticks(t0,systicks()) > dev->timeout )
-			longjmp(i2c_exception,I2C_Addr_Timeout); 
+			return showError(dev, I2C_Addr_Timeout); 
 		taskYIELD();
 	}
 
 	(void)I2C_SR2(dev->device);		// Clear flags
+	return I2C_Ok;
+}
+
+I2C_Fails i2c_stop(I2C_Control *dev) {
+	//  Stop the I2C connection.
+	i2c_send_stop(dev->device);
+	return I2C_Ok;
 }
 
 #ifdef NOTUSED  //  Calling convention used by BME280 library.
@@ -270,42 +282,34 @@ bool BME280I2C::ReadRegister(uint8_t addr, uint8_t data[], uint8_t length) {
 
 static I2C_Control i2c;			// I2C Control struct
 
-static uint8_t showError(I2C_Fails fc, uint8_t returnValue) {
-	debug_print("***** Error: I2C Failed ");
-	debug_print(fc); debug_print(" / ");
-	debug_println(i2c_error(fc));
-	debug_flush();
-	return returnValue;
-}
-
 I2CInterface::I2CInterface() {
     //  Init the I2C interface.  This constructor is called before platform_setup(),
     //  so we don't do any setup yet till later.
 }
 
 void I2CInterface::begin() {  //  Used by bme280.cpp
+	debug_println("i2c_begin"); debug_flush();
 	i2c_setup();
-	i2c_configure(&i2c, I2C1, 1000);
+	i2c_configure(&i2c, I2C1, 20000);
 }
 
 void I2CInterface::beginTransmission(uint8_t addr) {  //  Used by BME280I2C.cpp
 	//  Begin an I2C request to write register ID or register ID + data value.
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { showError(fc, 0); return; }
+	debug_print("i2c_begintrans "); debug_println((int) addr); debug_flush();
 	i2c.addr = addr;
 	i2c.reg = 0;
 	i2c.isRegSet = false;
 	i2c.length = 0;
-	i2c_start_addr(&i2c, i2c.addr, Write);
+	i2c.failCode = I2C_Ok;
+	i2c_start_addr(&i2c, addr, Write);
 }
 
 size_t I2CInterface::write(uint8_t registerIDOrValue) {  //  Used by BME280I2C.cpp
     //  Write a register ID or data value to the I2C Bus.  Arduino's Wire I2C interface
 	//  sends the register ID to the first write(), data value to the second write().
 	//  Wherever possible, use the two-parameter version of write() below.
-    //  debug_print("i2c_write reg: "); debug_println(dataRegister0);
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { return showError(fc, 0); }
+	//  Return the number of bytes written.
+    debug_print("i2c_write: "); debug_println((int) registerIDOrValue);
 	if (!i2c.isRegSet) {
 		//  First write must be register ID.
 		i2c.reg = registerIDOrValue;
@@ -313,38 +317,42 @@ size_t I2CInterface::write(uint8_t registerIDOrValue) {  //  Used by BME280I2C.c
 	} else {
 		//  Second write must be value.
 	}
-	i2c_write(&i2c, registerIDOrValue);
+	I2C_Fails fc = i2c_write(&i2c, registerIDOrValue);
+	if (fc > 0) return 0;
 	return 1;
 }
 
 size_t I2CInterface::write(uint8_t registerID, uint8_t value) {
     //  Write a register ID then data value to the I2C Bus.
-    //  debug_print("i2c_write reg: "); debug_println(dataRegister0);
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { return showError(fc, 0); }
+	//  Return the number of bytes written.
+    debug_print("i2c_write reg: "); debug_println((int) registerID);
 	i2c.reg = registerID;
 	i2c.isRegSet = true;
-	i2c_write(&i2c, registerID);
-	i2c_write(&i2c, value);
-	return 1;
+	I2C_Fails fc = i2c_write(&i2c, registerID);
+	if (fc > 0) { return 0; }
+	fc = i2c_write(&i2c, value);
+	if (fc > 0) { return 1; }
+	return 2;
 }
 
 uint8_t I2CInterface::endTransmission(void) {  //  Used by BME280I2C.cpp
 	//  End the write request to the I2C Bus.
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { return showError(fc, 0); }
-	i2c_stop(&i2c);
+    debug_print("i2c_endtrans");
+	I2C_Fails fc = i2c_stop(&i2c);
+	if (fc > 0) { return 0; }
 	return 1;
 }
 
 uint8_t I2CInterface::requestFrom(uint8_t addr, uint8_t length) {  //  Used by BME280I2C.cpp
     //  Begin an I2C request to read "length" number of bytes from the address at "addr".
-    debug_print("i2c_request reg: "); debug_println(i2c.reg); debug_flush();
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { return showError(fc, 0); }
+    debug_print("i2c_request reg: "); debug_println(i2c.reg);
 	i2c.addr = addr;
 	i2c.length = length;
-	i2c_start_addr(&i2c, addr, Read);	
+	I2C_Fails fc = i2c_start_addr(&i2c, addr, Read);
+	if (fc > 0) { 
+		i2c.length = 0;
+		return 0; 
+	}
     return length;
 }
 
@@ -355,14 +363,13 @@ int I2CInterface::available(void) {  //  Used by BME280I2C.cpp
 
 int I2CInterface::read(void) {  //  Used by BME280I2C.cpp
     //  Return the next byte to be read from the I2C address.
-    //  debug_println("i2c_read");
-	I2C_Fails fc;
-	if ((fc = (I2C_Fails) setjmp(i2c_exception)) != I2C_Ok ) { showError(fc, 0); return -1; }
+    debug_println("i2c_read");
 	if (i2c.length <= 0) { return -1; }
 	i2c.length--;	
 
 	bool lastByte = (i2c.length == 0);
-	uint8_t b = i2c_read(&i2c, lastByte);
+	int b = i2c_read(&i2c, lastByte);
+	if (b < 0) return b;
 	if (lastByte) { 
 		i2c_stop(&i2c); 
 		debug_println((int) b); debug_flush();

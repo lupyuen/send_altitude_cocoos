@@ -65,24 +65,24 @@ enum I2C_RW {
 
 typedef struct {
 	uint32_t	device;		// STM32 I2C device
-	uint8_t		addr;		  // I2C address
-	uint8_t		reg;		  // I2C register ID
-	bool		  isRegSet;	// True if reg has been set
-	uint8_t		length;		// Requested length
+	uint8_t		addr;		// I2C address to be read/written
+	uint8_t		reg;		// I2C register to be read/written
+	bool		isRegSet;	// True if reg has been set
+	uint8_t		length;		// Requested length	
 	uint32_t	timeout;	// Ticks (millisecond)
+	I2C_Fails	failCode;   // Last fail code.
 } I2C_Control;
 
-void i2c_setup(void);  	//  Init the I2C clock and I2C pin levels.  Should be called once only.
-void i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks);  //  Configure I2C device for 100 kHz, 7-bit addresses.
-void i2c_wait_busy(I2C_Control *dev);  //  Return when I2C is not busy.
-void i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw);  //  Start I2C Read/Write Transaction with indicated 7-bit address.
-void i2c_write(I2C_Control *dev,uint8_t byte);  //  Write one byte of data.
-void i2c_write_restart(I2C_Control *dev, uint8_t byte, uint8_t addr);  //  Write one byte of data, then initiate a repeated start for a read to follow.
-uint8_t i2c_read(I2C_Control *dev, bool lastf);  //  Read one byte of data. Set lastf=true, if this is the last/only byte being read.
-void i2c_stop(I2C_Control *dev);  //  Close the I2C request.
+I2C_Fails i2c_setup(void);  	//  Init the I2C clock and I2C pin levels.  Should be called once only.
+I2C_Fails i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks);  //  Configure I2C device for 100 kHz, 7-bit addresses.
+I2C_Fails i2c_wait_busy(I2C_Control *dev);  //  Return when I2C is not busy.
+I2C_Fails i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw);  //  Start I2C Read/Write Transaction with indicated 7-bit address.
+I2C_Fails i2c_write(I2C_Control *dev,uint8_t byte);  //  Write one byte of data.
+I2C_Fails i2c_write_restart(I2C_Control *dev, uint8_t byte, uint8_t addr);  //  Write one byte of data, then initiate a repeated start for a read to follow.
+int i2c_read(I2C_Control *dev, bool lastf);  //  Read one byte of data. Set lastf=true, if this is the last/only byte being read.  Return -1 in case of error.
+I2C_Fails i2c_stop(I2C_Control *dev);  //  Close the I2C request.
 
 //  For error handling.
-extern jmp_buf i2c_exception;  //  Jump here in case of error.  Returns an I2C_Fails code.
 const char *i2c_error(I2C_Fails fcode);  //  Get error message for I2C_Fails code.
 
 #ifdef __cplusplus

@@ -31,7 +31,11 @@
 			"__locale": "c",
 			"ios": "c",
 			"*.ipp": "cpp",
-			"string_view": "cpp"
+			"string_view": "cpp",
+			"xlocale": "cpp",
+			"xmemory0": "cpp",
+			"initializer_list": "cpp",
+			"xiosbase": "cpp"
 		}
 	}
 }
