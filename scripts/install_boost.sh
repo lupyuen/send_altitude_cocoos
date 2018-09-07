@@ -10,7 +10,9 @@ download_boost() {
         mkdir lib/boost_$1
     fi
     cd lib/boost_$1
-    rmdir $1  ####
+    if [ -d $1 ]; then
+        rm -rf $1
+    fi
     if [ ! -d $1 ]; then
         git clone https://github.com/boostorg/$1.git
     fi

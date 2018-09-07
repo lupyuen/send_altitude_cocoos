@@ -24,6 +24,7 @@ The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio C
 
 Tested with Arduino Uno and STM32 Blue Pill.
 
+-----
 ## Create Source File Links For PlatformIO
 
 To compile the project under PlatformIO in Visual Studio Code, the source files
@@ -46,13 +47,13 @@ There should not be any folders inside `lib/cocoOS_5.0.3/src`
 
 Then enter the following into the command prompt…
 
-### For Windows
+_For Windows:_
 
 ```cmd
 scripts\linksrc.cmd
 ```
 
-### For MacOS and Linux
+_For Mac and Ubuntu:_
 
 ```bash
 chmod +x scripts/*.sh
@@ -82,7 +83,7 @@ And comment the `uno` line (by inserting `;` in front):
 ; env_default = uno
 ```
 
-### Install OpenOCD For Displaying Debug Log
+### Install OpenOCD For Displaying STM32 Blue Pill Debug Log
 
 - For Windows:
 
@@ -112,6 +113,36 @@ And comment the `uno` line (by inserting `;` in front):
 1. Scroll down and click the `Get Software` button
 
 1. Unzip the ST-Link download. Double-click the `dpinst_amd64.exe` installer.
+
+-----
+## Enabling UART Interface on STM32 Blue Pill
+
+To enable the actual STM32 Blue Pill UART interface (instead of using the Wisol Sigfox simulator), edit `stm32/uartint/uartint.cpp`
+and comment the following line:
+
+```C++
+//  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
+```
+
+Then install the Boost libraries by executing the following script:
+
+_For Windows:_
+
+```cmd
+cd send_altitude_cocoos
+scripts\install_boost.cmd
+```
+
+_For Mac and Ubuntu:_
+
+```bash
+cd send_altitude_cocoos
+scripts/install_boost.sh
+```
+
+Rebuild the project. We support only Blue Pill USART Port 2: <br>
+`RX2` = Pin `PA3` <br>
+`TX2` = Pin `PA2`
 
 -----
 ## Downlink Server Support
