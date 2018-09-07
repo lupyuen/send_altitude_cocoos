@@ -9,83 +9,15 @@
 //  We support only Blue Pill I2C Port 1:
 //  SCL1 = Pin PB6
 //  SDA1 = Pin PB7
-
-/* A stm32f103 application I2C library
- * Warren W. Gay VE3WWG
- * Sat Nov 25 11:56:51 2017
- *
- * Notes:
- *	1. Master I2C mode only
- *	2. No interrupts are used
- *	3. ReSTART I2C is not supported
- *	4. Uses PB6=SCL, PB7=SDA
- *	5. Requires GPIOB clock enabled
- *	6. PB6+PB7 must be GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN
- *	7. Requires rcc_periph_clock_enable(RCC_I2C1);
- *	8. Requires rcc_periph_clock_enable(RCC_AFIO);
- *	9. 100 kHz
- */
-/*********************************************
- * This example performs a write transaction,
- * followed by a separate read transaction:
- *********************************************
-i2c_start_addr(&i2c, addr, Write);
-i2c_write(&i2c, value & 0x0FF);
-i2c_stop(&i2c);
-
-i2c_start_addr(&i2c, addr, Read);
-byte = i2c_read(&i2c, true);
-i2c_stop(&i2c);
-*/
-/*********************************************
- * This example performs a write followed
- * immediately by a read in one I2C transaction,
- * using a "Repeated Start"
- *********************************************
-i2c_start_addr(&i2c, addr, Write);
-i2c_write_restart(&i2c, value&0x0FF, addr);
-byte = i2c_read(&i2c, true);
-i2c_stop(&i2c);
-*/
 #include <stdbool.h>
-#include <setjmp.h>
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/timer.h>
 #include <bluepill.h>  //  For millis()
 
-typedef enum {
-	I2C_Ok = 0,
-	I2C_Addr_Timeout,
-	I2C_Addr_NAK,
-	I2C_Write_Timeout,
-	I2C_Read_Timeout
-} I2C_Fails;
-
-enum I2C_RW {
-	Read = 1,
-	Write = 0
-};
-
-typedef struct {
-	uint32_t	device;		// STM32 I2C device
-	uint8_t		addr;		// I2C address
-	uint8_t		reg;		// I2C register ID
-	bool		isRegSet;	// True if reg has been set
-	uint8_t		length;		// Requested length
-	uint32_t	timeout;	// Ticks (millisecond)
-} I2C_Control;
-
-static jmp_buf i2c_exception;
-static const char *i2c_error(I2C_Fails fcode);
-static void i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks);
-static void i2c_wait_busy(I2C_Control *dev);
-static void i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw);
-static void i2c_write(I2C_Control *dev,uint8_t byte);
-static void i2c_write_restart(I2C_Control *dev, uint8_t byte, uint8_t addr);
-static uint8_t i2c_read(I2C_Control *dev, bool lastf);
-static inline void i2c_stop(I2C_Control *dev) { i2c_send_stop(dev->device); }
+jmp_buf i2c_exception;
+void i2c_stop(I2C_Control *dev) { i2c_send_stop(dev->device); }
 
 //  TODO: Update this when running under FreeRTOS.
 #define systicks	millis
@@ -117,7 +49,7 @@ diff_ticks(TickType_t early,TickType_t later) {
  * Return a character string message for I2C_Fails code
  *********************************************************************/
 
-static const char *
+const char *
 i2c_error(I2C_Fails fcode) {
 	int icode = (int)fcode;
 	if ( icode < 0 || icode > (int)I2C_Read_Timeout )
@@ -126,10 +58,34 @@ i2c_error(I2C_Fails fcode) {
 }
 
 /*********************************************************************
+ * Peripheral setup:
+ *********************************************************************/
+
+void
+i2c_setup(void) {
+	//  Init the I2C clock and I2C pin levels.  Should be called once only.
+	
+	//  Moved to platform_setup() in bluepill.cpp:
+	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
+	rcc_periph_clock_enable(RCC_GPIOB);	// I2C
+	rcc_periph_clock_enable(RCC_AFIO);	// EXTI
+	rcc_periph_clock_enable(RCC_I2C1);	// I2C
+
+	gpio_set_mode(GPIOB,
+		GPIO_MODE_OUTPUT_50_MHZ,
+		GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
+		GPIO6|GPIO7);					// I2C
+	gpio_set(GPIOB,GPIO6|GPIO7);		// Idle high
+
+	// AFIO_MAPR_I2C1_REMAP=0, PB6+PB7
+	gpio_primary_remap(0,0); 
+}
+
+/*********************************************************************
  * Configure I2C device for 100 kHz, 7-bit addresses
  *********************************************************************/
 
-static void
+void
 i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks) {
 	dev->device = i2c;
 	dev->addr = 0;
@@ -153,7 +109,7 @@ i2c_configure(I2C_Control *dev, uint32_t i2c, uint32_t ticks) {
  * Return when I2C is not busy
  *********************************************************************/
 
-static void
+void
 i2c_wait_busy(I2C_Control *dev) {
 	while ( I2C_SR2(dev->device) & I2C_SR2_BUSY )
 		taskYIELD();			// I2C Busy
@@ -163,7 +119,7 @@ i2c_wait_busy(I2C_Control *dev) {
  * Start I2C Read/Write Transaction with indicated 7-bit address:
  *********************************************************************/
 
-static void
+void
 i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw) {
 	TickType_t t0 = systicks();
 	i2c_wait_busy(dev);			// Block until not busy
@@ -207,7 +163,7 @@ i2c_start_addr(I2C_Control *dev, uint8_t addr, enum I2C_RW rw) {
  * Write one byte of data
  *********************************************************************/
 
-static void
+void
 i2c_write(I2C_Control *dev,uint8_t byte) {
 	TickType_t t0 = systicks();
 
@@ -224,7 +180,7 @@ i2c_write(I2C_Control *dev,uint8_t byte) {
  * byte being read.
  *********************************************************************/
 
-static uint8_t
+uint8_t
 i2c_read(I2C_Control *dev,bool lastf) {
 	TickType_t t0 = systicks();
 
@@ -245,7 +201,7 @@ i2c_read(I2C_Control *dev,bool lastf) {
  * read to follow.
  *********************************************************************/
 
-static void
+void
 i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
 	TickType_t t0 = systicks();
 
@@ -292,37 +248,13 @@ i2c_write_restart(I2C_Control *dev,uint8_t byte,uint8_t addr) {
 	(void)I2C_SR2(dev->device);		// Clear flags
 }
 
-static I2C_Control i2c;			// I2C Control struct
-
-/*********************************************************************
- * Peripheral setup:
- *********************************************************************/
-
-void
-i2c_setup(void) {
-	//  Moved to platform_setup() in bluepill.cpp:
-	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();
-	rcc_periph_clock_enable(RCC_GPIOB);	// I2C
-	rcc_periph_clock_enable(RCC_AFIO);	// EXTI
-	rcc_periph_clock_enable(RCC_I2C1);	// I2C
-
-	gpio_set_mode(GPIOB,
-		GPIO_MODE_OUTPUT_50_MHZ,
-		GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
-		GPIO6|GPIO7);					// I2C
-	gpio_set(GPIOB,GPIO6|GPIO7);		// Idle high
-
-	// AFIO_MAPR_I2C1_REMAP=0, PB6+PB7
-	gpio_primary_remap(0,0); 
-}
-
-#ifdef NOTUSED
+#ifdef NOTUSED  //  Calling convention used by BME280 library.
 bool BME280I2C::WriteRegister(uint8_t addr, uint8_t data) {
   Wire.beginTransmission(m_bme_280_addr);
   Wire.write(addr);
   Wire.write(data);
   Wire.endTransmission();
-  return true; // TODO: Chech return values from wire calls.
+  return true;
 }
 
 bool BME280I2C::ReadRegister(uint8_t addr, uint8_t data[], uint8_t length) {
@@ -335,6 +267,8 @@ bool BME280I2C::ReadRegister(uint8_t addr, uint8_t data[], uint8_t length) {
   return ord == length;
 }
 #endif  //  NOTUSED
+
+static I2C_Control i2c;			// I2C Control struct
 
 static uint8_t showError(I2C_Fails fc, uint8_t returnValue) {
 	debug_print("***** Error: I2C Failed ");
