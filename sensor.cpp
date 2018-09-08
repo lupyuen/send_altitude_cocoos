@@ -4,7 +4,7 @@
 #include <string.h>
 #include <cocoos.h>
 #include "sensor.h"
-#include "display.h"
+
 
 static uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 

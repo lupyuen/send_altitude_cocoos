@@ -19,11 +19,12 @@ includes = -I. \
 -I./stm32/porting \
 -I./stm32f4/inc \
 -I./radios \
+-I./sensors \
 -I../cocoOS/common/inc \
 -I../stmlib/stm32f4 \
 -I../stmlib/stm32f4/inc
 
-source = . ./stm32f4/src ./radios
+source = . ./stm32f4/src ./radios ./sensors
 output = ./output
 modpath = ..
 
@@ -61,6 +62,9 @@ $(moddeps) :
 	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
 	
 ./output/%.o : ./radios/%.cpp
+	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
+
+./output/%.o : ./sensors/%.cpp
 	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
 	
 ./output/%.o : ./$(mcu)/src/%.cpp

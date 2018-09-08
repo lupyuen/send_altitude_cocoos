@@ -6,25 +6,20 @@
 #include "platform.h"
 #include <string.h>
 #include <cocoos.h>
-#include "display.h"
-#include "wisol.h"
 #include "sensor.h"
 #include "aggregate.h"
-#include "temp_sensor.h"   //  Temperature sensor (BME280)
-#include "humid_sensor.h"  //  Humidity sensor (BME280)
-#include "alt_sensor.h"    //  Altitude sensor (BME280)
 #include "gps_sensor.h"
 #include "stm32setup.h"
 #include "config.h"
-#include "radio.h"
-#include "radios/wisolRadio.h"
+#include "network.h"
+#include "wisolRadio.h"
 #include "uartSerial.h"
 
 
 
 static void system_setup(void);
-static uint8_t radio_setup(void);
-static uint8_t sensor_aggregator_setup(uint8_t radio_task);
+static uint8_t network_setup(void);
+static uint8_t sensor_aggregator_setup(uint8_t network_task);
 static void sensor_setup(uint8_t sensor_aggregator_task_id);
 
 static UartSerial::ptr createDebugConsole();
@@ -39,13 +34,13 @@ static char radioResponse[MAX_RADIO_RESPONSE_MSG_SIZE + 1];
 
 // Task contexts
 static AggregateContext aggregateContext;
-static RadioContext radioContext;
+static NetworkContext networkContext;
 
-// Pool of UART messages for the UART Tasks message queue.
-static RadioMsg radioMsgPool[RADIO_MSG_POOL_SIZE];
+// Pool of network messages for the network tasks message queue.
+static NetworkMsg networkMsgPool[RADIO_MSG_POOL_SIZE];
 
-// Pool of sensor data messages for the Network Task message queue.
-static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];
+// Pool of sensor data messages for the aggregator task message queue.
+static SensorMsg sensorMsgPool[NETWORK_MSG_POOL_SIZE];
 
 
 int main(void) {
@@ -57,10 +52,10 @@ int main(void) {
   os_init();
 
   //  Start the radio task to send and receive network messages.
-  uint8_t radio_task_id = radio_setup();
+  uint8_t network_task_id = network_setup();
 
   // the sensor aggregator needs the radio task id
-  uint8_t sensor_aggregator_id = sensor_aggregator_setup(radio_task_id);
+  uint8_t sensor_aggregator_id = sensor_aggregator_setup(network_task_id);
   
   // and the sensor tasks needs the aggregator id
   sensor_setup(sensor_aggregator_id);
@@ -94,38 +89,37 @@ static UartSerial::ptr createRadioUartConnection() {
 }
 
 
-static uint8_t radio_setup(void) {
-  //  Start the network task to send and receive network messages.
-  //  Start the Radio Task for transmitting data to the Wisol module.
+static uint8_t network_setup(void) {
 
+  // The radio device connected to the network task
   static WisolRadio radio(createRadioUartConnection());
 
-  radioContext.response = radioResponse;
-  radioContext.radio = &radio;
-  radioContext.initialized = false;
+  networkContext.response = radioResponse;
+  networkContext.radio = &radio;
+  networkContext.initialized = false;
 
-  uint8_t radioTaskID = task_create(
-    radio_task,     //  Task will run this function.
-    &radioContext,  //  task_get_data() will be set to the display object.
+  uint8_t networkTaskID = task_create(
+    network_task,     //  Task will run this function.
+    &networkContext,  //  task_get_data() will be set to the display object.
     10,            //  Priority 10 = highest priority
-    (Msg_t *) radioMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
     RADIO_MSG_POOL_SIZE,     //  Size of queue pool.
-    sizeof(RadioMsg));       //  Size of queue message.
+    sizeof(NetworkMsg));       //  Size of queue message.
 
-  return radioTaskID;
+  return networkTaskID;
 }
 
-static uint8_t sensor_aggregator_setup(uint8_t radio_task) {
+static uint8_t sensor_aggregator_setup(uint8_t network_task) {
   //  Start the Aggregate Task for receiving sensor data and transmitting to radio Task.
-  aggregateContext.radioTaskID = radio_task;
-  aggregateContext.sendPeriodInSeconds = 900;
+  aggregateContext.networkTaskID = network_task;
+  aggregateContext.sendPeriodInSeconds = 30;
   setup_aggregate();
 
   uint8_t aggregateTaskId = task_create(
       aggregate_task,   //  Task will run this function.
       &aggregateContext,  //  task_get_data() will be set to the display object.
       20,             //  Priority 20 = lower priority than UART task
-      (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
+      (Msg_t *) sensorMsgPool,  //  Pool to be used for storing the queue of UART messages.
       NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
       sizeof(SensorMsg));   //  Size of queue message.
     
@@ -138,17 +132,11 @@ static void sensor_setup(uint8_t sensor_aggregator_task_id) {
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
 
+  // get the sensor context for each sensor
   SensorContext *gpsContext  = setup_gps_sensor(0, sensor_aggregator_task_id);
-  //SensorContext *tempContext  = setup_temp_sensor(pollInterval, sensor_receiver_task_id);
-  //SensorContext *humidContext = setup_humid_sensor(pollInterval, sensor_receiver_task_id);
-  //SensorContext *altContext   = setup_alt_sensor(pollInterval, sensor_receiver_task_id);
 
+  // and create one task for each sensor, passing the context
   task_create(sensor_task, gpsContext, 100,0, 0, 0);
-  //task_create(sensor_task, tempContext, 100,0, 0, 0);
-  //task_create(sensor_task, humidContext, 120, 0, 0, 0);
-  //task_create(sensor_task, altContext, 130, 0, 0, 0);
 }
 
-
-volatile uint32_t tickCount = 0;  //  Number of millisecond ticks elapsed.
 

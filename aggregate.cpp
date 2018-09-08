@@ -5,13 +5,14 @@
 #include <string.h>
 #include "sensor.h"
 #include "aggregate.h"
+
+#include "network.h"
 #include "sigfox.h"
-#include "radio.h"
 #include "platform.h"
 
 #define NO_SENSOR 0xff
 
-static void createRadioMessage(RadioMsg *msg);
+static void createNetworkMessage(NetworkMsg *msg);
 static void save(const SensorMsg *msg);
 static SensorMsg *recallSensor(uint8_t id);
 static void copySensorData(SensorMsg *dest, const SensorMsg *src);
@@ -56,11 +57,11 @@ void aggregate_task(void) {
 
     if (sensorMsg.super.signal == TRANSMIT_SIG) {
 
-      // create radio message from the saved sensor readings
-      createRadioMessage(&context->radioMsg);
+      // create network message from the saved sensor readings
+      createNetworkMessage(&context->networkMsg);
 
       // send it to the radio
-      msg_post_async(context->radioTaskID, context->radioMsg);
+      msg_post_async(context->networkTaskID, context->networkMsg);
     }
     else if (sensorMsg.super.signal == SENSOR_DATA_SIG) {
       // save the received sensor data
@@ -80,7 +81,7 @@ static void save(const SensorMsg *msg) {
   }
 }
 
-static void createRadioMessage(RadioMsg *msg) {
+static void createNetworkMessage(NetworkMsg *msg) {
   float *payload = &msg->sensorData[0];
 
   payload[0] = 0;

@@ -3,14 +3,14 @@
 
 #include <cocoos.h>
 
-#include "radioDevice.h"
-#include "uartSerial.h"
 #include "radio.h"
+#include "network.h"
+#include "uartSerial.h"
 
 
 
 // A class for communicating with the Wisol radio chip
-class WisolRadio : public RadioDevice {
+class WisolRadio : public Radio {
 public:
   WisolRadio(UartSerial *serial);
   ~WisolRadio() = default;
@@ -18,7 +18,7 @@ public:
   // returns number of commands in list[]
   unsigned getStepBegin(NetworkCmd list[], int listSize, bool useEmulator) override;
 
-  unsigned getStepSend(RadioContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) override;
+  unsigned getStepSend(NetworkContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) override;
 
   // send a data buffer to the radio
   bool send(const uint8_t *data, uint8_t len) override;
@@ -38,7 +38,7 @@ public:
 private:
   void addCmd(NetworkCmd list[], int listSize, NetworkCmd cmd);
   int getCmdIndex(NetworkCmd list[], int listSize);
-  void getStepPowerChannel(RadioContext *context, NetworkCmd list[], int listSize);
+  void getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize);
 
   UartSerial *dev;
   uint8_t rxbuf[128];

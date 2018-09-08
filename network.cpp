@@ -1,15 +1,16 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
+#include "network.h"
+#include "radio.h"
 #include "platform.h"
 #include <string.h>
 #include <cocoos.h>
-#include "radio.h"
 #include "sensor.h"
 #include "downlink.h"
 #include "utils.h"
 
 
 static void serialize(NetworkCmd *cmd, char *buf);
-static void processResponse(RadioContext *context);
+static void processResponse(NetworkContext *context);
 
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 NetworkCmd endOfList = { NULL, NULL, NULL, NULL, 0 };  //  Command to indicate end of command list.
@@ -17,27 +18,27 @@ NetworkCmd endOfList = { NULL, NULL, NULL, NULL, 0 };  //  Command to indicate e
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-void radio_task(void) {
+void network_task(void) {
   //  This task loops and waits for an incoming message containing sensor data to be sent.
   //  The sensorData array contains float values of sensor readings which are converted to
   //  a string of hex digits and is added to a string of commands.
   //  We send the resulting string to the radio. The radio is setup to generate an rxDone
   //  event when the expected count of markers ('\r') has been received.
 
-  RadioContext *context;     //  The context for the task.
-  static RadioMsg msg;       //  The received message.
-  static char radioData[MAX_RADIO_SEND_MSG_SIZE + 1]; // will contain serialized command data to be sent, contains commands and sensor readings
+  NetworkContext *context;     //  The context for the task.
+  static NetworkMsg msg;       //  The received message.
+
 
   task_open();
 
-  context = (RadioContext *) task_get_data();
+  context = (NetworkContext *) task_get_data();
   context->rxDoneEvent = event_create();
   context->radio->setDoneEvent(context->rxDoneEvent);
 
   for (;;) {
     msg_receive(os_get_running_tid(), &msg);
 
-    context = (RadioContext *) task_get_data();  //  Must fetch again after msg_receive().
+    context = (NetworkContext *) task_get_data();  //  Must fetch again after msg_receive().
 
     // Empty the command list
     context->nCommands = 0;
@@ -58,22 +59,23 @@ void radio_task(void) {
 
     //  Send each AT command in the list.
     while (context->nCommands) {
-      context = (RadioContext *) task_get_data();  //  Must get context to be safe.
+      context = (NetworkContext *) task_get_data();  //  Must get context to be safe.
 
       if (context->cmd->sendData == NULL) { break; }  //  No more commands to send.
 
-      //  Convert radio command to serialized data
-      serialize(context->cmd, radioData);
+      //  Convert network command to serialized data
+      char serializedSendData[MAX_RADIO_SEND_MSG_SIZE + 1];
+      serialize(context->cmd, serializedSendData);
 
       // setup response logic : request event when expected number of markers have been received
       context->radio->setMarkerCount(context->cmd->expectedMarkerCount);
 
-      context->radio->send((const uint8_t*)radioData, strlen(radioData));
+      context->radio->send((const uint8_t*)serializedSendData, strlen(serializedSendData));
 
       // wait for event or timeout
       event_wait_timeout(context->rxDoneEvent, 10000);
 
-      context = (RadioContext *) task_get_data();
+      context = (NetworkContext *) task_get_data();
 
       // was it timeout or rx done?
       if (event_get_timeout() == 0) {
@@ -92,18 +94,17 @@ void radio_task(void) {
 
       if (context->status == false) break;  //  Quit if the processing failed.
 
-      //  Command was successful. Move to next command.
       if (!context->initialized) {
         context->initialized = true;
       }
 
-      context->cmd++;  //  Next Wisol command.
+      context->cmd++;
       context->nCommands--;
-    }  //  Loop to next Wisol command.
+    }
 
 
 
-    context = (RadioContext *) task_get_data();
+    context = (NetworkContext *) task_get_data();
 
   }  //  Loop back and wait for next queued message.
 
@@ -131,7 +132,7 @@ static void serialize(NetworkCmd *cmd, char *buf) {
 }
 
 
-static void processResponse(RadioContext *context) {
+static void processResponse(NetworkContext *context) {
   //  Process the response from the Wisol AT Command by calling the
   //  process response function.  Set the status to false if the processing failed.
 

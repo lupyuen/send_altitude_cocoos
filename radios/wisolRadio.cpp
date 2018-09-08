@@ -1,13 +1,14 @@
 #include "cocoos.h"
 #include "wisolRadio.h"
-#include "radio.h"
+
+#include "network.h"
 #include "string.h"
 #include "utils.h"
 
-static bool getID(RadioContext *context, const char *response);
-static bool getPAC(RadioContext *context, const char *response);
-static bool getDownlink(RadioContext *context, const char *response0);
-static bool checkChannel(RadioContext *context, const char *response);
+static bool getID(NetworkContext *context, const char *response);
+static bool getPAC(NetworkContext *context, const char *response);
+static bool getDownlink(NetworkContext *context, const char *response0);
+static bool checkChannel(NetworkContext *context, const char *response);
 
 #define MAX_OUTPUT_SIZE N_SENSORS * SENSOR_DATA_SIZE * 4 * 2 + 1
 static char output[MAX_OUTPUT_SIZE];
@@ -171,7 +172,7 @@ int WisolRadio::getCmdIndex(NetworkCmd list[], int listSize) {
   return i;
 }
 
-unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) {
+unsigned WisolRadio::getStepSend(NetworkContext *context, NetworkCmd list[], int listSize, const float payload[], bool enableDownlink) {
 
   //  Return the list of Wisol AT commands for the Send Step, to send the payload.
   //  Payload contains a string of hex digits, up to 24 digits / 12 bytes.
@@ -188,7 +189,7 @@ unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int l
 
   //  Compose the payload sending command.
   uint8_t markers = 1;  //  Wait for 1 line of response.
-  bool (*processFunc)(RadioContext *context, const char *response) = NULL;  //  Function to process result.
+  bool (*processFunc)(NetworkContext *context, const char *response) = NULL;  //  Function to process result.
   const __FlashStringHelper *sendData2 = NULL;  //  Text to be appended to payload.
 
   // If no downlink: Send CMD_SEND_MESSAGE + payload
@@ -217,7 +218,7 @@ unsigned WisolRadio::getStepSend(RadioContext *context, NetworkCmd list[], int l
   return nCommands;
 }
 
-void WisolRadio::getStepPowerChannel(RadioContext *context, NetworkCmd list[], int listSize) {
+void WisolRadio::getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize) {
   //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
   //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
   //  debug(F(" - wisol.getStepPowerChannel")); ////
@@ -246,7 +247,7 @@ void WisolRadio::getStepPowerChannel(RadioContext *context, NetworkCmd list[], i
   }
 }
 
-static bool getDownlink(RadioContext *context, const char *response0) {
+static bool getDownlink(NetworkContext *context, const char *response0) {
   //  Extract the downlink message and write into the context response.
   //  context response will be returned as an 8-byte hex string, e.g. "0123456789ABCDEF"
   //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
@@ -302,14 +303,14 @@ static bool getDownlink(RadioContext *context, const char *response0) {
 //  Wisol Response Processing Functions: Called to process response when response
 //  is received from Wisol AT Command.
 
-static bool getID(RadioContext *context, const char *response) {
+static bool getID(NetworkContext *context, const char *response) {
   //  Save the device ID to context.
   strncpy(context->device, response, MAX_DEVICE_ID_SIZE);
   context->device[MAX_DEVICE_ID_SIZE] = 0;  //  Terminate the device ID in case of overflow.
   return true;
 }
 
-static bool getPAC(RadioContext *context, const char *response) {
+static bool getPAC(NetworkContext *context, const char *response) {
   //  Save the PAC code to context.  Note that the PAC is only valid
   //  for the first registration in the Sigfox portal.  After
   //  registering the device, the PAC is changed in the Sigfox portal
@@ -320,7 +321,7 @@ static bool getPAC(RadioContext *context, const char *response) {
   return true;
 }
 
-static bool checkChannel(RadioContext *context, const char *response) {
+static bool checkChannel(NetworkContext *context, const char *response) {
   //  Parse the CMD_GET_CHANNEL response "X,Y" to determine if we need to send the CMD_RESET_CHANNEL command.
   //  If not needed, change the next command to CMD_NONE.
 
