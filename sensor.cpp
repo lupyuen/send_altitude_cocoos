@@ -9,14 +9,14 @@
 static uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
 void setup_sensor_context( SensorContext *context, Sensor *sensor, uint16_t pollInterval, uint8_t taskID) {
-  //  Set up the sensor context and call the sensor to initialise itself.
+  //  Set up the sensor context and call the sensor to initialize itself.
   //  Allocate a unique sensor ID and create the event.
   uint8_t sensorID =  nextSensorID++;
   Evt_t event = event_create();
 
   //  Initialise the sensor values.
   sensor->info.id = sensorID; 
-  sensor->info.event = &event;
+  sensor->info.event = event;
   sensor->info.poll_interval = pollInterval;
 
   //  Set the context.
@@ -43,6 +43,15 @@ void sensor_task(void) {
 
   for (;;) {
 
+    //  Wait for event or timeout
+    if (context->sensor->info.poll_interval) {
+      task_wait(context->sensor->info.poll_interval);
+    }
+    else {
+      event_wait(context->sensor->info.event);
+    }
+
+    context = (SensorContext *) task_get_data();
     sem_wait(i2cSemaphore);
 
     //  We have to fetch the context pointer again after the wait.
@@ -61,10 +70,6 @@ void sensor_task(void) {
       msg_post_async(context->receive_task_id, context->msg);
     }
 
-    //  Wait a short while before polling the sensor again.
-    task_wait(context->sensor->info.poll_interval);
-
-    context = (SensorContext *) task_get_data();
   }
 
   task_close();  //  End of the task. Should never come here.

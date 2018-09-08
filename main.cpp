@@ -13,6 +13,7 @@
 #include "temp_sensor.h"   //  Temperature sensor (BME280)
 #include "humid_sensor.h"  //  Humidity sensor (BME280)
 #include "alt_sensor.h"    //  Altitude sensor (BME280)
+#include "gps_sensor.h"
 #include "stm32setup.h"
 #include "config.h"
 #include "radio.h"
@@ -20,9 +21,12 @@
 #include "uartSerial.h"
 
 
+
 static void system_setup(void);
-static void sensor_setup(uint8_t sensor_receiver_task_id);
-static uint8_t network_setup(void);
+static uint8_t radio_setup(void);
+static uint8_t sensor_aggregator_setup(uint8_t radio_task);
+static void sensor_setup(uint8_t sensor_aggregator_task_id);
+
 static UartSerial::ptr createDebugConsole();
 static UartSerial::ptr createRadioUartConnection();
 
@@ -52,13 +56,14 @@ int main(void) {
   system_setup();
   os_init();
 
-  //  Start the network task to send and receive network messages.
-  uint8_t task_id = network_setup();
-  
-  //  Start the sensor tasks for each sensor to read sensor data and send
-  //  to the Network Task or Display Task.
-  sensor_setup(task_id);
+  //  Start the radio task to send and receive network messages.
+  uint8_t radio_task_id = radio_setup();
 
+  // the sensor aggregator needs the radio task id
+  uint8_t sensor_aggregator_id = sensor_aggregator_setup(radio_task_id);
+  
+  // and the sensor tasks needs the aggregator id
+  sensor_setup(sensor_aggregator_id);
 
   //  Start cocoOS task scheduler, which runs the sensor tasks and display task.
   os_start();  //  Never returns.  
@@ -88,7 +93,8 @@ static UartSerial::ptr createRadioUartConnection() {
   return &radioUart;
 }
 
-static uint8_t network_setup(void) {
+
+static uint8_t radio_setup(void) {
   //  Start the network task to send and receive network messages.
   //  Start the Radio Task for transmitting data to the Wisol module.
 
@@ -106,8 +112,12 @@ static uint8_t network_setup(void) {
     RADIO_MSG_POOL_SIZE,     //  Size of queue pool.
     sizeof(RadioMsg));       //  Size of queue message.
 
+  return radioTaskID;
+}
+
+static uint8_t sensor_aggregator_setup(uint8_t radio_task) {
   //  Start the Aggregate Task for receiving sensor data and transmitting to radio Task.
-  aggregateContext.radioTaskID = radioTaskID;
+  aggregateContext.radioTaskID = radio_task;
   aggregateContext.sendPeriodInSeconds = 900;
   setup_aggregate();
 
@@ -122,17 +132,19 @@ static uint8_t network_setup(void) {
   return aggregateTaskId;
 }
 
-static void sensor_setup(uint8_t sensor_receiver_task_id) {
+static void sensor_setup(uint8_t sensor_aggregator_task_id) {
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
 
-  SensorContext *tempContext  = setup_temp_sensor(pollInterval, sensor_receiver_task_id);
+  SensorContext *gpsContext  = setup_gps_sensor(0, sensor_aggregator_task_id);
+  //SensorContext *tempContext  = setup_temp_sensor(pollInterval, sensor_receiver_task_id);
   //SensorContext *humidContext = setup_humid_sensor(pollInterval, sensor_receiver_task_id);
   //SensorContext *altContext   = setup_alt_sensor(pollInterval, sensor_receiver_task_id);
 
-  task_create(sensor_task, tempContext, 100,0, 0, 0);
+  task_create(sensor_task, gpsContext, 100,0, 0, 0);
+  //task_create(sensor_task, tempContext, 100,0, 0, 0);
   //task_create(sensor_task, humidContext, 120, 0, 0, 0);
   //task_create(sensor_task, altContext, 130, 0, 0, 0);
 }

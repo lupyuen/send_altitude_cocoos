@@ -24,7 +24,7 @@ struct SensorInfo {
   //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
   uint8_t (*poll_sensor_func)(float *data, uint8_t size);
-  Evt_t *event;             //  Event to be signalled when new sensor data is available.
+  Evt_t event;             //  Event to be signalled when new sensor data is available.
   uint8_t id;               //  Unique sensor ID.
   uint16_t poll_interval;   //  How often the sensor should be polled, in milliseconds.
 
