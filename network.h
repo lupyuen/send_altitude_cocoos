@@ -61,7 +61,7 @@ struct NetworkContext {
 };
 
 
-void network_task(void);
+uint8_t network_setup(Radio *radio);
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

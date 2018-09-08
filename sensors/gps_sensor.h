@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-SensorContext *setup_gps_sensor(uint16_t pollInterval, uint8_t aggregator_id);
+SensorContext *gps_setup(uint16_t pollInterval, uint8_t aggregator_id);
 
 #ifdef __cplusplus
 }

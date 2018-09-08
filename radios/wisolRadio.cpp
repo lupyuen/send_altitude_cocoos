@@ -71,8 +71,7 @@ void WisolRadio::update(uint8_t data) {
       if (NO_EVENT != rxDoneEvt) {
         event_ISR_signal(rxDoneEvt);
       }
-      // We just hope that the message is read before new data arrives
-      // TODO: put received data in a thread safe circular buffer
+
       writepos = 0;
     }
     else {

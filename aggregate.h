@@ -19,9 +19,9 @@ struct AggregateContext {
   uint8_t networkTaskID;            // Task that aggregate task will send messages to
 };
 
-void setup_aggregate();
+uint8_t aggregate_setup(uint8_t network_task);
 
-void aggregate_task(void);
+
 
 END_EXTERN_C  //  End of extern C scope.
 

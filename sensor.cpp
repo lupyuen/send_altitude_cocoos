@@ -48,7 +48,8 @@ void sensor_task(void) {
       task_wait(context->sensor->info.poll_interval);
     }
     else {
-      event_wait(context->sensor->info.event);
+      //event_wait(context->sensor->info.event);
+      event_wait_timeout(context->sensor->info.event, TICKS_PER_S * 10);
     }
 
     context = (SensorContext *) task_get_data();
@@ -75,17 +76,7 @@ void sensor_task(void) {
   task_close();  //  End of the task. Should never come here.
 }
 
-uint8_t receive_sensor_data(float *dest, uint8_t destSize, const float *src, uint8_t srcSize ) {
-  //  Copy the received sensor data array into the provided data buffer.
-  //  Return the number of floats copied.
-  uint8_t i;
-  //  Copy the floats safely: Don't exceed the array size provided by caller.
-  //  Also don't exceed the number of available sensor data items.
-  for (i = 0; i < destSize && i < srcSize && i < MAX_SENSOR_DATA_SIZE; i++) {
-    dest[i] = src[i];
-  }
-  return i;  //  Return the number of floats copied.
-}
+
 
 //  SensorInfo constructor for C++ only.
 SensorInfo::SensorInfo(

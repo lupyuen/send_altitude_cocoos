@@ -17,21 +17,37 @@ static void save(const SensorMsg *msg);
 static SensorMsg *recallSensor(uint8_t id);
 static void copySensorData(SensorMsg *dest, const SensorMsg *src);
 static void addToPayload(char* payload, int data);
+static void aggregate_task(void);
 
 //  Remember the last sensor value of each sensor.
 static SensorMsg sensorData[N_SENSORS];
 
+static AggregateContext aggregateContext;
+static SensorMsg sensorMsgPool[NETWORK_MSG_POOL_SIZE];
 
-void setup_aggregate() {
+uint8_t aggregate_setup(uint8_t network_task) {
+
+  aggregateContext.networkTaskID = network_task;
+  aggregateContext.sendPeriodInSeconds = 900;
+
+  uint8_t aggregateTaskId = task_create(
+      aggregate_task,   //  Task will run this function.
+      &aggregateContext,  //  task_get_data() will be set to the display object.
+      20,             //  Priority 20 = lower priority than UART task
+       (Msg_t *) sensorMsgPool,  //  Pool to be used for storing the queue of UART messages.
+      NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
+      sizeof(SensorMsg));   //  Size of queue message.
+
 
   //  Clear the aggregated sensor data.
   for (int i = 0; i < N_SENSORS; i++) {
       sensorData[i].sensorId = NO_SENSOR;
       sensorData[i].count = 0;  //  Clear the values.
   }
+  return aggregateTaskId;
 }
 
-void aggregate_task(void) {
+static void aggregate_task(void) {
   //  Loop forever, receiving sensor data messages and sending to radio task to transmit to the network.
   //  Note: Declare task variables here before the task but don't populate them here
   //  unless they are not supposed to change.

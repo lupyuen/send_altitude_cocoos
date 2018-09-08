@@ -11,6 +11,13 @@
 
 static void serialize(NetworkCmd *cmd, char *buf);
 static void processResponse(NetworkContext *context);
+static void network_task(void);
+
+static NetworkContext networkContext;
+
+static char radioResponse[MAX_RADIO_RESPONSE_MSG_SIZE + 1];
+
+static NetworkMsg networkMsgPool[RADIO_MSG_POOL_SIZE];
 
 static NetworkCmd cmdList[MAX_NETWORK_CMD_LIST_SIZE];  //  Static buffer for storing command list. Includes terminating msg.
 NetworkCmd endOfList = { NULL, NULL, NULL, NULL, 0 };  //  Command to indicate end of command list.
@@ -18,7 +25,23 @@ NetworkCmd endOfList = { NULL, NULL, NULL, NULL, 0 };  //  Command to indicate e
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
 
-void network_task(void) {
+uint8_t network_setup(Radio *radio) {
+  networkContext.response = radioResponse;
+  networkContext.radio = radio;
+  networkContext.initialized = false;
+
+  uint8_t networkTaskID = task_create(
+    network_task,     //  Task will run this function.
+    &networkContext,  //  task_get_data() will be set to the display object.
+    10,            //  Priority 10 = highest priority
+    (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    RADIO_MSG_POOL_SIZE,     //  Size of queue pool.
+    sizeof(NetworkMsg));       //  Size of queue message.
+
+  return networkTaskID;
+}
+
+static void network_task(void) {
   //  This task loops and waits for an incoming message containing sensor data to be sent.
   //  The sensorData array contains float values of sensor readings which are converted to
   //  a string of hex digits and is added to a string of commands.
@@ -101,8 +124,6 @@ void network_task(void) {
       context->cmd++;
       context->nCommands--;
     }
-
-
 
     context = (NetworkContext *) task_get_data();
 

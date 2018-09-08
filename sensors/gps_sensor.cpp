@@ -1,5 +1,4 @@
-//  Implements the humidity sensor for BME280. Caller must use a semaphore to
-//  prevent concurrent access to BME280 module, which runs on a single I2C Bus.
+
 #include <cocoos.h>
 #include "sensor.h"
 #include "gps_sensor.h"
@@ -7,25 +6,21 @@
 #include "config.h"
 #include "string.h"
 
-static void init_sensor(void);
-static uint8_t poll_sensor(float *data, uint8_t size);
+static void init(void);
+static uint8_t poll(float *data, uint8_t size);
 static bool parse(char *nmea);
-
-//  Number of floats that this sensor returns as sensor data.
-#define sensorDataSize 2
 
 //  Construct a sensor object with the sensor functions.
 static Sensor sensor(
   "gps",                //  Name of sensor. The Structured Message field will use this name.
-  &init_sensor,         //  Function for initialising the sensor.
-  &poll_sensor          //  Function for polling sensor data.
+  &init,         //  Function for initialising the sensor.
+  &poll          //  Function for polling sensor data.
 );
 
 static SensorContext sensorContext;
-static float sensorData[sensorDataSize];
 
 static uint8_t nmeainput[128];
-bool bufferOpen = true;
+static bool bufferOpen = true;
 
 static float latitude;
 static float longitude;
@@ -65,7 +60,6 @@ void GpsReceiver::update(uint8_t data) {
       writepos = (writepos+1) % 128;
     }
   }
-
 }
 
 static UartSerial::ptr createGpsUart() {
@@ -76,28 +70,29 @@ static UartSerial::ptr createGpsUart() {
 // turn on GPRMC and GGA
 #define PMTK_SET_NMEA_OUTPUT_RMCGGA "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
 
-static void init_sensor(void) {
-  __attribute__((used)) static GpsReceiver gps(createGpsUart(), nmeainput);
+static void init(void) {
+  static GpsReceiver gps(createGpsUart(), nmeainput);
 
   const char *enableRMCGGA = PMTK_SET_NMEA_OUTPUT_RMCGGA;
   gps.write(enableRMCGGA, strlen(enableRMCGGA));
 }
 
-static uint8_t poll_sensor(float *data, uint8_t size) {
+static uint8_t poll(float *data, uint8_t size) {
   //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
   uint8_t rv = 0;
+
   if (parse((char*)nmeainput)) {
-    sensorData[0] = latitudeDegrees;
-    sensorData[1] = longitudeDegrees;
-    rv =  receive_sensor_data(data, size, sensorData, sensorDataSize);
+    data[0] = latitudeDegrees;
+    data[1] = longitudeDegrees;
+    rv =  2;
   }
 
   bufferOpen = true;
   return rv;
 }
 
-SensorContext *setup_gps_sensor(uint16_t pollInterval, uint8_t aggregator_id) {
+SensorContext *gps_setup(uint16_t pollInterval, uint8_t aggregator_id) {
   //  Set up and return the sensor context.
   setup_sensor_context(&sensorContext, &sensor, pollInterval, aggregator_id);
   return &sensorContext;
