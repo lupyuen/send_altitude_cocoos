@@ -21,6 +21,8 @@ send_altitude_cocoos
 ### Software Design
 The design of the system is shown below:
 ![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/send_altitude_cocoos.png)
+The cyan boxes is part of the platform and should (ideally) never be touched.
+The pink boxes is custom parts of the system: sensors, radio transceivers and serial connections. This is where you add stuff.
   
 # Hardware and required software:
 
@@ -31,5 +33,7 @@ The design of the system is shown below:
  - Sigfox breakout board BRKWS01 based on Wisol SFM10R1: https://yadom.eu/carte-breakout-sfm10r1.html
  - Adafruit Ultimate GPS breakout based on the MTK3339 chipset: https://www.adafruit.com/product/746
  
+ # Toolchain
+ The project uses gcc-arm-none-eabi toolchain for compiling and linking.
  
  More contents will follow here....
