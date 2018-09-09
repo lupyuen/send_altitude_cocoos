@@ -20,7 +20,7 @@ send_altitude_cocoos
 
 ### Software Design
 The design of the system is shown below:
-![alt text](https://github.com/lupyuen/send_altitude_cocoos/discoveryF4/send_altitude_cocoos.png)
+![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/send_altitude_cocoos.png)
   
 # Hardware and required software:
 
