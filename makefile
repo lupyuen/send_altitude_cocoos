@@ -1,9 +1,9 @@
 
 
-CPP_COMPILE_PATH = /home/peter/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-g++
-C_COMPILE_PATH =   /home/peter/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gcc
-ASSEM_PATH =       /home/peter/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-gcc
-LINKER_PATH =      /home/peter/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-g++
+CPP_COMPILE_PATH = /path/to/toolchain/bin/arm-none-eabi-g++
+C_COMPILE_PATH =   /path/to/toolchain/bin/arm-none-eabi-gcc
+ASSEM_PATH =       /path/to/toolchain/bin/arm-none-eabi-gcc
+LINKER_PATH =      /path/to/toolchain/bin/arm-none-eabi-g++
 
 CPP_FLAGS = -c -mcpu=cortex-m4 -mthumb -mlittle-endian -O2 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fno-threadsafe-statics -g3 -ggdb -std=gnu++11 -fabi-version=0 -MMD -MP
 C_FLAGS = -c -mcpu=cortex-m4 -mthumb -mlittle-endian -O2 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -ggdb -std=gnu11 -nostdlib -MMD -MP
@@ -41,19 +41,12 @@ moddeps = stmlib cocoOS
 # for each module, define the module object files. 
 moduleobjs = $(foreach module, $(moddeps), $(wildcard $(modpath)/$(module)/$(mcu)/obj/*.o) ) $(foreach module, $(moddeps), $(wildcard $(modpath)/$(module)/common/obj/*.o) )
 
-
-name: 
-	@echo $(sources)
 	
-#prog: application modules
 prog: $(moddeps) application
 	$(link) $(moduleobjs) $(appobjs)
 	
 	
 application: $(appobjs)
-
-#modules: 
-#	cd ../../modules/mcal && $(MAKE) mcu=stm32f4
 
 $(moddeps) : 
 	cd $(modpath)/$@ && $(MAKE)
@@ -81,11 +74,7 @@ $(moddeps) :
 
 ./output/%.o : ./$(mcu)/src/%.S
 	$(ASSEM) $(includes) -c $^ -o $@
-	
-names:
-	
-	@echo $(moduleobjs)
-	
+		
 clean:
 	rm ./output/*
 	
