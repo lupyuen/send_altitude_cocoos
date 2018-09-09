@@ -1,8 +1,9 @@
-A demonstration of the IoT platform send_altitude_cocoos ported to the ST DiscoveryF4 board.
+A demonstration of the IoT platform send_altitude_cocoos ported to the ST DiscoveryF4 board. Position aquired from a GPS module is sent to Sigfox network.
 
 # Introduction
 This project is based on the send_altitude_cocoos platform and follows its pattern: sensors are periodically polled for new readings that are sent to an aggregator. The aggregator in turn is setup to periodically send the collected readings to the network task for transmission. Finally the network task sends the sensor readings as a package to the connected Sigfox radio.
 
+### Repo structure changes
 However, the code has been refactored and restructured. Some files have been removed, and others have been renamed. All references to Arduino are removed, so is also all the debug prints to make the code cleaner and more readable. File tree was restructured to separate platform files at top level from project specific files in subfolders:
 ```
 send_altitude_cocoos
@@ -16,6 +17,9 @@ send_altitude_cocoos
 |  |--gps_sensor.h
 |--stm32f4
 ```
+
+### Software Design
+The design of the system is shown below:
 
   
 # Hardware and required software:
