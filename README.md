@@ -36,7 +36,7 @@ The pink boxes is custom parts of the system: sensors, radio transceivers and se
 ## Build and deploy for Linux
 The project uses gcc-arm-none-eabi toolchain for compiling and linking:
  - https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads. Untar the file in a suitable directory, e.g. ~/opt/toolchains/gcc-arm-none-eabi
- - Enter the path to the installation folder in the makefile.
+ - Enter the path to the installation folder in the send_altitude_cocoos/makefile.
  - Cd to directory with send_altitude_cocoos repo and enter `make prog mcu=stm32f4 host=linux` to compile and link the application.
  
  To download the application binary to the discovery board we use st-link. 
