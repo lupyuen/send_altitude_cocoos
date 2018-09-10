@@ -28,7 +28,7 @@ The pink boxes is custom parts of the system: sensors, radio transceivers and se
 
  - The code in this repo
  - cocoOS, v5.0.3: https://github.com/cocoOS/cocoOS should be located at same level as send_altitude_cocoos
- - A folder named stmlib at same level as send_altitude_cocoos, with inc and src subfolders containing the ST firmware lib files.
+ - stmlib: https://github.com/cocoOS/stmlib should be located at same level as send_altitude_cocoos
  - STM32F4DISCOVERY Discovery kit with MCU STM32F407VG
  - Sigfox breakout board BRKWS01 based on Wisol SFM10R1: https://yadom.eu/carte-breakout-sfm10r1.html
  - Adafruit Ultimate GPS breakout based on the MTK3339 chipset: https://www.adafruit.com/product/746
@@ -37,9 +37,9 @@ The pink boxes is custom parts of the system: sensors, radio transceivers and se
 The project uses gcc-arm-none-eabi toolchain for compiling and linking:
  - https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads. Untar the file in a suitable directory, e.g. ~/opt/toolchains/gcc-arm-none-eabi
  - Enter the path to the installation folder in the send_altitude_cocoos/makefile.
- - Cd to directory with send_altitude_cocoos repo and enter `make prog mcu=stm32f4 host=linux` to compile and link the application.
+ - Cd to directory with send_altitude_cocoos repo and enter `make` to compile and link the application.
  
- To download the application binary to the discovery board we use st-link. 
+ To flash the application binary to the discovery board we use st-link. 
   - `sudo apt-get install libusb-1.0-0-dev`
   - In a suitable directory: `git clone https://github.com/texane/stlink stlink.git`
    - Then:
@@ -71,8 +71,10 @@ Make sure the numbers for idVendor and idProduct matches what was listed when yo
 
 Now we are almost done!
 
- - Set environment variable LD_LIBRARY_PATH to the st-link lib folder: `export LD_LIBRARY_PATH=$HOME/usr/local/lib`
- - cd to the send_altitude_cocoos directory. It should contain the binary app.elf, created in the build step above. Create a .bin file: `/path/to/toolchain/arm-none-eabi-objcopy -O binary app.elf app.bin`
+ - Set environment variable LD_LIBRARY_PATH to the st-link lib folder:
+ `export LD_LIBRARY_PATH=$HOME/usr/local/lib`
+ - cd to the send_altitude_cocoos/output directory. It should contain the binary app.elf, created in the build step above. Create a .bin file: 
+ `/path/to/toolchain/arm-none-eabi-objcopy -O binary app.elf app.bin`
  - Flash it: `~/usr/local/bin/st-flash write app.bin 0x08000000` 
 
  More contents will follow here....
