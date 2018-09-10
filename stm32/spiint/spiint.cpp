@@ -194,8 +194,8 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 
 	spi_init_master(
 		SPI1,
-		// SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
-		SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
+		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
+		// SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
 		SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
 		SPI_CR1_CPHA_CLK_TRANSITION_1, ////
 		SPI_DFF,
@@ -370,9 +370,9 @@ void dma1_channel2_isr(void)
 {
 	//// TODO: gpio_set(SS_PORT, SS_PIN);
 	//// TODO: gpio_clear(SS_PORT, SS_PIN);
-	if ((DMA1_ISR &DMA_ISR_TCIF2) != 0) {
-		DMA1_IFCR |= DMA_IFCR_CTCIF2;
-	}
+	//// if ((DMA1_ISR &DMA_ISR_TCIF2) != 0) { DMA1_IFCR |= DMA_IFCR_CTCIF2; }
+	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL2, DMA_TCIF) )
+		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL2, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
 	spi_disable_rx_dma(SPI1);
 	dma_disable_channel(DMA1, DMA_CHANNEL2);
@@ -385,9 +385,9 @@ void dma1_channel2_isr(void)
 
 /* SPI transmit completed with DMA */
 void dma1_channel3_isr(void) {
-	if ((DMA1_ISR &DMA_ISR_TCIF3) != 0) {
-		DMA1_IFCR |= DMA_IFCR_CTCIF3;
-	}
+	//// if ((DMA1_ISR &DMA_ISR_TCIF3) != 0) { DMA1_IFCR |= DMA_IFCR_CTCIF3; }
+	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL3, DMA_TCIF) )
+		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL3, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 	spi_disable_tx_dma(SPI1);
 	dma_disable_channel(DMA1, DMA_CHANNEL3);
@@ -467,26 +467,74 @@ int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI
 	return result;
 }
 
+static const uint8_t ID_ADDR         = 0xD0;
+static const uint8_t BME280_SPI_WRITE   = 0x7F;
+static const uint8_t BME280_SPI_READ    = 0x80;
+
 static volatile uint8_t tx_packet[16];
 static volatile uint8_t rx_packet[16];
 
-void spi_test(void)
-{
-	debug_println("spi_test"); debug_flush();
+static void
+test_spi_configure(void) {
+	debug_println("test_spi_configure"); // debug_flush();
+	rcc_periph_clock_enable(RCC_SPI1);
+	gpio_set_mode(
+		GPIOA,
+        GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
+        GPIO4|GPIO5|GPIO7		// NSS=PA4,SCK=PA5,MOSI=PA7
+	);
+	gpio_set_mode(
+		GPIOA,
+		GPIO_MODE_INPUT,
+		GPIO_CNF_INPUT_FLOAT,
+		GPIO6				// MISO=PA6
+	);
+	spi_reset(SPI1); 
+	spi_init_master(
+		SPI1,
+        SPI_CR1_BAUDRATE_FPCLK_DIV_256,
+        SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE,
+		SPI_CR1_CPHA_CLK_TRANSITION_1,
+	    SPI_CR1_DFF_8BIT,
+	    SPI_CR1_MSBFIRST
+	);
+	spi_disable_software_slave_management(SPI1);
+	spi_enable_ss_output(SPI1);
+}
 
-	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-	spi_setup();
-	spi_configure(500000, MSBFIRST, SPI_MODE0);
-	spi_open();
-
-	static const uint8_t ID_ADDR         = 0xD0;
-	static const uint8_t BME280_SPI_WRITE   = 0x7F;
-   	static const uint8_t BME280_SPI_READ    = 0x80;
-
+static uint8_t
+test_read(void) {
 	// bme280 uses the msb to select read and write
 	// combine the addr with the read/write bit
 	uint8_t addr = ID_ADDR;
 	uint8_t readAddr = addr | BME280_SPI_READ;
+	// uint8_t readAddr = addr & BME280_SPI_WRITE;
+	spi_enable(SPI1);
+	spi_xfer(SPI1, readAddr);
+#define DUMMY			0x00
+	uint8_t sr1 = spi_xfer(SPI1, DUMMY);
+	spi_disable(SPI1);
+	debug_print("test_read received "); debug_println((int) sr1); debug_flush();
+	return sr1;
+}
+
+void spi_test(void) {
+	debug_println("spi_test"); debug_flush();
+
+	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+	spi_setup();
+
+	test_spi_configure(); test_read(); for(;;) {} ////
+
+	spi_configure(500000, MSBFIRST, SPI_MODE0);
+	spi_open();
+
+	// bme280 uses the msb to select read and write
+	// combine the addr with the read/write bit
+	uint8_t addr = ID_ADDR;
+	// uint8_t readAddr = addr | BME280_SPI_READ;
+	uint8_t readAddr = addr & BME280_SPI_WRITE;
 	tx_packet[0] = readAddr;
 	rx_packet[0] = 0;
 	int tx_len = 1;
