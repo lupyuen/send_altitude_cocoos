@@ -88,6 +88,7 @@ uint8_t dummy_tx_buf = 0xdd;
 #endif
 
 void spi_setup(void) {
+	debug_println("spi_setup"); debug_flush();
 	//  Moved to platform_setup() in bluepill.cpp.
 	//  rcc_spi_setup_in_hse_12mhz_out_72mhz();
 
@@ -104,6 +105,7 @@ void spi_setup(void) {
 }
 
 void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
+	debug_println("spi_configure"); debug_flush();
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -160,6 +162,18 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 		SPI_CR1_MSBFIRST
 	);
 
+#define HARDWARE_NSS ////
+#ifdef HARDWARE_NSS
+	//  Set NSS management to hardware.
+	//  Important!  	You must have a pullup resistor on the NSS
+ 	//  line in order that the NSS (/CS) SPI output
+ 	//  functions correctly as a chip select. The
+ 	//  SPI peripheral configures NSS pin as an
+ 	//  open drain output.
+	debug_println("spi_configure hardware nss"); debug_flush();
+	spi_disable_software_slave_management(SPI1);
+	spi_enable_ss_output(SPI1);
+#else
 	/*
 	 * Set NSS management to software.
 	 *
@@ -170,6 +184,7 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 	 */
 	spi_enable_software_slave_management(SPI1);
 	spi_set_nss_high(SPI1);
+#endif  //  NSS_HARDWARE
 
 	/* Enable SPI1 periph. */
 	spi_enable(SPI1);
@@ -177,6 +192,7 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 
 void spi_open(void) {
 	//  Enable DMA interrupt for SPI1.
+	debug_println("spi_open"); debug_flush();
 	/* SPI1 RX on DMA1 Channel 2 */
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
 	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -187,23 +203,24 @@ void spi_open(void) {
 
 void spi_close(void) {
 	//  Disable DMA interrupt for SPI1.
+	debug_println("spi_close"); debug_flush();
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
  	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
 }
 
-int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
+int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
 	//  Print what is going to be sent on the SPI bus
-	debug_print("Sending packet tx len "); debug_println(tx_len);
+	debug_print("spi_transceive sending len "); debug_println(tx_len);
 	for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); }
 	debug_println(""); debug_flush();
 
 	/* Check for 0 length in both tx and rx */
 	if ((rx_len < 1) && (tx_len < 1)) {
 		/* return -1 as error */
-		debug_println("Attempted 0 length tx and rx packets"); debug_flush();
+		debug_println("***** ERROR: Attempted 0 length SPI transceive"); debug_flush();
 		return -1;
 	}
 	/* Reset DMA channels*/
@@ -265,7 +282,7 @@ int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int
 		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
 	} else {
-		/* Here we aren't transmitting any real data, use the dummy buffer
+		/* TODO: Here we aren't transmitting any real data, use the dummy buffer
 		 * and set the length to the rx_len to get all rx data in, while
 		 * not incrementing the memory pointer
 		 */
@@ -314,11 +331,8 @@ void dma1_channel2_isr(void)
 	if ((DMA1_ISR &DMA_ISR_TCIF2) != 0) {
 		DMA1_IFCR |= DMA_IFCR_CTCIF2;
 	}
-
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
-
 	spi_disable_rx_dma(SPI1);
-
 	dma_disable_channel(DMA1, DMA_CHANNEL2);
 
 	/* Increment the status to indicate one of the transfers is complete */
@@ -335,7 +349,7 @@ void dma1_channel3_isr(void) {
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 	spi_disable_tx_dma(SPI1);
 	dma_disable_channel(DMA1, DMA_CHANNEL3);
-	/* If tx_len < rx_len, create a dummy transfer to clock in the remaining
+	/* TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining
 	 * rx data */
 	if (rx_buf_remainder > 0) {
 		dma_channel_reset(DMA1, DMA_CHANNEL3);
@@ -390,7 +404,7 @@ void spi_wait(void) {
 	debug_println("spi_wait returned"); debug_flush();
 }
 
-int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
+int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
@@ -405,7 +419,7 @@ int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf
 	spi_wait();
 
 	//  Print what was received on the SPI bus
-	debug_print("Received Packet rx len"); debug_println(rx_len);
+	debug_print("spi_transceive_wait received len "); debug_println(rx_len);
 	for (int i = 0; i < rx_len; i++) { debug_print(rx_buf[i]); debug_print(" "); }
 	debug_println(""); debug_flush();
 	return result;

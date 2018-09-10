@@ -39,8 +39,8 @@ void spi_setup(void);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be 
 void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
 void spi_open(void);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
-int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 void spi_wait(void);  //  Wait until transceive complete.
 void spi_close(void);  //  Disable DMA interrupt for SPI1.
 void spi_test(void);  //  For testing only.
