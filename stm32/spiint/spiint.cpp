@@ -147,6 +147,45 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 	SPI_CR1_CPHA_CLK_TRANSITION_2
 	”
 	Excerpt From: Warren Gay. “Beginning STM32.”
+
+	“Divisor
+	Macro
+	SPI1 Frequency
+	SPI2 Frequency
+	2
+	SPI_CR1_BAUDRATE_FPCLK_DIV_2 =
+	36 MHz
+	18 MHz
+	4
+	SPI_CR1_BAUDRATE_FPCLK_DIV_4 =
+	18 MHz
+	9 MHz
+	8
+	SPI_CR1_BAUDRATE_FPCLK_DIV_8 =
+	9 MHz
+	4.5 MHz
+	16
+	SPI_CR1_BAUDRATE_FPCLK_DIV_16 =
+	4.5 MHz
+	2.25 MHz
+	32
+	SPI_CR1_BAUDRATE_FPCLK_DIV_32 =
+	2.25 MHz
+	1.125 MHz
+	64
+	SPI_CR1_BAUDRATE_FPCLK_DIV_64 =
+	1.125 MHz
+	562.5 kHz
+	128
+	SPI_CR1_BAUDRATE_FPCLK_DIV_128 =
+	562.5 kHz
+	281.25 kHz
+	256
+	SPI_CR1_BAUDRATE_FPCLK_DIV_256 =
+	281.25 kHz
+	140.625 kHz”
+
+	Excerpt From: Warren Gay. “Beginning STM32.” iBooks. 
 	 */
 #define SPI_MODE0 0x00
 #define SPI_MODE1 0x04
@@ -155,7 +194,8 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 
 	spi_init_master(
 		SPI1,
-		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////
+		// SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
+		SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
 		SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
 		SPI_CR1_CPHA_CLK_TRANSITION_1, ////
 		SPI_DFF,
@@ -254,6 +294,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	 *    interrupt, set up a new dummyy buf tx dma transfer for the remaining
 	 *    required clock cycles (handled in tx dma complete interrupt)
 	 */
+	rx_buf_remainder = 0;
 	if ((tx_len > 0) && (tx_len < rx_len)) {
 		rx_buf_remainder = rx_len - tx_len;
 	}
@@ -320,7 +361,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
     spi_enable_tx_dma(SPI1);
 
 	int result = 0;
-	debug_print("spi_transceive returned "); debug_println(result); // debug_flush();
+	debug_print("spi_transceive returned "); debug_println(result); debug_flush();
     return result;
 }
 
