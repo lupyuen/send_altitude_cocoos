@@ -16,6 +16,10 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 //  This is the new SPI Interface.  New code should use this.
 void spi_setup(void);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
 void spi_configure();
+void spi_open(void);  //  Enable DMA interrupt for SPI1.
+int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len);
+void spi_close(void);  //  Disable DMA interrupt for SPI1.
+void spi_test(void);  //  For testing only.
 
 #ifdef __cplusplus
 }  //  End of extern C scope.
