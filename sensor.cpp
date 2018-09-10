@@ -32,9 +32,9 @@ void sensor_task(void) {
   //  This task will be reused by all sensors: temperature, humidity, altitude.
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
-  SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
+  SensorContext *context = NULL;
 
-  task_open();  //  Start of the task. Must be matched with task_close().
+  task_open();
   context = (SensorContext *) task_get_data();
 
   // Initialize the SensorMsg contained in this sensor context
@@ -48,7 +48,6 @@ void sensor_task(void) {
       task_wait(context->sensor->info.poll_interval);
     }
     else {
-      //event_wait(context->sensor->info.event);
       event_wait_timeout(context->sensor->info.event, TICKS_PER_S * 10);
     }
 
