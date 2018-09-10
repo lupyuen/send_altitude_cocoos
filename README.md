@@ -77,4 +77,14 @@ Now we are almost done!
  `/path/to/toolchain/arm-none-eabi-objcopy -O binary app.elf app.bin`
  - Flash it: `~/usr/local/bin/st-flash write app.bin 0x08000000` 
 
+## Debug with Eclipse
+You can of course load the code and start a gdb debug session from within Eclipse. How to set this up is explained in this excellent guide: http://erika.tuxfamily.org/wiki/index.php?title=Tutorial:_STM32_-_Integrated_Debugging_in_Eclipse_using_GNU_toolchain
+
+## Hardware
+Here is my setup:
+![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/IMG_20180910_205904.png)
+
+![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/IMG_20180910_210037.png)
+
+
  More contents will follow here....
