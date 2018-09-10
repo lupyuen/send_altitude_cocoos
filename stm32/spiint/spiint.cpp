@@ -32,9 +32,20 @@
 #include <stdio.h>
 #include <errno.h>
 #include <logger.h>
+#include "spiint.h"
 
-#ifndef USE_16BIT_TRANSFERS
-#define USE_16BIT_TRANSFERS 0
+#ifndef USE_16BIT_SPI_TRANSFERS
+#define USE_16BIT_SPI_TRANSFERS 0
+#endif
+
+#if USE_16BIT_SPI_TRANSFERS
+#define SPI_PSIZE DMA_CCR_PSIZE_16BIT
+#define SPI_MSIZE DMA_CCR_MSIZE_16BIT
+#define SPI_DFF SPI_CR1_DFF_16BIT
+#else
+#define SPI_PSIZE DMA_CCR_PSIZE_8BIT
+#define SPI_MSIZE DMA_CCR_MSIZE_8BIT
+#define SPI_DFF SPI_CR1_DFF_8BIT
 #endif
 
 //  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7.  TODO: Support other ports and pins.
@@ -70,7 +81,7 @@ volatile int transceive_status;
 /* Global for dummy tx dma transfer */
 int rx_buf_remainder = 0;
 
-#if USE_16BIT_TRANSFERS
+#if USE_16BIT_SPI_TRANSFERS
 uint16_t dummy_tx_buf = 0xdd;
 #else
 uint8_t dummy_tx_buf = 0xdd;
@@ -92,7 +103,7 @@ void spi_setup(void) {
 	////rcc_periph_clock_enable(RCC_GPIOC);
 }
 
-void spi_configure(void) {
+void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -140,25 +151,14 @@ void spi_configure(void) {
 #define SPI_MODE2 0x08
 #define SPI_MODE3 0x0C
 
-#if USE_16BIT_TRANSFERS
 	spi_init_master(
 		SPI1,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////
 		SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
 		SPI_CR1_CPHA_CLK_TRANSITION_1, ////
-		SPI_CR1_DFF_16BIT,
+		SPI_DFF,
 		SPI_CR1_MSBFIRST
 	);
-#else
-	spi_init_master(
-		SPI1,
-		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////
-		SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
-		SPI_CR1_CPHA_CLK_TRANSITION_1, ////
-		SPI_CR1_DFF_8BIT,
-		SPI_CR1_MSBFIRST
-	);
-#endif
 
 	/*
 	 * Set NSS management to software.
@@ -191,19 +191,15 @@ void spi_close(void) {
  	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
 }
 
-#if USE_16BIT_TRANSFERS
-int spi_transceive(uint16_t *tx_buf, int tx_len, uint16_t *rx_buf, int rx_len)
-#else
-int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len)
-#endif
-{	
+int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
+	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+	//  Return -1 in case of error.
 
 	/* Check for 0 length in both tx and rx */
 	if ((rx_len < 1) && (tx_len < 1)) {
 		/* return -1 as error */
 		return -1;
 	}
-
 	/* Reset DMA channels*/
 	dma_channel_reset(DMA1, DMA_CHANNEL2);
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
@@ -244,13 +240,8 @@ int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len)
 		dma_set_number_of_data(DMA1, DMA_CHANNEL2, rx_len);
 		dma_set_read_from_peripheral(DMA1, DMA_CHANNEL2);
 		dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL2);
-#if USE_16BIT_TRANSFERS
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL2, DMA_CCR_PSIZE_16BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL2, DMA_CCR_MSIZE_16BIT);
-#else
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL2, DMA_CCR_PSIZE_8BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL2, DMA_CCR_MSIZE_8BIT);
-#endif
+		dma_set_peripheral_size(DMA1, DMA_CHANNEL2, SPI_PSIZE);
+		dma_set_memory_size(DMA1, DMA_CHANNEL2, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL2, DMA_CCR_PL_VERY_HIGH);
 	}
 
@@ -262,13 +253,8 @@ int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len)
 		dma_set_number_of_data(DMA1, DMA_CHANNEL3, tx_len);
 		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
 		dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL3);
-#if USE_16BIT_TRANSFERS
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_16BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_16BIT);
-#else
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_8BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_8BIT);
-#endif
+		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
+		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
 	} else {
 		/* Here we aren't transmitting any real data, use the dummy buffer
@@ -280,13 +266,8 @@ int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len)
 		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_len); // Change here
 		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
 		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
-#if USE_16BIT_TRANSFERS
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_16BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_16BIT);
-#else
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_8BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_8BIT);
-#endif
+		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
+		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
 	}
 
@@ -337,22 +318,15 @@ void dma1_channel2_isr(void)
 }
 
 /* SPI transmit completed with DMA */
-void dma1_channel3_isr(void)
-{
-	////gpio_set(GPIOB, GPIO1);
+void dma1_channel3_isr(void) {
 	if ((DMA1_ISR &DMA_ISR_TCIF3) != 0) {
 		DMA1_IFCR |= DMA_IFCR_CTCIF3;
 	}
-
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
-
 	spi_disable_tx_dma(SPI1);
-
 	dma_disable_channel(DMA1, DMA_CHANNEL3);
-
 	/* If tx_len < rx_len, create a dummy transfer to clock in the remaining
-	 * rx data
-	 */
+	 * rx data */
 	if (rx_buf_remainder > 0) {
 		dma_channel_reset(DMA1, DMA_CHANNEL3);
 		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
@@ -360,13 +334,8 @@ void dma1_channel3_isr(void)
 		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_buf_remainder); // Change here
 		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
 		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
-#if USE_16BIT_TRANSFERS
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_16BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_16BIT);
-#else
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_8BIT);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_8BIT);
-#endif
+		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
+		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
 
 		rx_buf_remainder = 0; // Clear the buffer remainder to disable this section later
@@ -378,8 +347,6 @@ void dma1_channel3_isr(void)
 		/* Increment the status to indicate one of the transfers is complete */
 		transceive_status++;
 	}
-
-	////gpio_clear(GPIOB, GPIO1);
 }
 
 static void OLDgpio_setup(void)
@@ -398,108 +365,77 @@ static void OLDgpio_setup(void)
 
 }
 
+void spi_wait(void) {
+	/* Wait until transceive complete.
+	* This checks the state flag as well as follows the
+	* procedure on the Reference Manual (RM0008 rev 14
+	* Section 25.3.9 page 692, the note.)
+	*/
+	while (transceive_status != DONE) {}
+	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
+	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
+}
+
+int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
+	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+	//  Return -1 in case of error.
+
+	//  Print what is going to be sent on the SPI bus
+	debug_print("Sending packet tx len "); debug_println(tx_len);
+	for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); }
+	debug_println(""); debug_flush();
+
+	//  Start a transceive
+	transceive_status = DONE;  //  TODO
+	int result = spi_transceive(tx_buf, tx_len, rx_buf, rx_len);
+	if (result < 0) {
+		debug_println("Attempted 0 length tx and rx packets"); debug_flush();
+		return result;
+	}
+
+	//  Wait until transceive complete.
+	spi_wait();
+
+	//  Print what was received on the SPI bus
+	debug_print("Received Packet rx len"); debug_println(rx_len);
+	for (int i = 0; i < rx_len; i++) { debug_print(rx_buf[i]); debug_print(" "); }
+	debug_println(""); debug_flush();
+	return result;
+}
+
+static uint8_t tx_packet[16];
+static uint8_t rx_packet[16];
+
 void spi_test(void)
 {
 	debug_println("spi_test"); debug_flush();
-	int counter_tx = 0;
-	int counter_rx = 0;
-	cnt_state counter_state = TX_UP_RX_HOLD;
-	int i = 0;
-	transceive_status = DONE;
 
 	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
 	spi_setup();
-	// gpio_setup();
-	// usart_setup();
-	spi_configure();
+	spi_configure(500000, MSBFIRST, SPI_MODE0);
 	spi_open();
-	// dma_setup();
 
-	// bme280 uses the msb to select read and write
-	// combine the addr with the read/write bit
 	static const uint8_t ID_ADDR         = 0xD0;
 	static const uint8_t BME280_SPI_WRITE   = 0x7F;
    	static const uint8_t BME280_SPI_READ    = 0x80;
+
+	// bme280 uses the msb to select read and write
+	// combine the addr with the read/write bit
 	uint8_t addr = ID_ADDR;
 	uint8_t readAddr = addr | BME280_SPI_READ;
-	uint8_t tx_packet[1] = { readAddr };
-	uint8_t rx_packet[1] = { 0 };
+	tx_packet[0] = readAddr;
+	rx_packet[0] = 0;
 	int tx_len = 1;
 	int rx_len = 1;
+	spi_transceive(tx_packet, tx_len, rx_packet, rx_len);
 
-	/* Blink the LED (PA8) on the board with every transmitted byte. */
-	{
-		/* LED on/off */
-		// gpio_toggle(GPIOA, LED_PIN);
-
-		/* Print what is going to be sent on the SPI bus */
-		debug_print("Sending  packet tx len "); debug_println(counter_tx);
-		for (i = 0; i < tx_len; i++)
-		{
-			debug_print((int) tx_packet[i]); debug_print(" "); 
-		}
-		debug_println(""); debug_flush();
-
-		/* Start a transceive */
-		if (spi_transceive(tx_packet, tx_len, rx_packet, rx_len)) {
-			debug_println("Attempted 0 length tx and rx packets"); debug_flush();
-		}
-
-		/* Wait until transceive complete.
-		 * This checks the state flag as well as follows the
-		 * procedure on the Reference Manual (RM0008 rev 14
-		 * Section 25.3.9 page 692, the note.)
-		 */
-		while (transceive_status != DONE)
-			;
-		while (!(SPI_SR(SPI1) & SPI_SR_TXE))
-			;
-		while (SPI_SR(SPI1) & SPI_SR_BSY)
-			;
-
-		/* Print what was received on the SPI bus */
-		debug_print("Received Packet rx len"); debug_println(rx_len);
-		for (i = 0; i < rx_len; i++) {
-			debug_print(rx_packet[i]); debug_print(" ");
-		}
-		debug_println(""); debug_flush();
-
-		/* Update counters
-		 * If we use the loopback method, we can not
-		 * have a rx length longer than the tx length.
-		 * Testing rx lengths longer than tx lengths
-		 * requires an actual slave device that will
-		 * return data.
-		 */
-		switch (counter_state) {
-			case TX_UP_RX_HOLD:
-				counter_tx++;
-				if (counter_tx > 15) {
-					counter_state = TX_HOLD_RX_UP;
-				}
-				break;
-			case TX_HOLD_RX_UP:
-				counter_rx++;
-				if (counter_rx > 15) {
-					counter_state = TX_DOWN_RX_HOLD;
-				}
-				break;
-			case TX_DOWN_RX_HOLD:
-				counter_tx--;
-				if (counter_tx < 1) {
-					counter_state = TX_HOLD_RX_DOWN;
-				}
-				break;
-			case TX_HOLD_RX_DOWN:
-				counter_rx--;
-				if (counter_rx < 1) {
-					counter_state = TX_UP_RX_HOLD;
-				}
-				break;
-			default:
-				;
-		}
-	}
+	// transfer 0x00 to get the data
+	tx_packet[0] = 0;
+	rx_packet[0] = 0;
+	tx_len = 1;
+	rx_len = 1;
+	spi_transceive(tx_packet, tx_len, rx_packet, rx_len);
 
 	spi_close();
+	debug_println("spi_test OK"); debug_flush();
 }

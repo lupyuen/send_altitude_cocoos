@@ -9,15 +9,39 @@
 #include <stdint.h>  //  For uint8_t
 #include <stdlib.h>  //  For size_t
 
+#define USE_16BIT_SPI_TRANSFERS 0  //  Uncomment for 8-bit SPI transfer.
+//  #define USE_16BIT_SPI_TRANSFERS 1  //  Uncomment for 16-bit SPI transfer.
+
+#ifndef LSBFIRST
+#define LSBFIRST 0
+#endif
+#ifndef MSBFIRST
+#define MSBFIRST 1
+#endif
+
+#define SPI_MODE0 0x00
+#define SPI_MODE1 0x04
+#define SPI_MODE2 0x08
+#define SPI_MODE3 0x0C
+
+#if USE_16BIT_SPI_TRANSFERS
+#define SPI_DATA_TYPE uint16_t
+#else
+#define SPI_DATA_TYPE uint8_t
+#endif
+
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 //  This is the new SPI Interface.  New code should use this.
 void spi_setup(void);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
-void spi_configure();
+void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
 void spi_open(void);  //  Enable DMA interrupt for SPI1.
-int spi_transceive(uint8_t *tx_buf, int tx_len, uint8_t *rx_buf, int rx_len);
+//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+void spi_wait(void);  //  Wait until transceive complete.
 void spi_close(void);  //  Disable DMA interrupt for SPI1.
 void spi_test(void);  //  For testing only.
 
@@ -27,17 +51,28 @@ void spi_test(void);  //  For testing only.
 
 #ifdef __cplusplus  //  SPIInterface class for C++ only
 //  This is the legacy SPI Interface for Arduino.  New code should NOT use this.
+class SPIInterfaceSettings {
+public:
+  SPIInterfaceSettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);  //  Used by BME280Spi.cpp
+  // SPIInterfaceSettings();
+};
+
 class SPIInterface {
-  public:
-    SPIInterface();
-    void begin();  //  Used by bme280.cpp
-    void beginTransmission(uint8_t);  //  Used by BME280I2C.cpp
-    size_t write(uint8_t registerIDOrValue);  //  Used by BME280I2C.cpp
-    size_t write(uint8_t registerID, uint8_t value);  //  New code should use this.
-    uint8_t endTransmission(void);  //  Used by BME280I2C.cpp
-    uint8_t requestFrom(uint8_t addr, uint8_t length);  //  Used by BME280I2C.cpp
-    int available(void);  //  Used by BME280I2C.cpp
-    int read(void);  //  Used by BME280I2C.cpp
+public:
+    // static void begin();
+    // static void usingInterrupt(uint8_t interruptNumber);
+    // static void notUsingInterrupt(uint8_t interruptNumber);
+    static void beginTransaction(SPIInterfaceSettings settings);  //  Used by BME280Spi.cpp
+    static uint8_t transfer(uint8_t data);  //  Used by BME280Spi.cpp
+    // static uint16_t transfer16(uint16_t data);
+    // static void transfer(void *buf, size_t count);
+    static void endTransaction(void);  //  Used by BME280Spi.cpp
+    // static void end();
+    // static void setBitOrder(uint8_t bitOrder);
+    // static void setDataMode(uint8_t dataMode);
+    // static void setClockDivider(uint8_t clockDiv);
+    // static void attachInterrupt();
+    // static void detachInterrupt();
 };
 #endif  //  __cplusplus
 #endif  //  SPIINT_H_
