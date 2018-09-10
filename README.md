@@ -90,6 +90,13 @@ Here is my setup:
 ![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/IMG_20180910_210037.png)
 
 
+## Sigfox message
+And the proof of a working system:
 
+![GitHub Logo](https://github.com/lupyuen/send_altitude_cocoos/blob/discoveryF4/sigfox.png)
+
+The message data: 225a5f0007207dc8 should be interpreted as to hex values:
+Latitude  = 0x225a5f00  => Divide with 10000000 =>  57.6347904 deg
+Longitude = 0x07207dc8  => Divide with 10000000 =>  11.9569864 deg
 
  More contents will follow here....
