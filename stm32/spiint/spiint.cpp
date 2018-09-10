@@ -10,37 +10,33 @@
 #include <errno.h>
 #include "spiint.h"
 
-int _write(int file, char *ptr, int len);
-
-static void clock_setup(void)
-{
+void spi_setup(void) {
 	//  Moved to platform_setup() in bluepill.cpp.
 	//  rcc_clock_setup_in_hse_12mhz_out_72mhz();
 
+	//  Enable SPI1 peripheral and GPIOA clocks.
+	rcc_periph_clock_enable(RCC_GPIOA);  //  GPIOA because SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
+	rcc_periph_clock_enable(RCC_SPI1);
+
 	/* Enable GPIOA, GPIOB, GPIOC clock. */
-	rcc_periph_clock_enable(RCC_GPIOA);
-	rcc_periph_clock_enable(RCC_GPIOB);
-	rcc_periph_clock_enable(RCC_GPIOC);
+	////rcc_periph_clock_enable(RCC_GPIOB);
+	////rcc_periph_clock_enable(RCC_GPIOC);
 
 	/* Enable clocks for GPIO port A (for GPIO_USART2_TX) and USART2. */
-	rcc_periph_clock_enable(RCC_GPIOA);
-	rcc_periph_clock_enable(RCC_AFIO);
-	rcc_periph_clock_enable(RCC_USART2);
-
-	/* Enable SPI1 Periph and gpio clocks */
-	rcc_periph_clock_enable(RCC_SPI1);
+	////rcc_periph_clock_enable(RCC_GPIOA);
+	////rcc_periph_clock_enable(RCC_AFIO);
+	////rcc_periph_clock_enable(RCC_USART2);
 }
 
-static void spi_setup(void) {
-
+void spi_configure(void) {
   /* Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7 */
   gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
-            GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO4 |
-            								GPIO5 |
-                                            GPIO7 );
+            GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO4 |  //  SS
+            								GPIO5 |  //  SCK
+                                            GPIO7 );  //  MOSI
 
   gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
-          GPIO6);
+          GPIO6);  //  MISO
 
   /* Reset SPI, SPI_CR1 register cleared, SPI is disabled */
   spi_reset(SPI1);
@@ -70,45 +66,11 @@ static void spi_setup(void) {
   spi_enable(SPI1);
 }
 
-static void usart_setup(void)
-{
-	/* Setup GPIO pin GPIO_USART2_TX and GPIO_USART2_RX. */
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
-		      GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
-	gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
-		      GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
-
-	/* Setup UART parameters. */
-	usart_set_baudrate(USART2, 9600);
-	usart_set_databits(USART2, 8);
-	usart_set_stopbits(USART2, USART_STOPBITS_1);
-	usart_set_mode(USART2, USART_MODE_TX_RX);
-	usart_set_parity(USART2, USART_PARITY_NONE);
-	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
-
-	/* Finally enable the USART. */
-	usart_enable(USART2);
-}
-
-int _write(int file, char *ptr, int len)
-{
-	int i;
-
-	if (file == 1) {
-		for (i = 0; i < len; i++)
-			usart_send_blocking(USART2, ptr[i]);
-		return i;
-	}
-
-	errno = EIO;
-	return -1;
-}
-
 static void gpio_setup(void)
 {
 	/* Set GPIO8 (in GPIO port A) to 'output push-pull'. */
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO8);
+	////gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
+		      ////GPIO_CNF_OUTPUT_PUSHPULL, GPIO8);
 }
 
 int OLDmain(void)
@@ -116,11 +78,10 @@ int OLDmain(void)
 	int counter = 0;
 	uint16_t rx_value = 0x42;
 
-	clock_setup();
-	gpio_setup();
-	usart_setup();
 	spi_setup();
-
+	gpio_setup();
+	////usart_setup();
+	spi_configure();
 
 	/* Blink the LED (PA8) on the board with every transmitted byte. */
 	while (1) {
