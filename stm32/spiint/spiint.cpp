@@ -195,14 +195,21 @@ int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
+	//  Print what is going to be sent on the SPI bus
+	debug_print("Sending packet tx len "); debug_println(tx_len);
+	for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); }
+	debug_println(""); debug_flush();
+
 	/* Check for 0 length in both tx and rx */
 	if ((rx_len < 1) && (tx_len < 1)) {
 		/* return -1 as error */
+		debug_println("Attempted 0 length tx and rx packets"); debug_flush();
 		return -1;
 	}
 	/* Reset DMA channels*/
 	dma_channel_reset(DMA1, DMA_CHANNEL2);
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
+	debug_println("spi_transceive1"); debug_flush();
 
 	/* Reset SPI data and status registers.
 	 * Here we assume that the SPI peripheral is NOT
@@ -213,6 +220,7 @@ int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int
 	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) {
 		temp_data = SPI_DR(SPI1);
 	}
+	debug_println("spi_transceive2"); debug_flush();
 
 	/* Reset status flag appropriately (both 0 case caught above) */
 	transceive_status = NONE;
@@ -293,7 +301,9 @@ int spi_transceive(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int
     }
     spi_enable_tx_dma(SPI1);
 
-    return 0;
+	int result = 0;
+	debug_print("spi_transceive returned "); debug_println(result); debug_flush();
+    return result;
 }
 
 /* SPI receive completed with DMA */
@@ -371,25 +381,23 @@ void spi_wait(void) {
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.)
 	*/
+	debug_println("spi_wait"); debug_flush();
 	while (transceive_status != DONE) {}
+	debug_println("spi_wait2"); debug_flush();
 	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
+	debug_println("spi_wait3"); debug_flush();
 	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
+	debug_println("spi_wait returned"); debug_flush();
 }
 
 int spi_transceive_wait(SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
-	//  Print what is going to be sent on the SPI bus
-	debug_print("Sending packet tx len "); debug_println(tx_len);
-	for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); }
-	debug_println(""); debug_flush();
-
 	//  Start a transceive
 	transceive_status = DONE;  //  TODO
 	int result = spi_transceive(tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) {
-		debug_println("Attempted 0 length tx and rx packets"); debug_flush();
 		return result;
 	}
 
@@ -427,14 +435,14 @@ void spi_test(void)
 	rx_packet[0] = 0;
 	int tx_len = 1;
 	int rx_len = 1;
-	spi_transceive(tx_packet, tx_len, rx_packet, rx_len);
+	spi_transceive_wait(tx_packet, tx_len, rx_packet, rx_len);
 
 	// transfer 0x00 to get the data
 	tx_packet[0] = 0;
 	rx_packet[0] = 0;
 	tx_len = 1;
 	rx_len = 1;
-	spi_transceive(tx_packet, tx_len, rx_packet, rx_len);
+	spi_transceive_wait(tx_packet, tx_len, rx_packet, rx_len);
 
 	spi_close();
 	debug_println("spi_test OK"); debug_flush();
