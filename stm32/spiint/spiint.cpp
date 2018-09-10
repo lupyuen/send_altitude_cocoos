@@ -226,7 +226,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	/* Reset DMA channels*/
 	dma_channel_reset(DMA1, DMA_CHANNEL2);
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
-	debug_println("spi_transceive1"); debug_flush();
+	debug_println("spi_transceive1"); // debug_flush();
 
 	/* Reset SPI data and status registers.
 	 * Here we assume that the SPI peripheral is NOT
@@ -237,7 +237,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) {
 		temp_data = SPI_DR(SPI1);
 	}
-	debug_println("spi_transceive2"); debug_flush();
+	debug_println("spi_transceive2"); // debug_flush();
 
 	/* Reset status flag appropriately (both 0 case caught above) */
 	transceive_status = NONE;
@@ -286,6 +286,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 		 * and set the length to the rx_len to get all rx data in, while
 		 * not incrementing the memory pointer
 		 */
+		debug_println("spi_transceive tx=0"); debug_flush();
 		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
 		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)(&dummy_tx_buf)); // Change here
 		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_len); // Change here
@@ -319,7 +320,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
     spi_enable_tx_dma(SPI1);
 
 	int result = 0;
-	debug_print("spi_transceive returned "); debug_println(result); debug_flush();
+	debug_print("spi_transceive returned "); debug_println(result); // debug_flush();
     return result;
 }
 
@@ -395,13 +396,13 @@ void spi_wait(void) {
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.)
 	*/
-	debug_println("spi_wait"); debug_flush();
+	debug_println("spi_wait"); // debug_flush();
 	while (transceive_status != DONE) {}
-	debug_println("spi_wait2"); debug_flush();
+	debug_println("spi_wait2"); // debug_flush();
 	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
-	debug_println("spi_wait3"); debug_flush();
+	debug_println("spi_wait3"); // debug_flush();
 	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
-	debug_println("spi_wait returned"); debug_flush();
+	debug_println("spi_wait returned"); // debug_flush();
 }
 
 int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
@@ -425,8 +426,8 @@ int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI
 	return result;
 }
 
-static uint8_t tx_packet[16];
-static uint8_t rx_packet[16];
+static volatile uint8_t tx_packet[16];
+static volatile uint8_t rx_packet[16];
 
 void spi_test(void)
 {
