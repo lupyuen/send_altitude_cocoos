@@ -1,4 +1,5 @@
 
+mcu = stm32f4
 
 CPP_COMPILE_PATH = /path/to/toolchain/bin/arm-none-eabi-g++
 C_COMPILE_PATH =   /path/to/toolchain/bin/arm-none-eabi-gcc
@@ -40,16 +41,17 @@ moddeps = stmlib cocoOS
 
 # for each module, define the module object files. 
 moduleobjs = $(foreach module, $(moddeps), $(wildcard $(modpath)/$(module)/$(mcu)/obj/*.o) ) $(foreach module, $(moddeps), $(wildcard $(modpath)/$(module)/common/obj/*.o) )
-
 	
+
 prog: $(moddeps) application
 	$(link) $(moduleobjs) $(appobjs)
 	
 	
 application: $(appobjs)
 
+
 $(moddeps) : 
-	cd $(modpath)/$@ && $(MAKE)
+	cd $(modpath)/$@ && $(MAKE) mcu=$(mcu)
 
 ./output/%.o : %.cpp
 	$(COMPILE_CPP) $(includes) -DSTM32F4 -DDISABLE_DEBUG_LOG -c $^ -o $@
@@ -74,22 +76,12 @@ $(moddeps) :
 
 ./output/%.o : ./$(mcu)/src/%.S
 	$(ASSEM) $(includes) -c $^ -o $@
-		
+	
+names:
+	@echo $(moduleobjs)
+	
 clean:
 	rm ./output/*
 	
-help:
-	@echo 
-	@echo Usage: make [target] mcu=[mcu] host=[host]
-	@echo
-	@echo Builds and links executable on the specified host for the specified mcu
-	@echo 
-	@echo "[target]:	application, builds only application. No linking."
-	@echo "		prog, builds application and modules. Link executable."
-	@echo 
-	@echo "[mcu]:		stm32f3"
-	@echo "		stm32f4"
-	@echo  
-	@echo "[host]:		win"
-	@echo "		linux"
+
 	
