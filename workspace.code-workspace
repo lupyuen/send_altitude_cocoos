@@ -39,7 +39,9 @@
 			"deque": "cpp",
 			"forward_list": "cpp",
 			"list": "cpp",
-			"regex": "cpp"
+			"regex": "cpp",
+			"future": "cpp",
+			"system_error": "cpp"
 		}
 	}
 }
