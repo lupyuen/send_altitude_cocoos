@@ -14,10 +14,18 @@ static const uint8_t i2cAddresses[] = {
   0x77,  //  Default address for SparkFun BME280 Breakout Board.
 };
 
-//  The global instance of the BME API.
-BME280I2C bme;    // Default : forced mode, standby time = 1000 ms
-                  // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
-static BME280I2C::Settings settings;  //  BME280 settings, including I2C address.
+#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
+#define DEVICE_PIN 10  //  Not used on STM32.
+static BME280Spi::Settings settings(DEVICE_PIN);  //  BME280 SPI settings.
+BME280Spi bme(settings); //  The global instance of the BME280 SPI API.
+
+#else  //  Else we are using I2C version of BME280...
+static BME280I2C::Settings settings;  //  BME280 I2C settings, including I2C address.
+BME280I2C bme; //  The global instance of the BME280 I2C API.
+#endif
+
+// Default Settings: forced mode, standby time = 1000 ms
+// Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
 void bme280_setup(void) {
   //  Set up the BME280 module for reading.  Skip if already set up.
@@ -29,10 +37,11 @@ void bme280_setup(void) {
   Wire.begin();
   const int numAddresses = sizeof(i2cAddresses) / sizeof(uint8_t);
   for (int i = 0; i < numAddresses; i++) {
+#ifndef USE_BME280_SPI  //  If we are using I2C version of BME280...
     uint8_t addr = i2cAddresses[i];
     settings.bme280Addr = addr;
     bme = BME280I2C(settings);
-    // bme.setSettings(settings);
+#endif  //  !USE_BME280_SPI
 
     //  Not found at this address.  Try next address.
     if (!bme.begin()) { continue; }
