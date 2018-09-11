@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <logger.h>
+#include "bluepill.h"  //  For led_wait()
 #include "spiint.h"
 
 #ifndef USE_16BIT_SPI_TRANSFERS
@@ -196,13 +197,20 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 		SPI1,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
 		// SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
-		SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
-		SPI_CR1_CPHA_CLK_TRANSITION_1, ////
+
+		//  SPI_MODE0:
+		//  SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
+		//  SPI_CR1_CPHA_CLK_TRANSITION_1, ////
+
+		//  SPI_MODE3:
+		SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE,
+		SPI_CR1_CPHA_CLK_TRANSITION_2,
+
 		SPI_DFF,
 		SPI_CR1_MSBFIRST
 	);
 
-#define HARDWARE_NSS ////
+// #define HARDWARE_NSS ////
 #ifdef HARDWARE_NSS
 	//  Set NSS management to hardware.
 	//  Important!  	You must have a pullup resistor on the NSS
@@ -499,21 +507,56 @@ test_spi_configure(void) {
 	    SPI_CR1_DFF_8BIT,
 	    SPI_CR1_MSBFIRST
 	);
+#ifdef HARDWARE_NSS
+	//  Set NSS management to hardware.
+	//  Important!  	You must have a pullup resistor on the NSS
+ 	//  line in order that the NSS (/CS) SPI output
+ 	//  functions correctly as a chip select. The
+ 	//  SPI peripheral configures NSS pin as an
+ 	//  open drain output.
+	debug_println("test_spi_configure hardware nss"); debug_flush();
 	spi_disable_software_slave_management(SPI1);
 	spi_enable_ss_output(SPI1);
+#else
+	/*
+	 * Set NSS management to software.
+	 *
+	 * Note:
+	 * Setting nss high is very important, even if we are controlling the GPIO
+	 * ourselves this bit needs to be at least set to 1, otherwise the spi
+	 * peripheral will not send any data out.
+	 */
+	spi_enable_software_slave_management(SPI1);
+	spi_set_nss_high(SPI1);
+
+	//  Set SS to high to select SPI interface of BME280 instead of I2C.
+	//  gpio_clear(SS_PORT, SS_PIN);
+	gpio_set(SS_PORT, SS_PIN);
+
+#endif  //  NSS_HARDWARE
 }
 
 static uint8_t
-test_read(void) {
-	// bme280 uses the msb to select read and write
-	// combine the addr with the read/write bit
-	uint8_t addr = ID_ADDR;
-	uint8_t readAddr = addr | BME280_SPI_READ;
-	// uint8_t readAddr = addr & BME280_SPI_WRITE;
+test_read(uint8_t readAddr) {
+	debug_print("test_read addr "); debug_println((int) readAddr); debug_flush();
 	spi_enable(SPI1);
+
+#ifndef HARDWARE_NSS
+	//  Assume SS is high.  Before reading, set SS to low.
+	//  gpio_set(SS_PORT, SS_PIN);
+	gpio_clear(SS_PORT, SS_PIN);
+#endif  //  !HARDWARE_NSS	
+
+#define DUMMY 0x00
 	spi_xfer(SPI1, readAddr);
-#define DUMMY			0x00
 	uint8_t sr1 = spi_xfer(SPI1, DUMMY);
+
+#ifndef HARDWARE_NSS
+	//  After reading, set SS to high.
+	//  gpio_clear(SS_PORT, SS_PIN);
+	gpio_set(SS_PORT, SS_PIN);
+#endif  //  !HARDWARE_NSS	
+
 	spi_disable(SPI1);
 	debug_print("test_read received "); debug_println((int) sr1); debug_flush();
 	return sr1;
@@ -522,19 +565,23 @@ test_read(void) {
 void spi_test(void) {
 	debug_println("spi_test"); debug_flush();
 
-	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-	spi_setup();
-
-	test_spi_configure(); test_read(); for(;;) {} ////
-
-	spi_configure(500000, MSBFIRST, SPI_MODE0);
-	spi_open();
-
 	// bme280 uses the msb to select read and write
 	// combine the addr with the read/write bit
 	uint8_t addr = ID_ADDR;
-	// uint8_t readAddr = addr | BME280_SPI_READ;
-	uint8_t readAddr = addr & BME280_SPI_WRITE;
+	uint8_t readAddr = addr | BME280_SPI_READ;
+	
+	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+	spi_setup();
+
+#define DISABLE_DMA
+#ifdef DISABLE_DMA
+	test_spi_configure();
+	for (int i = 0; i < 10; i++) { led_wait(); }
+	test_read(readAddr); 
+#else
+	spi_configure(500000, MSBFIRST, SPI_MODE0);
+	spi_open();
+
 	tx_packet[0] = readAddr;
 	rx_packet[0] = 0;
 	int tx_len = 1;
@@ -549,5 +596,6 @@ void spi_test(void) {
 	spi_transceive_wait(tx_packet, tx_len, rx_packet, rx_len);
 
 	spi_close();
+#endif  //  DISABLE_DMA
 	debug_println("spi_test OK"); debug_flush();
 }
