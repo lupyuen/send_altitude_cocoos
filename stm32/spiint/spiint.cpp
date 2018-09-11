@@ -77,16 +77,12 @@ typedef enum {
 	DONE
 } trans_status;
 
-volatile int transceive_status;
+volatile int transceive_status;  //  TODO: Allocate per port.
 
 /* Global for dummy tx dma transfer */
-int rx_buf_remainder = 0;
+int rx_buf_remainder = 0;  //  TODO: Allocate per port.
 
-#if USE_16BIT_SPI_TRANSFERS
-uint16_t dummy_tx_buf = 0xdd;
-#else
-uint8_t dummy_tx_buf = 0xdd;
-#endif
+SPI_DATA_TYPE dummy_tx_buf = 0xdd;
 
 void spi_setup(void) {
 	debug_println("spi_setup"); debug_flush();
