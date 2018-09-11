@@ -9,15 +9,20 @@
 #include <stdint.h>  //  For uint8_t
 #include <stdlib.h>  //  For size_t
 
+#define MAX_SPI_PORTS 3  //  Define 3 SPI ports: SPI1, SPI2, SPI3.
+
 #define USE_16BIT_SPI_TRANSFERS 0  //  Uncomment for 8-bit SPI transfer.
 //  #define USE_16BIT_SPI_TRANSFERS 1  //  Uncomment for 16-bit SPI transfer.
 
-#ifndef LSBFIRST
+//  From Arduino.h.  Used by BME280ASpi.h.
+#define HIGH 0x1
+#define LOW  0x0
+
+#define INPUT 0x0
+#define OUTPUT 0x1
+
 #define LSBFIRST 0
-#endif
-#ifndef MSBFIRST
 #define MSBFIRST 1
-#endif
 
 #define SPI_MODE0 0x00
 #define SPI_MODE1 0x04
@@ -55,24 +60,33 @@ class SPIInterfaceSettings {
 public:
   SPIInterfaceSettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);  //  Used by BME280Spi.cpp
   // SPIInterfaceSettings();
+  uint8_t spi_port;  //  SPI port for STM32: 1=SPI1, 2=SPI2, 3=SPI3
+  uint32_t clock;
+  uint8_t bitOrder;
+  uint8_t dataMode;
 };
 
 class SPIInterface {
 public:
-    // static void begin();
-    // static void usingInterrupt(uint8_t interruptNumber);
-    // static void notUsingInterrupt(uint8_t interruptNumber);
-    static void beginTransaction(SPIInterfaceSettings settings);  //  Used by BME280Spi.cpp
-    static uint8_t transfer(uint8_t data);  //  Used by BME280Spi.cpp
-    // static uint16_t transfer16(uint16_t data);
-    // static void transfer(void *buf, size_t count);
-    static void endTransaction(void);  //  Used by BME280Spi.cpp
-    // static void end();
-    // static void setBitOrder(uint8_t bitOrder);
-    // static void setDataMode(uint8_t dataMode);
-    // static void setClockDivider(uint8_t clockDiv);
-    // static void attachInterrupt();
-    // static void detachInterrupt();
+  // static void begin();
+  // static void usingInterrupt(uint8_t interruptNumber);
+  // static void notUsingInterrupt(uint8_t interruptNumber);
+  static void beginTransaction(SPIInterfaceSettings settings);  //  Used by BME280Spi.cpp
+  static uint8_t transfer(uint8_t data);  //  Used by BME280Spi.cpp
+  // static uint16_t transfer16(uint16_t data);
+  // static void transfer(void *buf, size_t count);
+  static void endTransaction(void);  //  Used by BME280Spi.cpp
+  // static void end();
+  // static void setBitOrder(uint8_t bitOrder);
+  // static void setDataMode(uint8_t dataMode);
+  // static void setClockDivider(uint8_t clockDiv);
+  // static void attachInterrupt();
+  // static void detachInterrupt();
+
+  //  From Arduino wiring_digital.h.  We intercept and identify the SPI port to be used.
+  static void pinMode(uint8_t, uint8_t);  //  Used by BME280ASpi.h
+  static void digitalWrite(uint8_t pin, uint8_t val);  //  Used by BME280ASpi.h
+  // static int digitalRead(uint8_t);  //  Used by BME280SpiSw.cpp
 };
 #endif  //  __cplusplus
 #endif  //  SPIINT_H_

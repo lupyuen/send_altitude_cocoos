@@ -6,17 +6,9 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
-//  From Arduino.h.  Used by BME280ASpi.h.
-#define HIGH 0x1
-#define LOW  0x0
-#define INPUT 0x0
-#define OUTPUT 0x1
-#define LSBFIRST 0
-#define MSBFIRST 1
-
 //  From Arduino wiring_digital.h
-void pinMode(uint8_t, uint8_t);  //  Used by BME280ASpi.h
-void digitalWrite(uint8_t pin, uint8_t val);  //  Used by BME280ASpi.h
+void pinMode(uint8_t, uint8_t);  //  Used by BME280Spi.h
+void digitalWrite(uint8_t pin, uint8_t val);  //  Used by BME280Spi.h
 int digitalRead(uint8_t);  //  Used by BME280SpiSw.cpp
 // int analogRead(uint8_t);
 // void analogReference(uint8_t mode);

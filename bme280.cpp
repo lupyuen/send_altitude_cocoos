@@ -15,7 +15,13 @@ static const uint8_t i2cAddresses[] = {
 };
 
 #ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
-#define DEVICE_PIN 10  //  Not used on STM32.
+
+#ifdef STM32
+#define DEVICE_PIN 1  //  1 = SPI1
+#else
+#define DEVICE_PIN 10  //  Arduino pin.
+#endif  //  STM32
+
 static BME280Spi::Settings settings(DEVICE_PIN);  //  BME280 SPI settings.
 BME280Spi bme(settings); //  The global instance of the BME280 SPI API.
 
