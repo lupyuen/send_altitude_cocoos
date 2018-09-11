@@ -41,7 +41,8 @@
 			"list": "cpp",
 			"regex": "cpp",
 			"future": "cpp",
-			"system_error": "cpp"
+			"system_error": "cpp",
+			"typeinfo": "cpp"
 		}
 	}
 }

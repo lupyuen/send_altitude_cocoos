@@ -123,11 +123,6 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 	SPI1_I2SCFGR = 0;
 
 	/* Set up SPI in Master mode with:
-	 * Clock baud rate: 1/256 of SPI1 peripheral clock frequency (281.25 kHz)
-	 * Clock polarity: Idle Low
-	 * Clock phase: Data valid on 1st clock pulse
-	 * Data frame format: 8-bit or 16-bit
-	 * Frame format: MSB First
 	SPI Mode
 	Clock Polarity
 	Clock Phase
@@ -454,6 +449,13 @@ int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI
 //  Which SPI port is now sending/receiving. 1=SPI1, 2=SPI2, ...
 static volatile uint8_t currentSPIPort = 0;  //  0=Unknown.
 
+//  Allocate one byte per SPI port for send and receive, including the unknown port (0).
+static volatile uint8_t tx_buffer[MAX_SPI_PORTS + 1];  //  Must be static volatile because of DMA.
+static volatile uint8_t rx_buffer[MAX_SPI_PORTS + 1];
+
+static volatile uint8_t tx_packet[16];
+static volatile uint8_t rx_packet[16];
+
 void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	//  Used by BME280Spi.cpp
 	if (settings.spi_port < 1 || settings.spi_port > MAX_SPI_PORTS) {
@@ -466,19 +468,18 @@ void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	spi_open();
 }
 
-//  Allocate one byte per SPI port for send and receive, including the unknown port (0).
-static volatile uint8_t tx_buffer[MAX_SPI_PORTS + 1];
-static volatile uint8_t rx_buffer[MAX_SPI_PORTS + 1];
-
 uint8_t SPIInterface::transfer(uint8_t data) {
-  	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Used by BME280Spi.cpp
+  	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Return the byte received.  Used by BME280Spi.cpp
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) {
 		debug_print("***** ERROR: SPIInterface.transfer invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return 0;
 	}
-	int result = spi_transceive_wait(tx_buffer + currentSPIPort, 1, rx_buffer + currentSPIPort, 1);
+	volatile uint8_t port = currentSPIPort;  //  Remember in case it changes while waiting.
+	tx_buffer[port] = data;
+	rx_buffer[port] = 0x22;  //  Means uninitialised.
+	int result = spi_transceive_wait(&tx_buffer[port], 1, &rx_buffer[port], 1);
 	if (result < 0) { return 0; }
-	return rx_buffer[0];
+	return rx_buffer[port];
 }
 
 void SPIInterface::endTransaction(void) {
@@ -487,18 +488,21 @@ void SPIInterface::endTransaction(void) {
 		debug_print("***** ERROR: SPIInterface.endTransaction invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return;
 	}
-	spi_close();
 	currentSPIPort = 0;
+	spi_close();
 }
 
 void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 	//  Used by BME280Spi.h
-	debug_print("pinMode pin "); debug_println((int) pin); 
+	debug_print("pinMode pin "); debug_print((int) pin); 
 	debug_print(" mode "); debug_println((int) mode); debug_flush();
+	spi_test(); for(;;){} ////
 }
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin.  Used by BME280Spi.h
+	debug_print("digitalWrite pin "); debug_print((int) pin); 
+	debug_print(" val "); debug_println((int) val); debug_flush();
 	if (pin < 1 || pin > MAX_SPI_PORTS) {
 		debug_print("***** ERROR: SPIInterface.digitalWrite Invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return;
@@ -517,9 +521,6 @@ SPIInterfaceSettings::SPIInterfaceSettings(uint32_t clock0, uint8_t bitOrder0, u
 static const uint8_t ID_ADDR         = 0xD0;
 static const uint8_t BME280_SPI_WRITE   = 0x7F;
 static const uint8_t BME280_SPI_READ    = 0x80;
-
-static volatile uint8_t tx_packet[16];
-static volatile uint8_t rx_packet[16];
 
 // #define DISABLE_DMA
 #ifdef DISABLE_DMA

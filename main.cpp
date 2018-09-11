@@ -38,6 +38,8 @@ static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];  //  Pool of sensor data
 static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
 
+extern "C" void spi_test(void); ////  spi_test(); for(;;){} ////
+
 int main(void) {
   //  The application starts here. We create the tasks to read and send sensor data 
   //  and start the task scheduler. Note: Arduino's setup() and loop() will not be called since main() is defined.
@@ -45,9 +47,12 @@ int main(void) {
   enable_debug();  //  Allow display of debug messages. NOTE: This will hang if no debugger is attached.
   //  disable_debug();  //  Disable display of debug messages.  For use in production.
 
-  //  Init the system and OS for cocoOS.
-  system_setup();
-  os_init();
+  //  Init the platform, cocoOS and create any system objects.
+  platform_setup();  //  Arduino or STM32 platform setup.
+  os_init();         //  Init cocoOS before creating Semaphore.
+  system_setup();    //  Create the I2C Semaphore.
+
+  spi_test(); ////
 
   //  Erase the aggregated sensor data.
   setup_aggregate();
@@ -139,9 +144,6 @@ static void sensor_setup(uint8_t task_id) {
 
 static void system_setup(void) {
   //  Initialise the system. Create the I2C semaphore.
-
-  //  Setup the Arduino or STM32 platform.
-  platform_setup();
 
 #ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
   init_display();  //  Setup the display objects.

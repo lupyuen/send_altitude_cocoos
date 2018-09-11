@@ -4,6 +4,8 @@
 #include <logger.h>
 #include "bluepill.h"
 
+extern "C" void spi_test(void); ////
+
 //  Debugging is off by default.  Developer must switch it on with enable_debug().
 static bool debugEnabled = false;
 
@@ -12,7 +14,6 @@ void platform_setup(void) {
 	//  If LED blinks on-off-on-off and stays off, then debug mode is enabled and no debugger is connected.
 	rcc_clock_setup_in_hse_8mhz_out_72mhz();
 	led_setup();
-
 	if (debugEnabled) {
 		led_on(); led_wait();
 		led_off(); led_wait();
@@ -22,6 +23,7 @@ void platform_setup(void) {
   		debug_println("----platform_setup");
 		led_on();
 	}
+	//  TODO: spi_test(); for(;;){}  //  Test SPI functions.
 }
 
 void enable_debug(void) {
