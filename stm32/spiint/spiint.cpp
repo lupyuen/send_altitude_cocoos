@@ -457,7 +457,7 @@ static volatile uint8_t currentSPIPort = 0;  //  0=Unknown.
 void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	//  Used by BME280Spi.cpp
 	if (settings.spi_port < 1 || settings.spi_port > MAX_SPI_PORTS) {
-		debug_print("***** ERROR: SPIInterface.beginTransaction invalid SPI port "); debug_println((int) settings.spi_port); debug.flush();
+		debug_print("***** ERROR: SPIInterface.beginTransaction invalid SPI port "); debug_println((int) settings.spi_port); debug_flush();
 		return;
 	}
 	currentSPIPort = settings.spi_port;
@@ -473,7 +473,7 @@ static volatile uint8_t rx_buffer[MAX_SPI_PORTS + 1];
 uint8_t SPIInterface::transfer(uint8_t data) {
   	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Used by BME280Spi.cpp
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) {
-		debug_print("***** ERROR: SPIInterface.transfer invalid SPI port "); debug_println((int) currentSPIPort); debug.flush();
+		debug_print("***** ERROR: SPIInterface.transfer invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return 0;
 	}
 	int result = spi_transceive_wait(tx_buffer + currentSPIPort, 1, rx_buffer + currentSPIPort, 1);
@@ -484,7 +484,7 @@ uint8_t SPIInterface::transfer(uint8_t data) {
 void SPIInterface::endTransaction(void) {
 	//  Used by BME280Spi.cpp
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) {
-		debug_print("***** ERROR: SPIInterface.endTransaction invalid SPI port "); debug_println((int) currentSPIPort); debug.flush();
+		debug_print("***** ERROR: SPIInterface.endTransaction invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return;
 	}
 	spi_close();
@@ -494,13 +494,13 @@ void SPIInterface::endTransaction(void) {
 void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 	//  Used by BME280Spi.h
 	debug_print("pinMode pin "); debug_println((int) pin); 
-	debug_print(" mode "); debug_println((int) mode); debug.flush();
+	debug_print(" mode "); debug_println((int) mode); debug_flush();
 }
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin.  Used by BME280Spi.h
 	if (pin < 1 || pin > MAX_SPI_PORTS) {
-		debug_print("***** ERROR: SPIInterface.digitalWrite Invalid SPI port "); debug_println((int) currentSPIPort); debug.flush();
+		debug_print("***** ERROR: SPIInterface.digitalWrite Invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return;
 	}
 	currentSPIPort = pin;
