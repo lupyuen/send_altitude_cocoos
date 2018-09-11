@@ -90,6 +90,7 @@ uint8_t dummy_tx_buf = 0xdd;
 
 void spi_setup(void) {
 	debug_println("spi_setup"); debug_flush();
+
 	//  Moved to platform_setup() in bluepill.cpp.
 	//  rcc_spi_setup_in_hse_12mhz_out_72mhz();
 
@@ -99,10 +100,6 @@ void spi_setup(void) {
 
 	/* Enable DMA1 clock */
 	rcc_periph_clock_enable(RCC_DMA1);
-
-	/* Enable GPIOA, GPIOB, GPIOC clock. */
-	////rcc_periph_clock_enable(RCC_GPIOB);
-	////rcc_periph_clock_enable(RCC_GPIOC);
 }
 
 void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
@@ -210,7 +207,7 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 		SPI_CR1_MSBFIRST
 	);
 
-// #define HARDWARE_NSS ////
+#define HARDWARE_NSS //  Software NSS doesn't work.
 #ifdef HARDWARE_NSS
 	//  Set NSS management to hardware.
 	//  Important!  	You must have a pullup resistor on the NSS
@@ -376,9 +373,6 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 /* SPI receive completed with DMA */
 void dma1_channel2_isr(void)
 {
-	//// TODO: gpio_set(SS_PORT, SS_PIN);
-	//// TODO: gpio_clear(SS_PORT, SS_PIN);
-	//// if ((DMA1_ISR &DMA_ISR_TCIF2) != 0) { DMA1_IFCR |= DMA_IFCR_CTCIF2; }
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL2, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL2, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
@@ -387,13 +381,10 @@ void dma1_channel2_isr(void)
 
 	/* Increment the status to indicate one of the transfers is complete */
 	transceive_status++;
-	//// TODO: gpio_clear(SS_PORT, SS_PIN);
-	//// TODO: gpio_set(SS_PORT, SS_PIN);
 }
 
 /* SPI transmit completed with DMA */
 void dma1_channel3_isr(void) {
-	//// if ((DMA1_ISR &DMA_ISR_TCIF3) != 0) { DMA1_IFCR |= DMA_IFCR_CTCIF3; }
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL3, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL3, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
@@ -421,22 +412,6 @@ void dma1_channel3_isr(void) {
 		/* Increment the status to indicate one of the transfers is complete */
 		transceive_status++;
 	}
-}
-
-static void OLDgpio_setup(void)
-{
-	/* Set LED_PIN (in GPIO port A) to 'output push-pull'. */
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
-
-	/* Use the extra pins to signal when the ISRs are running */
-	/* First, SPI1 - SS pin on Lisa/M v2.0 */
-	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, SS_PIN);
-	/* Then, SPI1 - DRDY pin on Lisa/M v2.0 */
-	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO1);
-
 }
 
 void spi_wait(void) {
@@ -481,6 +456,9 @@ static const uint8_t BME280_SPI_READ    = 0x80;
 
 static volatile uint8_t tx_packet[16];
 static volatile uint8_t rx_packet[16];
+
+// #define DISABLE_DMA
+#ifdef DISABLE_DMA
 
 static void
 test_spi_configure(void) {
@@ -529,9 +507,9 @@ test_spi_configure(void) {
 	spi_enable_software_slave_management(SPI1);
 	spi_set_nss_high(SPI1);
 
-	//  Set SS to high to select SPI interface of BME280 instead of I2C.
+	//  Set SS to high (NSS low) to select SPI interface of BME280 instead of I2C.
 	//  gpio_clear(SS_PORT, SS_PIN);
-	gpio_set(SS_PORT, SS_PIN);
+	//  gpio_set(SS_PORT, SS_PIN);
 
 #endif  //  NSS_HARDWARE
 }
@@ -542,7 +520,7 @@ test_read(uint8_t readAddr) {
 	spi_enable(SPI1);
 
 #ifndef HARDWARE_NSS
-	//  Assume SS is high.  Before reading, set SS to low.
+	//  Assume SS is high.  Before reading, set SS to low (NSS high).
 	//  gpio_set(SS_PORT, SS_PIN);
 	gpio_clear(SS_PORT, SS_PIN);
 #endif  //  !HARDWARE_NSS	
@@ -552,7 +530,7 @@ test_read(uint8_t readAddr) {
 	uint8_t sr1 = spi_xfer(SPI1, DUMMY);
 
 #ifndef HARDWARE_NSS
-	//  After reading, set SS to high.
+	//  After reading, set SS to high (NSS low).
 	//  gpio_clear(SS_PORT, SS_PIN);
 	gpio_set(SS_PORT, SS_PIN);
 #endif  //  !HARDWARE_NSS	
@@ -561,6 +539,7 @@ test_read(uint8_t readAddr) {
 	debug_print("test_read received "); debug_println((int) sr1); debug_flush();
 	return sr1;
 }
+#endif  //  DISABLE_DMA
 
 void spi_test(void) {
 	debug_println("spi_test"); debug_flush();
@@ -573,11 +552,10 @@ void spi_test(void) {
 	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
 	spi_setup();
 
-#define DISABLE_DMA
 #ifdef DISABLE_DMA
 	test_spi_configure();
 	for (int i = 0; i < 10; i++) { led_wait(); }
-	test_read(readAddr); 
+	test_read(readAddr);  //  Should return 96.
 #else
 	spi_configure(500000, MSBFIRST, SPI_MODE0);
 	spi_open();
@@ -593,7 +571,7 @@ void spi_test(void) {
 	rx_packet[0] = 0;
 	tx_len = 1;
 	rx_len = 1;
-	spi_transceive_wait(tx_packet, tx_len, rx_packet, rx_len);
+	spi_transceive_wait(tx_packet, tx_len, rx_packet, rx_len);  //  Should return 96.
 
 	spi_close();
 #endif  //  DISABLE_DMA
