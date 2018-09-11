@@ -99,7 +99,7 @@ void spi_setup(void) {
 }
 
 void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
-	debug_println("spi_configure"); debug_flush();
+	//  debug_println("spi_configure"); debug_flush();
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -206,7 +206,7 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
  	//  functions correctly as a chip select. The
  	//  SPI peripheral configures NSS pin as an
  	//  open drain output.
-	debug_println("spi_configure hardware nss"); debug_flush();
+	//  debug_println("spi_configure hardware nss"); debug_flush();
 	spi_disable_software_slave_management(SPI1);
 	spi_enable_ss_output(SPI1);
 #else
@@ -455,7 +455,8 @@ void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 		return;
 	}
 	currentSPIPort = settings.spi_port;
-	spi_setup();  //  TODO: Setup should only run once.
+	//  SPI setup should have been called in bme280.cpp.  TODO: Verify SPI port number.
+	//  spi_setup();
 	spi_configure(settings.clock, settings.bitOrder, settings.dataMode);
 	spi_open();
 }
