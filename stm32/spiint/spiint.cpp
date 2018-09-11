@@ -232,7 +232,7 @@ void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 
 void spi_open(void) {
 	//  Enable DMA interrupt for SPI1.
-	debug_println("spi_open"); debug_flush();
+	//  debug_println("spi_open"); debug_flush();
 	/* SPI1 RX on DMA1 Channel 2 */
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
 	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -243,7 +243,7 @@ void spi_open(void) {
 
 void spi_close(void) {
 	//  Disable DMA interrupt for SPI1.
-	debug_println("spi_close"); debug_flush();
+	//  debug_println("spi_close"); debug_flush();
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
  	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
 }
@@ -253,9 +253,8 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	//  Return -1 in case of error.
 
 	//  Print what is going to be sent on the SPI bus
-	debug_print("spi_transceive sending len "); debug_println(tx_len);
-	for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); }
-	debug_println(""); debug_flush();
+	//  debug_print("spi_transceive sending len "); debug_println(tx_len);
+	//  for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); } debug_println(""); debug_flush();
 
 	/* Check for 0 length in both tx and rx */
 	if ((rx_len < 1) && (tx_len < 1)) {
@@ -266,7 +265,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	/* Reset DMA channels*/
 	dma_channel_reset(DMA1, DMA_CHANNEL2);
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
-	debug_println("spi_transceive1"); // debug_flush();
+	// debug_println("spi_transceive1"); // debug_flush();
 
 	/* Reset SPI data and status registers.
 	 * Here we assume that the SPI peripheral is NOT
@@ -277,7 +276,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
 	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) {
 		temp_data = SPI_DR(SPI1);
 	}
-	debug_println("spi_transceive2"); // debug_flush();
+	// debug_println("spi_transceive2"); // debug_flush();
 
 	/* Reset status flag appropriately (both 0 case caught above) */
 	transceive_status = NONE;
@@ -361,7 +360,7 @@ int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA
     spi_enable_tx_dma(SPI1);
 
 	int result = 0;
-	debug_print("spi_transceive returned "); debug_println(result); debug_flush();
+	// debug_print("spi_transceive returned "); debug_println(result); debug_flush();
     return result;
 }
 
@@ -416,33 +415,30 @@ void spi_wait(void) {
 	* Section 25.3.9 page 692, the note.)
 	*/
 	//  TODO: Check for timeout.
-	debug_println("spi_wait"); // debug_flush();
+	//  debug_println("spi_wait"); // debug_flush();
 	while (transceive_status != DONE) {}
-	debug_println("spi_wait2"); // debug_flush();
+	//  debug_println("spi_wait2"); // debug_flush();
 	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
-	debug_println("spi_wait3"); // debug_flush();
+	//  debug_println("spi_wait3"); // debug_flush();
 	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
-	debug_println("spi_wait returned"); // debug_flush();
+	//  debug_println("spi_wait returned"); // debug_flush();
 }
 
 int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
-	//  Start a transceive
-	transceive_status = DONE;  //  TODO
+	//  Start a transceive.
+	transceive_status = DONE;  //  TODO: Status per SPI port.
 	int result = spi_transceive(tx_buf, tx_len, rx_buf, rx_len);
-	if (result < 0) {
-		return result;
-	}
+	if (result < 0) { return result; }
 
 	//  Wait until transceive complete.
 	spi_wait();
 
-	//  Print what was received on the SPI bus
-	debug_print("spi_transceive_wait received len "); debug_println(rx_len);
-	for (int i = 0; i < rx_len; i++) { debug_print(rx_buf[i]); debug_print(" "); }
-	debug_println(""); debug_flush();
+	//  Print what was received on the SPI bus.
+	//  debug_print("spi_transceive_wait received len "); debug_println(rx_len);
+	//  for (int i = 0; i < rx_len; i++) { debug_print(rx_buf[i]); debug_print(" "); } debug_println(""); debug_flush();
 	return result;
 }
 
@@ -494,14 +490,12 @@ void SPIInterface::endTransaction(void) {
 
 void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 	//  Used by BME280Spi.h
-	debug_print("pinMode pin "); debug_print((int) pin); 
-	debug_print(" mode "); debug_println((int) mode); debug_flush();
+	//  debug_print("pinMode pin "); debug_print((int) pin); debug_print(" mode "); debug_println((int) mode); debug_flush();
 }
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin.  Used by BME280Spi.h
-	debug_print("digitalWrite pin "); debug_print((int) pin); 
-	debug_print(" val "); debug_println((int) val); debug_flush();
+	//  debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" val "); debug_println((int) val); debug_flush();
 	if (pin < 1 || pin > MAX_SPI_PORTS) {
 		debug_print("***** ERROR: SPIInterface.digitalWrite Invalid SPI port "); debug_println((int) currentSPIPort); debug_flush();
 		return;
