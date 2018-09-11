@@ -496,7 +496,6 @@ void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 	//  Used by BME280Spi.h
 	debug_print("pinMode pin "); debug_print((int) pin); 
 	debug_print(" mode "); debug_println((int) mode); debug_flush();
-	spi_test(); for(;;){} ////
 }
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
