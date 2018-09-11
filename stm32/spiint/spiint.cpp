@@ -420,6 +420,7 @@ void spi_wait(void) {
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.)
 	*/
+	//  TODO: Check for timeout.
 	debug_println("spi_wait"); // debug_flush();
 	while (transceive_status != DONE) {}
 	debug_println("spi_wait2"); // debug_flush();
