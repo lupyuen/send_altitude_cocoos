@@ -9,7 +9,7 @@
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.  TODO: Sync with platform.h
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.  TODO: Sync with sensor.h
-#define MAX_TRAIL_SIZE 32  //  Max number of bytes per trail.
+#define MAX_TRAIL_SIZE 64  //  Max number of bytes per trail.
 
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
@@ -19,6 +19,7 @@ enum Simulator_Fails {  //  Error codes.
 	Simulator_Ok = 0,
 	Simulator_Invalid_Size,
 	Simulator_Trail_Overflow,
+	Simulator_Missing_Port,
 	Simulator_Write_Timeout,
 	Simulator_Read_Timeout,
     Simulator_End,  //  Insert new codes above.

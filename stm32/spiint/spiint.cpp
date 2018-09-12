@@ -104,9 +104,8 @@ static SPI_Fails showError(volatile SPI_Control *port, SPI_Fails fc) {
 
 static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
 	//  Print the contents of the packet.
-	debug_print(title); debug_print(" len "); debug_print(len); debug_print(" - ");
+	debug_print(title); debug_print(" ");
 	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
-	debug_println(""); debug_flush();
 }
 
 static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
@@ -115,7 +114,7 @@ static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int 
 	for (int i = 0; i < tx_len; i++) { debug_printhex(tx_buf[i]); debug_print(" "); }
 	debug_print("<< ");
 	for (int i = 0; i < rx_len; i++) { debug_printhex(rx_buf[i]); debug_print(" "); } 
-	debug_println(""); debug_flush();
+	debug_println(""); // debug_flush();
 }
 
 SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
@@ -131,6 +130,7 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	}
 	int i = port->simulator->index;
 	port->simulator->index = 0;
+	debug_print(title); debug_print(" ");
 	for (;;) {
 		//  Read the captured SPI packet for send and receive.
 		int tx_len = simulator_replay_size(port->simulator);
@@ -140,10 +140,11 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 		//  Stop if the packet was invalid.
 		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
 		//  Dump the packet.
-		dump_packets(title, tx_buf, tx_len, rx_buf, rx_len);
+		dump_packet(">>", tx_buf, tx_len);
+		dump_packet("<<", rx_buf, rx_len);
 	}
 	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
-	debug_print(" / "); debug_println((int) (port->simulator->length));
+	debug_print(" / "); debug_println((int) (port->simulator->length)); debug_flush();
 	port->simulator->index = i;
 	return SPI_Ok;
 }
@@ -340,7 +341,8 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 
 SPI_Fails spi_close(volatile SPI_Control *port) {
 	//  Disable DMA interrupt for SPI1.
-	//  if (port->simulator != NULL) { debug_println("spi close"); debug_flush(); }
+	//  if (port->simulator != NULL) 
+	{ debug_println("spi close"); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -485,8 +487,10 @@ static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 	return NULL;
 }
 
-/* SPI receive completed with DMA */
-void dma1_channel2_isr(void) {
+volatile SPI_Control *test_port = NULL;
+volatile Evt_t *test_event = NULL;
+
+void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	//  TODO: Handle other errors.
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL2, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL2, DMA_TCIF); }
@@ -499,13 +503,14 @@ void dma1_channel2_isr(void) {
 
 	//  For replay: Signal to Sensor Task that receive is done.
 	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
+	test_port = port; ////
 	if (port != NULL && port->rx_event != NULL) {
+		test_event = port->rx_event; ////
 		event_ISR_signal(*port->rx_event);
 	}
 }
 
-/* SPI transmit completed with DMA */
-void dma1_channel3_isr(void) {
+void dma1_channel3_isr(void) {  //  SPI transmit completed with DMA.
 	//  TODO: Handle other errors.
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL3, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL3, DMA_TCIF); }
@@ -574,10 +579,9 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	} else {
 		//  If no simulator, or simulator is in other modes, wait for transceive response.
 		spi_wait(port);		
+		////if (port->simulator != NULL) 
+		{ dump_packets("spi", tx_buf, tx_len, rx_buf, rx_len); }
 	}
-
-	////if (port->simulator != NULL) 
-	{ dump_packets("spi", tx_buf, tx_len, rx_buf, rx_len); }
 
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Capture) {
 		//  If simulator is in Capture Mode, capture the SPI command for replay and simulation later.
@@ -585,7 +589,7 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 		simulator_capture_packet(port->simulator, tx_buf, tx_len);
 		simulator_capture_size(port->simulator, rx_len);
 		simulator_capture_packet(port->simulator, rx_buf, rx_len);
-		spi_dump_trail(port);
+		// spi_dump_trail(port);
 	}
 	return result;
 }
@@ -603,9 +607,23 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
 	//  Signal when rx_completed.
 	port->rx_event = &port->event;
+	dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush();
+
+	////
+	test_port = NULL;
+	test_event = NULL;
+	////
+
 	//  Send the transceive request and send the event when completed.
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return NULL; }
+
+	////
+	for (int i = 0; i < 10; i++) { led_wait(); }
+	debug_print("*** test_port: "); debug_println(test_port == NULL ? "NULL" : "OK");
+	debug_print("*** test_event: "); debug_println(test_event == NULL ? "NULL" : "OK");
+	////
+
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
 	return &port->event;
 }

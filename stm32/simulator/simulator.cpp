@@ -14,6 +14,7 @@ static const char *simulator_msg[] = {
 	"OK",
 	"Invalid size",  //  Simulator_Invalid_Size
 	"Trail overflow",  //  Simulator_Trail_Overflow
+    "Missing port",  //  Simulator_Missing_Port
 	"Write timeout",
 	"Read timeout"
 };
@@ -68,10 +69,16 @@ Simulator_Fails simulator_configure(
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the port.
+    debug_println("sim open");
+    if (sim->port == NULL) { return showError(sim, Simulator_Missing_Port); }
     sim->index = 0;
     //  Simulator depends on sensor ID, so we need to refresh the port.
-    if (sim->port == NULL) { debug_println("simulator_open missing port"); debug_flush(); }
-    if (sim->port) { sim->port->simulator = sim; }
+    sim->port->simulator = sim;
+
+    //  For Replay Mode, open the SPI port.
+    if (sim->mode == Simulator_Replay) {
+        spi_open(sim->port);
+    }
     return Simulator_Ok;
 }
 
@@ -90,6 +97,7 @@ volatile Evt_t *simulator_replay(Simulator_Control *sim) {
 
 static Simulator_Fails simulator_overflow(Simulator_Control *sim) {
     //  Handle an overflow.  Switch to error mode.
+    debug_println("sim overflow");
     sim->mode = Simulator_Mismatch;
     return showError(sim, Simulator_Trail_Overflow);
 }
@@ -153,11 +161,17 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
 Simulator_Fails simulator_close(Simulator_Control *sim) {  
     //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
-    if (sim->port) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
+    debug_println("sim close");
+    //  For Replay Mode, close the SPI port.
+    if (sim->port != NULL && sim->mode == Simulator_Replay) {
+        spi_close(sim->port);
+    }
+    if (sim->port != NULL) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }
             else { sim->mode = Simulator_Mismatch; }  //  Nothing recorded, don't replay.
+            ////TODO: sim->mode = Simulator_Capture; ////
             break;
         case Simulator_Replay: sim->mode = Simulator_Simulate; break;  //  After replay, simulate.
         case Simulator_Simulate: sim->mode = Simulator_Replay; break;  //  After simulate, replay.
@@ -167,7 +181,7 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
             break;
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
-    if (sim->port) { sim->port->simulator = NULL; }
+    if (sim->port != NULL) { sim->port->simulator = NULL; }
     return Simulator_Ok;
 }
 
