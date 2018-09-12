@@ -42,7 +42,11 @@
 			"regex": "cpp",
 			"future": "cpp",
 			"system_error": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"hash_map": "cpp",
+			"hash_set": "cpp",
+			"slist": "cpp",
+			"utility": "cpp"
 		}
 	}
 }

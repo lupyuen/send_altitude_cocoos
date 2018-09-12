@@ -6,10 +6,21 @@
 //  aggregation/transmission or for display.
 #ifndef SENSOR_H_
 #define SENSOR_H_
-
 #include "platform.h"
 #include <stdlib.h>
 #include <cocoos.h>
+
+#ifdef STM32  //  If STM32 Blue Pill...
+//  We call Simulator Module to capture, replay and simulate SPI commands for SPI sensors.
+//  We do this so that we can capture the SPI send/receive commands of Arduino sensor drivers and replay
+//  them efficiently on STM32, with multitasking.
+#include <simulator.h>  //  For Simulator_Control
+#include <spiint.h>     //  For SPI_Control
+#else  //  If Arduino or other platform...
+#define Simulator_Control uint8_t  //  No need to simulate on Arduino.
+#define SPI_Control uint16_t       //  No need for SPI Interface on Arduino.
+#endif  //  STM32
+
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 #define MAX_SENSOR_DATA_SIZE 3  //  Max number of floats that can be returned as sensor data for a single sensor.
@@ -59,8 +70,10 @@ struct SensorControl {
 
 //  Interface for accessing the sensor data and controlling a sensor.
 struct Sensor {  
-  SensorInfo info; //  For accessing sensor data
-  SensorControl control; //  For controlling the sensor
+  SensorInfo info;              //  For accessing sensor data
+  SensorControl control;        //  For controlling the sensor
+  SPI_Control port;             //  For SPI port used by sensor.  Must be in static memory, not stack memory.
+  Simulator_Control simulator;  //  For simulating the sensor.  Must be in static memory, not stack memory.
 
   #ifdef __cplusplus
   Sensor(  //  Constructor for C++
@@ -78,7 +91,7 @@ struct Sensor {
 
 //  Each sensor task will have a Task Data in this format to remember the context of the sensor.
 struct SensorContext {
-  Sensor *sensor;  //  The sensor for the context.
+  Sensor *sensor;           //  The sensor for the context.
   uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
 };
 
@@ -88,17 +101,17 @@ extern Sem_t i2cSemaphore;
 //  Set up the sensor context. Allocate a new sensor ID and event.
 void setup_sensor_context(
   SensorContext *context,  //  Context to be set up.
-  Sensor *sensor,  //  Sensor to be set up.
-  uint16_t pollInterval,  //  Polling interval in milliseconds.
-  uint8_t displayTaskID  //  Task ID for the Display Task.  Used for sending display messages.
+  Sensor *sensor,          //  Sensor to be set up.
+  uint16_t pollInterval,   //  Polling interval in milliseconds.
+  uint8_t displayTaskID    //  Task ID for the Network or Display Task.  Used for sending sensor data messages.
 );
 
 //  Copy the received sensor data into the provided data buffer. Return the number of floats copied.
 uint8_t receive_sensor_data(
-  float *sensorData,  //  Array of floats containing the received sensor data.
+  float *sensorData,       //  Array of floats containing the received sensor data.
   uint8_t sensorDataSize,  //  Number of floats in the received sensor data.
-  float *data,  //  Array of floats that sensor data should be copied to.
-  uint8_t size  //  Number of floats in the array that sensor data should be copied to.
+  float *data,             //  Array of floats that sensor data should be copied to.
+  uint8_t size             //  Number of floats in the array that sensor data should be copied to.
 );
 
 //  Background task to receive and process sensor data.

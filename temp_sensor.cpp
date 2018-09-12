@@ -31,7 +31,7 @@ static float sensorData[sensorDataSize];  //  Array of floats for remembering th
 
 static void init_sensor(void) {
   //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
-  bme280_setup();  //  Set up the BME280 API.
+  bme280_setup(&sensor.port);  //  Set up the BME280 API.
 }
 
 static uint8_t poll_sensor(float *data, uint8_t size) {

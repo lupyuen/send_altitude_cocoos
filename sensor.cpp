@@ -7,12 +7,27 @@
 #define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
-// #include <stdio.h>
 #include <cocoos.h>
 #include "sensor.h"
 #include "display.h"
 
 #ifdef SENSOR_DATA
+
+#ifdef STM32  //  If STM32 Blue Pill...
+//  We call Simulator Module to capture, replay and simulate SPI commands for SPI sensors.
+//  We do this so that we can capture the SPI send/receive commands of Arduino sensor drivers and replay
+//  them efficiently on STM32, with multitasking.
+#include <simulator.h>
+
+#else  //  If Arduino or other platform...
+//  No need to simulate on Arduino.
+#define simulator_setup() {}
+#define simulator_configure(sim, id, name) {}
+#define simulator_open(sim) {}
+#define simulator_close(sim) {}
+#define simulator_test(sim) {}
+#define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.
+#endif  //  STM32
 
 uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
@@ -23,6 +38,10 @@ void setup_sensor_context(
   uint8_t taskID
   ) {
   //  Set up the sensor context and call the sensor to initialise itself.
+
+  //  Set up the simulator system once.
+  simulator_setup();
+
   //  Allocate a unique sensor ID and create the event.
   uint8_t sensorID =  nextSensorID++;
   Evt_t event = event_create();
@@ -38,6 +57,9 @@ void setup_sensor_context(
 
   //  Call the sensor to do initialisation.
   sensor->control.init_sensor_func();
+
+  //  Set up the simulator and SPI port for the sensor.
+  simulator_configure(&sensor->simulator, sensorID, sensor->info.name, &sensor->port);
 }
 
 void sensor_task(void) {
@@ -61,18 +83,39 @@ void sensor_task(void) {
     context = (SensorContext *) task_get_data();
 
     //  Prepare a sensor data message for copying the sensor data.
+    //  TODO: Save and retrieve msg from context.
     SensorMsg msg;
     msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
     strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
     msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
-    //  Poll for the sensor data and copy into the display message.
-    msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
+    //  Begin to capture, replay or simulate the sensor SPI commands.
+    simulator_open(&context->sensor->simulator);
+
+    //  If this is the first time we are polling the sensor, or if this is a simulated sensor...
+    if (simulator_should_poll_sensor(&context->sensor->simulator)) {
+      //  Poll for the sensor data and copy into the sensor message.  This will also capture or simulate the sensor SPI commands.
+      msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
+    } else {
+      //  Else we are replaying a captured SPI command.
+      msg.count = 0;  //  Don't return the message yet until the simulation next round.
+      Evt_t *replay_event;
+      for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
+        replay_event = simulator_replay(&context->sensor->simulator);
+        if (replay_event == NULL) { break; }  //  No more packets to replay.
+        event_wait(*replay_event);
+        context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait();
+      }
+    }
+
+    //  End the capture, replay or simulation of the sensor SPI commands.
+    simulator_close(&context->sensor->simulator);
 
     //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
     debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
     context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
+    //  TODO: Save and retrieve msg from context.
 
     //  Do we have new data?
     if (msg.count > 0) {
@@ -83,9 +126,7 @@ void sensor_task(void) {
       else { debug_println("(empty)"); }
       debug_flush();
       //  Note: msg_post() will block if the receiver's queue is full.
-      //  That's why we send the message outside the semaphore lock.
-      ////msg_post(context->receive_task_id, msg);
-      msg_post_async(context->receive_task_id, msg);////
+      msg_post_async(context->receive_task_id, msg);
     }
 
     //  Wait a short while before polling the sensor again.

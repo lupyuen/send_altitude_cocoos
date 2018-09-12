@@ -52,7 +52,7 @@ const char *i2c_error(I2C_Fails fcode) {
 }
 
 static I2C_Fails showError(I2C_Control *dev, I2C_Fails fc) {
-	dev->failCode = fc;
+	if (dev) { dev->failCode = fc; }
 	debug_print("***** Error: I2C Failed ");
 	debug_print(fc); debug_print(" / ");
 	debug_println(i2c_error(fc));

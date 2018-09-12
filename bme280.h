@@ -15,8 +15,10 @@
 
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
-//  Set up the BME280 module for reading.
-void bme280_setup(void);
+struct port;
+
+//  Set up the BME280 module for reading, connecting via that I/O port.
+void bme280_setup(SPI_Control *port);
 
 #ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
 extern BME280Spi bme;  //  Global instance of BME280 SPI interface.

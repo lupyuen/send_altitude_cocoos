@@ -8,6 +8,7 @@
 #define SPIINT_H_
 #include <stdint.h>  //  For uint8_t
 #include <stdlib.h>  //  For size_t
+#include <cocoos.h>  //  For Evt_t
 
 #define MAX_SPI_PORTS 3  //  Define 3 SPI ports: SPI1, SPI2, SPI3.
 
@@ -39,16 +40,45 @@
 extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
+enum SPI_Fails {  //  Error codes.
+	SPI_Ok = 0,
+  SPI_Missing_Simulator,
+	SPI_Invalid_Port,
+	SPI_Invalid_Size,
+	SPI_Mismatch,
+	SPI_Read_Timeout,
+  SPI_End,  //  Insert new codes above.
+};
+
+struct Simulator_Control;
+
+struct SPI_Control {
+  uint8_t id;  //  1=SPI1, 2=SPI2, 3=SPI3.
+  uint32_t clock;
+  uint8_t bitOrder;
+  uint8_t dataMode;
+  uint32_t tx_dma;  //  Transmit DMA Port.
+  uint8_t tx_channel;  //  Transmit DMA Channel.
+  uint32_t rx_dma;  //  Receive DMA Port.
+  uint8_t rx_channel;  //  Receive DMA Channel.
+  volatile int transceive_status;
+  int rx_buf_remainder;
+  Evt_t event;  //  Event to signal that replay was completed.
+  Simulator_Control *simulator;  //  Simulator for the port.
+	SPI_Fails	failCode;   // Last fail code.
+};
+
 //  This is the new SPI Interface.  New code should use this.
-void spi_setup(void);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
-void spi_configure(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
-void spi_open(void);  //  Enable DMA interrupt for SPI1.
+SPI_Fails spi_setup(SPI_Control *port, uint8_t id);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
+SPI_Fails spi_configure(SPI_Control *port, uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
+SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-int spi_transceive(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-int spi_transceive_wait(volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-void spi_wait(void);  //  Wait until transceive complete.
-void spi_close(void);  //  Disable DMA interrupt for SPI1.
-void spi_test(void);  //  For testing only.
+int spi_transceive(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive_wait(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+Evt_t *spi_transceive_replay(SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
+SPI_Fails spi_wait(SPI_Control *port);  //  Wait until transceive complete.
+SPI_Fails spi_close(SPI_Control *port);  //  Disable DMA interrupt for SPI1.
+SPI_Fails spi_test(SPI_Control *port);  //  For testing only.
 
 #ifdef __cplusplus
 }  //  End of extern C scope.
