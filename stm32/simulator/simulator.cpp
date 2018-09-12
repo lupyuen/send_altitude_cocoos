@@ -151,7 +151,10 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
             break;
         case Simulator_Replay: sim->mode = Simulator_Simulate; break;  //  After replay, simulate.
         case Simulator_Simulate: sim->mode = Simulator_Replay; break;  //  After simulate, replay.
-        case Simulator_Mismatch: break;  //  If replay failed, disable the simulation.
+        case Simulator_Mismatch:   //  If replay failed, capture again.
+            sim->length = 0;
+            sim->mode = Simulator_Capture; 
+            break;
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
     if (sim->port) { sim->port->simulator = NULL; }

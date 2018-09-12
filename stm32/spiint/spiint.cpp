@@ -105,7 +105,16 @@ static SPI_Fails showError(volatile SPI_Control *port, SPI_Fails fc) {
 static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
 	//  Print the contents of the packet.
 	debug_print(title); debug_print(" len "); debug_print(len); debug_print(" - ");
-	for (int i = 0; i < len; i++) { debug_print((int) buf[i]); debug_print(" "); } 
+	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
+	debug_println(""); debug_flush();
+}
+
+static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+	//  Print the contents of the packets.
+	debug_print(title); debug_print(" >> ");
+	for (int i = 0; i < tx_len; i++) { debug_printhex(tx_buf[i]); debug_print(" "); }
+	debug_print("<< ");
+	for (int i = 0; i < rx_len; i++) { debug_printhex(rx_buf[i]); debug_print(" "); } 
 	debug_println(""); debug_flush();
 }
 
@@ -355,8 +364,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
-	/////if (port->simulator != NULL) 
-	{ dump_packet("spi >>", tx_buf, tx_len); }
+	/////if (port->simulator != NULL) { dump_packet("spi >>", tx_buf, tx_len); }
 	//  Check for 0 length in both tx and rx.
 	if ((rx_len < 1) && (tx_len < 1)) { showError(port, SPI_Invalid_Size); return -1; }
 	//  If this is simulation mode, return the simulation.
@@ -545,7 +553,7 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 		}
 	}
 	////if (port->simulator != NULL) 
-	{ dump_packet("spi <<", rx_buf, tx_len); }
+	{ dump_packets("spi", tx_buf, tx_len, rx_buf, rx_len); }
 	return result;
 }
 
