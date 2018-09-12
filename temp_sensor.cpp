@@ -12,6 +12,15 @@
 #include "bme280.h"
 #include "temp_sensor.h"
 
+#ifdef STM32  //  For STM32 Blue Pill...
+#define SENSOR_PORT 1  //  Sensor is connected at this SPI Port (1=SPI1, 2=SPI2, 3=SPI3)
+#include <spiint.h>
+
+#else  //  For Arduino...
+#define SENSOR_PORT 10  //  Sensor is connected at this pin for SPI Chip Select
+#define spi_setup(id) NULL
+#endif  //  STM32
+
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
 static uint8_t poll_sensor(float *data, uint8_t size);
@@ -31,7 +40,8 @@ static float sensorData[sensorDataSize];  //  Array of floats for remembering th
 
 static void init_sensor(void) {
   //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
-  bme280_setup(&sensor.port);  //  Set up the BME280 API.
+  sensor.port = spi_setup(SENSOR_PORT);  //  Get the SPI port.
+  bme280_setup(SENSOR_PORT);  //  Set up the BME280 API.
 }
 
 static uint8_t poll_sensor(float *data, uint8_t size) {

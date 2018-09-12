@@ -76,6 +76,8 @@ static uint8_t network_setup(void) {
   //  Also starts the UART Task called by the Network Task to send/receive data to the UART port.
   //  UART Task must have the highest task priority because it must respond to UART data immediately.
 
+  return 0; //// TODO
+
   //  Start the UART Task for transmitting UART data to the Wisol module.
   setup_uart(
     &uartContext,  //  Init the context for UART Task.
@@ -116,8 +118,8 @@ static void sensor_setup(uint8_t task_id) {
   //  Set up the sensors and get their sensor contexts.
   const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
-  SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
-  SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
+  ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
+  ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
 #ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
 #endif  //  GYRO_SENSOR
@@ -127,10 +129,10 @@ static void sensor_setup(uint8_t task_id) {
   //// debug(F("task_create")); ////
   task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
     0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, humidContext, 120,  //  Priority 120
-    0, 0, 0);  //  Will not receive message queue data.
-  task_create(sensor_task, altContext, 130,  //  Priority 130
-    0, 0, 0);  //  Will not receive message queue data.
+  ////TODO: task_create(sensor_task, humidContext, 120,  //  Priority 120
+    ////0, 0, 0);  //  Will not receive message queue data.
+  ////TODO: task_create(sensor_task, altContext, 130,  //  Priority 130
+    ////0, 0, 0);  //  Will not receive message queue data.
 #ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
   task_create(sensor_task, gyroContext, 140,   //  Priority 140
     0, 0, 0);  //  Will not receive message queue data.

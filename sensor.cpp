@@ -4,7 +4,7 @@
 //  for specific sensor (e.g. temp_sensor) will provide the function to poll the actual sensor.
 //  Every Sensor will also post a SensorMsg to the Network Task or Display Task for
 //  aggregation/transmission or for display.
-#define DISABLE_DEBUG_LOG  //  Disable debug logging.
+////#define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
 #include <cocoos.h>
@@ -59,7 +59,7 @@ void setup_sensor_context(
   sensor->control.init_sensor_func();
 
   //  Set up the simulator and SPI port for the sensor.
-  simulator_configure(&sensor->simulator, sensorID, sensor->info.name, &sensor->port);
+  simulator_configure(&sensor->simulator, sensorID, sensor->info.name, sensor->port);
 }
 
 void sensor_task(void) {
@@ -101,10 +101,13 @@ void sensor_task(void) {
       msg.count = 0;  //  Don't return the message yet until the simulation next round.
       Evt_t *replay_event;
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
-        replay_event = simulator_replay(&context->sensor->simulator);
+        replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
-        event_wait(*replay_event);
+        debug(context->sensor->info.name, F(" >> Wait for replay")); ////
+
+        event_wait(*replay_event);  //  Wait for replay to complete.
         context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait();
+        debug(context->sensor->info.name, F(" >> Replay done")); ////
       }
     }
 
