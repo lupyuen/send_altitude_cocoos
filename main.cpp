@@ -116,7 +116,8 @@ static void sensor_setup(uint8_t task_id) {
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
-  const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
+  ////TODO: const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
+  const int pollInterval = 60000;  //  Poll the sensor every 60000 milliseconds.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
   ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
   ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);

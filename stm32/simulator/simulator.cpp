@@ -67,9 +67,10 @@ Simulator_Fails simulator_configure(
 }
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
-    //  Begin capture, replay or simulate.
+    //  Begin capture, replay or simulate.  Set the simulator in the port.
     sim->index = 0;
     //  Simulator depends on sensor ID, so we need to refresh the port.
+    if (sim->port == NULL) { debug_println("simulator_open missing port"); debug_flush(); }
     if (sim->port) { sim->port->simulator = sim; }
     return Simulator_Ok;
 }
@@ -140,7 +141,7 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
 }
 
 Simulator_Fails simulator_close(Simulator_Control *sim) {  
-    //  End capture, replay or simulate.
+    //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
     if (sim->port) { sim->index = 0; spi_dump_trail(sim->port); }  //  Dump the trail for debug.
     switch (sim->mode) {
@@ -153,6 +154,7 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
         case Simulator_Mismatch: break;  //  If replay failed, disable the simulation.
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
+    if (sim->port) { sim->port->simulator = NULL; }
     return Simulator_Ok;
 }
 

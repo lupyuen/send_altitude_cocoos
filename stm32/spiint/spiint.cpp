@@ -69,9 +69,9 @@ typedef uint32_t TickType_t;
 //  Messages for each fail code.
 static const char *spi_msg[] = {
 	"OK",
-	"Missing Simulator"
-	"Invalid Port",
-	"Invalid Size",
+	"Missing Simulator",  //  SPI_Missing_Simulator
+	"Invalid Port",  //  SPI_Invalid_Port
+	"Invalid Size",  //  SPI_Invalid_Size
 	"Simulation Mismatch",  //  SPI_Mismatch
 	"Read timeout"
 };
@@ -102,6 +102,13 @@ static SPI_Fails showError(volatile SPI_Control *port, SPI_Fails fc) {
 	return fc;
 }
 
+static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
+	//  Print the contents of the packet.
+	debug_print(title); debug_print(" len "); debug_println(len);
+	for (int i = 0; i < len; i++) { debug_print((int) buf[i]); debug_print(" "); } 
+	debug_println(""); debug_flush();
+}
+
 volatile SPI_Control *spi_setup(uint8_t id) {
 	debug_println("spi_setup"); debug_flush();
 	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
@@ -119,13 +126,13 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 			allPorts[i].event = event_create();
 			allPorts[i].tx_event = NULL;
 			allPorts[i].rx_event = NULL;
+			allPorts[i].simulator = NULL;
 		}
 	}
 
 	//  Remember the port ID for later.  We remember only the first port.
 	volatile SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
-	port->simulator = NULL;
 
 	//  Moved to platform_setup() in bluepill.cpp.
 	//  rcc_spi_setup_in_hse_12mhz_out_72mhz();
@@ -203,13 +210,10 @@ SPI_Fails spi_configure(
 	uint32_t clock, 
 	uint8_t bitOrder, 
 	uint8_t dataMode) {
-	//  debug_println("spi_configure"); debug_flush();
+	debug_println("spi_configure"); debug_flush();
 	port->clock = clock;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
-	//  port->simulator is set in simulator_configure().
-	if (port->simulator == NULL) { return showError(port, SPI_Missing_Simulator); }
-
 	port->tx_dma = DMA1;  //  TODO
 	port->tx_channel = DMA_CHANNEL2;
 	port->rx_dma = DMA1;
@@ -280,9 +284,12 @@ SPI_Fails spi_configure(
 
 SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI1.
-	//  debug_println("spi_open"); debug_flush();
+	if (port->simulator != NULL) { debug_println("spi_open"); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
+	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
+	if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
+
 	//  SPI1 RX on DMA1 Channel 2
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
 	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -294,7 +301,7 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 
 SPI_Fails spi_close(volatile SPI_Control *port) {
 	//  Disable DMA interrupt for SPI1.
-	//  debug_println("spi_close"); debug_flush();
+	if (port->simulator != NULL) { debug_println("spi_close"); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -306,16 +313,22 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 	//  Simulate an SPI command.
 	//  Verify that tx_len and rx_len are same as captured trail.
 	//  Verify that tx_buf is same as captured trail.
-
+	if (port->simulator != NULL) { debug_println("spi_simulate_error"); debug_flush(); }
 	//  In case of error, don't simulate.
 	showError(NULL, fc);  //  Don't set last fail.
 	//  Do an actual transceive, don't simulate.
-	port->simulator->mode = Simulator_Mismatch;
+	if (port->simulator != NULL) {
+		port->simulator->mode = Simulator_Mismatch;
+	}
 	return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 }
 
 static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Simulate an SPI command.  In case of error, don't simulate, perform the actual transceive.
+	if (port->simulator != NULL) { debug_println("spi_simulate"); debug_flush(); }
+	if (port->simulator == NULL) {
+		return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);  //  Don't simulate.
+	}
 	int captured_tx_len = simulator_simulate_size(port->simulator);
 	volatile uint8_t *captured_tx_buf = simulator_simulate_packet(port->simulator, captured_tx_len);
 	int captured_rx_len = simulator_simulate_size(port->simulator);
@@ -336,16 +349,13 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
-
-	//  Print what is going to be sent on the SPI bus
-	//  debug_print("spi_transceive sending len "); debug_println(tx_len);
-	//  for (int i = 0; i < tx_len; i++) { debug_print((int) tx_buf[i]); debug_print(" "); } debug_println(""); debug_flush();
-
+	if (port->simulator != NULL) { dump_packet("spi_transceive sending", tx_buf, tx_len); }
 	//  Check for 0 length in both tx and rx.
 	if ((rx_len < 1) && (tx_len < 1)) { showError(port, SPI_Invalid_Size); return -1; }
 	//  If this is simulation mode, return the simulation.
-	if (port->simulator->mode == Simulator_Simulate) { return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); }
-
+	if (port->simulator != NULL && port->simulator->mode == Simulator_Simulate) { 
+		return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); 
+	}
 	//  Reset DMA channels.
 	dma_channel_reset(DMA1, DMA_CHANNEL2);  //  TODO
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
@@ -432,6 +442,7 @@ static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 
 /* SPI receive completed with DMA */
 void dma1_channel2_isr(void) {
+	//  TODO: Handle other errors.
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL2, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL2, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
@@ -450,6 +461,7 @@ void dma1_channel2_isr(void) {
 
 /* SPI transmit completed with DMA */
 void dma1_channel3_isr(void) {
+	//  TODO: Handle other errors.
 	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL3, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL3, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
@@ -512,27 +524,28 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return result; }
 
-	if (port->simulator->mode == Simulator_Capture || port->simulator->mode == Simulator_Mismatch) {
-		//  If this is capture or error mode, wait until transceive complete.
-		spi_wait(port);
-		if (port->simulator->mode == Simulator_Capture) {
-			//  Capture the SPI command for replay and simulation later.
-			simulator_capture_size(port->simulator, tx_len);
-			simulator_capture_packet(port->simulator, tx_buf, tx_len);
-			simulator_capture_size(port->simulator, rx_len);
-			simulator_capture_packet(port->simulator, rx_buf, rx_len);
+	if (port->simulator != NULL) {
+		if (port->simulator->mode == Simulator_Capture || port->simulator->mode == Simulator_Mismatch) {
+			//  If this is capture or error mode, wait until transceive complete.
+			spi_wait(port);
+			if (port->simulator->mode == Simulator_Capture) {
+				//  Capture the SPI command for replay and simulation later.
+				simulator_capture_size(port->simulator, tx_len);
+				simulator_capture_packet(port->simulator, tx_buf, tx_len);
+				simulator_capture_size(port->simulator, rx_len);
+				simulator_capture_packet(port->simulator, rx_buf, rx_len);
+			}
 		}
 	}
-
-	//  Print what was received on the SPI bus.
-	//  debug_print("spi_transceive_wait received len "); debug_println(rx_len);
-	//  for (int i = 0; i < rx_len; i++) { debug_print(rx_buf[i]); debug_print(" "); } debug_println(""); debug_flush();
+	if (port->simulator != NULL) { dump_packet("spi_transceive_wait received", rx_buf, tx_len); }
 	return result;
 }
 
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
 	//  Read the captured SPI packet for send and receive.
+	if (port->simulator != NULL) { debug_println("spi_transceive_replay"); debug_flush(); }
+	if (port->simulator == NULL) { showError(port, SPI_Missing_Simulator); return NULL; }  //  No simulator.
 	int tx_len = simulator_replay_size(port->simulator);
 	volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
 	int rx_len = simulator_replay_size(port->simulator);
@@ -547,15 +560,9 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	return &port->event;
 }
 
-static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
-	//  Print the contents of the packet.
-	debug_print(title); debug_print(" len "); debug_println(len);
-	for (int i = 0; i < len; i++) { debug_print((int) buf[i]); debug_print(" "); } 
-	debug_println(""); debug_flush();
-}
-
 SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	//  Dump the simulated commands to console.
+	if (port->simulator == NULL) { return SPI_Missing_Simulator; }  //  No simulator.
 	for (;;) {
 		//  Read the captured SPI packet for send and receive.
 		int tx_len = simulator_replay_size(port->simulator);
@@ -568,6 +575,8 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 		dump_packet("tx", tx_buf, tx_len);
 		dump_packet("rx", rx_buf, rx_len);
 	}
+	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
+	debug_print(" / "); debug_println((int) (port->simulator->length));
 	return SPI_Ok;
 }
 
