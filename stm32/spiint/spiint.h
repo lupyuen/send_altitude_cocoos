@@ -53,6 +53,21 @@ enum SPI_Fails {  //  Error codes.
   SPI_End,  //  Insert new codes above.
 };
 
+/* This is for the counter state flag */
+enum cnt_state {
+	TX_UP_RX_HOLD = 0,
+	TX_HOLD_RX_UP,
+	TX_DOWN_RX_HOLD,
+	TX_HOLD_RX_DOWN
+};
+
+/* This is a global spi state flag */
+enum trans_status {
+	NONE = 0,
+	ONE,
+	DONE
+};
+
 struct Simulator_Control;
 
 struct SPI_Control {
@@ -64,8 +79,8 @@ struct SPI_Control {
   uint8_t tx_channel;  //  Transmit DMA Channel.
   uint32_t rx_dma;  //  Receive DMA Port.
   uint8_t rx_channel;  //  Receive DMA Channel.
-  volatile int transceive_status;
-  int rx_buf_remainder;
+  volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
+  volatile int rx_buf_remainder;  //  Excess of bytes to be received over transmission length.
   Evt_t event;  //  Event to signal that replay was completed.
   volatile Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
   volatile Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.

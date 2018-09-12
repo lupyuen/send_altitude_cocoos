@@ -40,21 +40,6 @@
 #define MOSI_PORT GPIOA
 #define MOSI_PIN GPIO7
 
-/* This is for the counter state flag */
-typedef enum {
-	TX_UP_RX_HOLD = 0,
-	TX_HOLD_RX_UP,
-	TX_DOWN_RX_HOLD,
-	TX_HOLD_RX_DOWN
-} cnt_state;
-
-/* This is a global spi state flag */
-typedef enum {
-	NONE = 0,
-	ONE,
-	DONE
-} trans_status;
-
 volatile int transceive_status;  //  TODO: Allocate per port.
 
 /* Global for dummy tx dma transfer */
@@ -415,7 +400,11 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 
 	//  Reset status flag appropriately (both 0 case caught above).
 	transceive_status = NONE;
-	if (rx_len < 1) { transceive_status = ONE; }
+	port->transceive_status = NONE;
+	if (rx_len < 1) { 
+		transceive_status = ONE; 
+		port->transceive_status = ONE;
+	}
 
 	/* Determine tx length case to change behaviour
 	 * If tx_len >= rx_len, then normal case, run both DMAs with normal settings
@@ -487,8 +476,8 @@ static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 	return NULL;
 }
 
-volatile SPI_Control *test_port = NULL;
-volatile Evt_t *test_event = NULL;
+volatile SPI_Control *isr_port = NULL;
+volatile Evt_t *isr_event = NULL;
 
 void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	//  TODO: Handle other errors.
@@ -501,11 +490,19 @@ void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	/* Increment the status to indicate one of the transfers is complete */
 	transceive_status++;  //  TODO
 
-	//  For replay: Signal to Sensor Task that receive is done.
+	//  Find the port and update it.
 	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
-	test_port = port; ////
-	if (port != NULL && port->rx_event != NULL) {
-		test_event = port->rx_event; ////
+	isr_port = port; ////
+	if (port == NULL) { return; }
+	switch(port->transceive_status) {
+		case NONE: port->transceive_status = ONE; break;
+		case ONE: port->transceive_status = DONE; break;
+		default:  //  Nothing.
+	}
+
+	//  For replay: Signal to Sensor Task when receive is done.
+	if (port->transceive_status == DONE && port->rx_event != NULL) {
+		isr_event = port->rx_event; ////
 		event_ISR_signal(*port->rx_event);
 	}
 }
@@ -570,7 +567,6 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	//  Return -1 in case of error.
 
 	//  Start a transceive.
-	transceive_status = DONE;  //  TODO: Status per SPI port.
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return result; }
 
@@ -610,18 +606,17 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush();
 
 	////
-	test_port = NULL;
-	test_event = NULL;
+	isr_port = NULL;
+	isr_event = NULL;
 	////
 
 	//  Send the transceive request and send the event when completed.
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return NULL; }
 
-	////
-	for (int i = 0; i < 10; i++) { led_wait(); }
-	debug_print("*** test_port: "); debug_println(test_port == NULL ? "NULL" : "OK");
-	debug_print("*** test_event: "); debug_println(test_event == NULL ? "NULL" : "OK");
+	//// for (int i = 0; i < 10; i++) { led_wait(); }
+	debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
+	debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
 	////
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
