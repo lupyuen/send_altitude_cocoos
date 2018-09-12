@@ -76,7 +76,7 @@ static const char *spi_msg[] = {
 	"Read timeout"
 };
 
-static volatile SPI_Control *allPorts[MAX_SPI_PORTS + 1];  //  Map port ID to the port control.  Volatile because the DMA ISR will lookup this array.
+static volatile SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the port control.  Volatile because the DMA ISR will lookup this array.
 
 static inline TickType_t diff_ticks(TickType_t early,TickType_t later) {
     //  Compute the difference in ticks.
@@ -102,19 +102,28 @@ static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
 	return fc;
 }
 
-SPI_Fails spi_setup(SPI_Control *port, uint8_t id) {
+volatile SPI_Control *spi_setup(uint8_t id) {
 	debug_println("spi_setup"); debug_flush();
-	if (id < 1 || id > MAX_SPI_PORTS) { return showError(port, SPI_Invalid_Port); }
+	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
 
 	//  Initialise the ports for the first time.
 	static bool firstTime = true;
 	if (firstTime) {
 		firstTime = false;
-		for (int i = 0; i < MAX_SPI_PORTS + 1; i++) { allPorts[i] = NULL; }
+		for (int i = 0; i < MAX_SPI_PORTS; i++) { 
+			allPorts[i].id = i;
+			allPorts[i].tx_dma = 0;
+			allPorts[i].tx_channel = 0;
+			allPorts[i].rx_dma = 0;
+			allPorts[i].rx_channel = 0;
+			allPorts[i].event = event_create();
+			allPorts[i].tx_event = NULL;
+			allPorts[i].rx_event = NULL;
+		}
 	}
 
 	//  Remember the port ID for later.  We remember only the first port.
-	if (allPorts[id] == NULL) { allPorts[id] = port; }
+	volatile SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
 	port->simulator = NULL;
 
@@ -127,7 +136,7 @@ SPI_Fails spi_setup(SPI_Control *port, uint8_t id) {
 
 	//  Enable DMA1 clock
 	rcc_periph_clock_enable(RCC_DMA1);
-	return SPI_Ok;
+	return port;
 }
 
 /* TODO: Set up SPI:
@@ -199,7 +208,11 @@ SPI_Fails spi_configure(SPI_Control *port,
 	port->dataMode = dataMode;
 	//  port->simulator is set in simulator_configure().
 	if (port->simulator == NULL) { return showError(port, SPI_Missing_Simulator); }
-	port->event = event_create();
+
+	port->tx_dma = DMA1;  //  TODO
+	port->tx_channel = DMA_CHANNEL2;
+	port->rx_dma = DMA1;
+	port->rx_channel = DMA_CHANNEL3;
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -267,6 +280,8 @@ SPI_Fails spi_configure(SPI_Control *port,
 SPI_Fails spi_open(SPI_Control *port) {
 	//  Enable DMA interrupt for SPI1.
 	//  debug_println("spi_open"); debug_flush();
+	port->tx_event = NULL;
+	port->rx_event = NULL;
 	//  SPI1 RX on DMA1 Channel 2
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
 	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -279,6 +294,8 @@ SPI_Fails spi_open(SPI_Control *port) {
 SPI_Fails spi_close(SPI_Control *port) {
 	//  Disable DMA interrupt for SPI1.
 	//  debug_println("spi_close"); debug_flush();
+	port->tx_event = NULL;
+	port->rx_event = NULL;
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
  	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
 	return SPI_Ok;
@@ -329,11 +346,6 @@ int spi_transceive(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len
 	if (port->simulator->mode == Simulator_Simulate) { return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); }
 
 	//  Reset DMA channels.
-	port->tx_dma = DMA1;  //  TODO
-	port->tx_channel = DMA_CHANNEL2;
-	port->rx_dma = DMA1;
-	port->rx_channel = DMA_CHANNEL3;
-
 	dma_channel_reset(DMA1, DMA_CHANNEL2);  //  TODO
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
 	//  debug_println("spi_transceive1"); // debug_flush();
@@ -409,12 +421,10 @@ int spi_transceive(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len
 
 static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 	//  Called by DMA ISR to return the port by DMA port and channel.  Don't use any external functions.
-	for (int i = 0; i < MAX_SPI_PORTS + 1; i++) {
-		volatile SPI_Control *port = allPorts[i];
-		if (port != NULL) { 
-			if (port->rx_dma == dma && port->rx_channel == channel) { return port; }
-			if (port->tx_dma == dma && port->tx_channel == channel) { return port; }
-		}
+	for (int i = 0; i < MAX_SPI_PORTS; i++) {
+		volatile SPI_Control *port = &allPorts[i];
+		if (port->rx_dma == dma && port->rx_channel == channel) { return port; }
+		if (port->tx_dma == dma && port->tx_channel == channel) { return port; }
 	}
 	return NULL;
 }
@@ -428,12 +438,12 @@ void dma1_channel2_isr(void) {
 	dma_disable_channel(DMA1, DMA_CHANNEL2);
 
 	/* Increment the status to indicate one of the transfers is complete */
-	transceive_status++;
+	transceive_status++;  //  TODO
 
-	//  For replay: Signal to Sensor Task that transceive is done.
+	//  For replay: Signal to Sensor Task that receive is done.
 	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
-	if (port != NULL && port->simulator != NULL && port->simulator->mode == Simulator_Replay) {
-		event_ISR_signal(port->event);
+	if (port != NULL && port->rx_event != NULL) {
+		event_ISR_signal(*port->rx_event);
 	}
 }
 
@@ -464,7 +474,14 @@ void dma1_channel3_isr(void) {
 		spi_enable_tx_dma(SPI1);
 	} else {
 		/* Increment the status to indicate one of the transfers is complete */
-		transceive_status++;
+		transceive_status++;  //  TODO
+
+		//  Send signal that transmit is done.  (Not used)
+		volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
+		if (port != NULL && port->tx_event != NULL) {
+			event_ISR_signal(*port->tx_event);
+		}
+
 	}
 }
 
@@ -521,6 +538,8 @@ Evt_t *spi_transceive_replay(SPI_Control *port) {
 	volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
 	//  Stop if the packet was invalid.
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
+	//  Signal when rx_completed.
+	port->rx_event = &port->event;
 	//  Send the transceive request.
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return NULL; }
@@ -530,9 +549,9 @@ Evt_t *spi_transceive_replay(SPI_Control *port) {
 //  Which SPI port is now sending/receiving. 1=SPI1, 2=SPI2, ...
 static volatile uint8_t currentSPIPort = 0;  //  0=Unknown.
 
-//  Allocate one byte per SPI port for send and receive, including the unknown port (0).
-static volatile uint8_t tx_buffer[MAX_SPI_PORTS + 1];  //  Must be static volatile because of DMA.
-static volatile uint8_t rx_buffer[MAX_SPI_PORTS + 1];
+//  Allocate one byte per SPI port for send and receive.
+static volatile uint8_t tx_buffer[MAX_SPI_PORTS];  //  Must be static volatile because of DMA.
+static volatile uint8_t rx_buffer[MAX_SPI_PORTS];
 
 static volatile uint8_t tx_packet[16];
 static volatile uint8_t rx_packet[16];
@@ -540,9 +559,8 @@ static volatile uint8_t rx_packet[16];
 void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	//  Used by BME280Spi.cpp
 	if (settings.spi_port < 1 || settings.spi_port > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }
-	SPI_Control *port = allPorts[settings.spi_port];
-	if (port == NULL)  { showError(NULL, SPI_Invalid_Port); return; }
 	currentSPIPort = settings.spi_port;
+	volatile SPI_Control *port = &allPorts[currentSPIPort - 1];
 	//  SPI setup should have been called in bme280.cpp.  TODO: Verify SPI port number.
 	//  spi_setup();
 	spi_configure(port, settings.clock, settings.bitOrder, settings.dataMode);
@@ -553,21 +571,19 @@ uint8_t SPIInterface::transfer(uint8_t data) {
   	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Return the byte received.  Used by BME280Spi.cpp
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return 0; }
 	volatile uint8_t portID = currentSPIPort;  //  Remember in case it changes while waiting.
-	SPI_Control *port = allPorts[portID];
-	if (port == NULL)  { showError(NULL, SPI_Invalid_Port); return 0; }
+	volatile SPI_Control *port = &allPorts[portID - 1];
 
-	tx_buffer[portID] = data;
-	rx_buffer[portID] = 0x22;  //  Means uninitialised.
-	int result = spi_transceive_wait(port, &tx_buffer[portID], 1, &rx_buffer[portID], 1);
+	tx_buffer[portID - 1] = data;
+	rx_buffer[portID - 1] = 0x22;  //  Means uninitialised.
+	int result = spi_transceive_wait(port, &tx_buffer[portID - 1], 1, &rx_buffer[portID - 1], 1);
 	if (result < 0) { return 0; }
-	return rx_buffer[portID];
+	return rx_buffer[portID - 1];
 }
 
 void SPIInterface::endTransaction(void) {
 	//  Used by BME280Spi.cpp
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
-	SPI_Control *port = allPorts[currentSPIPort];
-	if (port == NULL)  { showError(NULL, SPI_Invalid_Port); return; }
+	volatile SPI_Control *port = &allPorts[currentSPIPort - 1];
 	currentSPIPort = 0;
 	spi_close(port);
 }
@@ -680,8 +696,6 @@ test_read(uint8_t readAddr) {
 }
 #endif  //  DISABLE_DMA
 
-SPI_Control testPort;
-
 void spi_test(void) {
 	debug_println("spi_test"); debug_flush();
 
@@ -691,30 +705,30 @@ void spi_test(void) {
 	uint8_t readAddr = addr | BME280_SPI_READ;
 	
 	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-	spi_setup(&testPort, 1);
+	volatile SPI_Control *port = spi_setup(1);
 
 #ifdef DISABLE_DMA
 	test_spi_configure();
 	for (int i = 0; i < 10; i++) { led_wait(); }
 	test_read(readAddr);  //  Should return 96.
 #else
-	spi_configure(&testPort, 500000, MSBFIRST, SPI_MODE0);
-	spi_open(&testPort);
+	spi_configure(port, 500000, MSBFIRST, SPI_MODE0);
+	spi_open(port);
 
 	tx_packet[0] = readAddr;
 	rx_packet[0] = 0;
 	int tx_len = 1;
 	int rx_len = 1;
-	spi_transceive_wait(&testPort, tx_packet, tx_len, rx_packet, rx_len);
+	spi_transceive_wait(port, tx_packet, tx_len, rx_packet, rx_len);
 
 	// transfer 0x00 to get the data
 	tx_packet[0] = 0;
 	rx_packet[0] = 0;
 	tx_len = 1;
 	rx_len = 1;
-	spi_transceive_wait(&testPort, tx_packet, tx_len, rx_packet, rx_len);  //  Should return 96.
+	spi_transceive_wait(port, tx_packet, tx_len, rx_packet, rx_len);  //  Should return 96.
 
-	spi_close(&testPort);
+	spi_close(port);
 #endif  //  DISABLE_DMA
 	debug_println("spi_test OK"); debug_flush();
 }

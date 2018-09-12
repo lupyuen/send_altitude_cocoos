@@ -63,6 +63,8 @@ Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const c
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.
     sim->index = 0;
+    //  Simulator depends on sensor ID, so we need to refresh the port.
+    if (sim->port) { sim->port->simulator = sim; }
 }
 
 bool simulator_should_poll_sensor(Simulator_Control *sim) {

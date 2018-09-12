@@ -64,21 +64,23 @@ struct SPI_Control {
   volatile int transceive_status;
   int rx_buf_remainder;
   Evt_t event;  //  Event to signal that replay was completed.
+  Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
+  Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
   Simulator_Control *simulator;  //  Simulator for the port.
 	SPI_Fails	failCode;   // Last fail code.
 };
 
 //  This is the new SPI Interface.  New code should use this.
-SPI_Fails spi_setup(SPI_Control *port, uint8_t id);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
-SPI_Fails spi_configure(SPI_Control *port, uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
-SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI1.
+volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
+SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
+SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-int spi_transceive(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-int spi_transceive_wait(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-Evt_t *spi_transceive_replay(SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
-SPI_Fails spi_wait(SPI_Control *port);  //  Wait until transceive complete.
-SPI_Fails spi_close(SPI_Control *port);  //  Disable DMA interrupt for SPI1.
-SPI_Fails spi_test(SPI_Control *port);  //  For testing only.
+int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
+SPI_Fails spi_wait(volatile SPI_Control *port);  //  Wait until transceive complete.
+SPI_Fails spi_close(volatile SPI_Control *port);  //  Disable DMA interrupt for SPI1.
+SPI_Fails spi_test(volatile SPI_Control *port);  //  For testing only.
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

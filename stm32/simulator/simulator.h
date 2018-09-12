@@ -9,7 +9,7 @@
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.  TODO: Sync with platform.h
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.  TODO: Sync with sensor.h
-#define MAX_TRAIL_SIZE 32  //  Max number of bytes per trail.
+#define MAX_TRAIL_SIZE 16  //  Max number of bytes per trail.
 
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.
