@@ -118,6 +118,32 @@ static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int 
 	debug_println(""); debug_flush();
 }
 
+SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
+	//  Dump the simulated commands to console.
+	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
+	switch (port->simulator->mode) {
+		case Simulator_Capture: debug_println("captured trail -"); break;
+		case Simulator_Replay: debug_println("replayed trail -"); break;
+		case Simulator_Simulate: debug_println("simulated trail -"); break;
+		case Simulator_Mismatch: debug_println("mismatch trail -"); break;
+		default: debug_println("unknown trail -");
+	}
+	for (;;) {
+		//  Read the captured SPI packet for send and receive.
+		int tx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
+		int rx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
+		//  Stop if the packet was invalid.
+		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
+		//  Dump the packet.
+		dump_packets("", tx_buf, tx_len, rx_buf, rx_len);
+	}
+	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
+	debug_print(" / "); debug_println((int) (port->simulator->length));
+	return SPI_Ok;
+}
+
 volatile SPI_Control *spi_setup(uint8_t id) {
 	debug_println("spi_setup"); debug_flush();
 	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
@@ -539,21 +565,24 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return result; }
 
-	if (port->simulator != NULL) {
-		if (port->simulator->mode == Simulator_Capture || port->simulator->mode == Simulator_Mismatch) {
-			//  If this is capture or error mode, wait until transceive complete.
-			spi_wait(port);
-			if (port->simulator->mode == Simulator_Capture) {
-				//  Capture the SPI command for replay and simulation later.
-				simulator_capture_size(port->simulator, tx_len);
-				simulator_capture_packet(port->simulator, tx_buf, tx_len);
-				simulator_capture_size(port->simulator, rx_len);
-				simulator_capture_packet(port->simulator, rx_buf, rx_len);
-			}
-		}
+	if (port->simulator != NULL && port->simulator->mode == Simulator_Replay ) {
+		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
+	} else {
+		//  If no simulator, or simulator is in other modes, wait for transceive response.
+		spi_wait(port);		
 	}
+
 	////if (port->simulator != NULL) 
 	{ dump_packets("spi", tx_buf, tx_len, rx_buf, rx_len); }
+
+	if (port->simulator != NULL && port->simulator->mode == Simulator_Capture) {
+		//  If simulator is in Capture Mode, capture the SPI command for replay and simulation later.
+		simulator_capture_size(port->simulator, tx_len);
+		simulator_capture_packet(port->simulator, tx_buf, tx_len);
+		simulator_capture_size(port->simulator, rx_len);
+		simulator_capture_packet(port->simulator, rx_buf, rx_len);
+		int i = port->simulator->index; spi_dump_trail(port); port->simulator->index = i;
+	}
 	return result;
 }
 
@@ -575,33 +604,6 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	if (result < 0) { return NULL; }
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
 	return &port->event;
-}
-
-SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
-	//  Dump the simulated commands to console.
-	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
-	switch (port->simulator->mode) {
-		case Simulator_Capture: debug_println("captured trail -"); break;
-		case Simulator_Replay: debug_println("replayed trail -"); break;
-		case Simulator_Simulate: debug_println("simulated trail -"); break;
-		case Simulator_Mismatch: debug_println("mismatch trail -"); break;
-		default: debug_println("unknown trail -");
-	}
-	for (;;) {
-		//  Read the captured SPI packet for send and receive.
-		int tx_len = simulator_replay_size(port->simulator);
-		volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
-		int rx_len = simulator_replay_size(port->simulator);
-		volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
-		//  Stop if the packet was invalid.
-		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
-		//  Dump the packet.
-		dump_packet("tx >>", tx_buf, tx_len);
-		dump_packet("rx <<", rx_buf, rx_len);
-	}
-	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
-	debug_print(" / "); debug_println((int) (port->simulator->length));
-	return SPI_Ok;
 }
 
 //  Which SPI port is now sending/receiving. 1=SPI1, 2=SPI2, ...
