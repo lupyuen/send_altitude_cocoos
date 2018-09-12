@@ -476,8 +476,8 @@ static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 	return NULL;
 }
 
-volatile SPI_Control *isr_port = NULL;
-volatile Evt_t *isr_event = NULL;
+volatile SPI_Control *isr_port = NULL;  //  For debug only.
+volatile Evt_t *isr_event = NULL;  //  For debug only.
 
 void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	//  TODO: Handle other errors.
@@ -497,7 +497,7 @@ void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	switch(port->transceive_status) {
 		case NONE: port->transceive_status = ONE; break;
 		case ONE: port->transceive_status = DONE; break;
-		default:  //  Nothing.
+		default: break; //  Nothing.
 	}
 
 	//  For replay: Signal to Sensor Task when receive is done.

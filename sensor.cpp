@@ -105,9 +105,9 @@ void sensor_task(void) {
         if (replay_event == NULL) { break; }  //  No more packets to replay.
         debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay")); ////
 
-        event_wait(*replay_event);  //  Wait for replay to complete.
+        event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
         context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait();
-        debug(context->sensor->info.name, F(" >> Replay done")); ////
+        debug_print(context->sensor->info.name); debug_print(F(" >> Replay done ")); debug_println((int) context->sensor->port->transceive_status); debug_flush(); ////
       }
     }
 
