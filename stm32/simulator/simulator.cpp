@@ -88,15 +88,23 @@ volatile Evt_t *simulator_replay(Simulator_Control *sim) {
     return spi_transceive_replay(sim->port);
 }
 
+static Simulator_Fails simulator_overflow(Simulator_Control *sim) {
+    //  Handle an overflow.  Switch to error mode.
+    sim->mode = Simulator_Mismatch;
+    return showError(sim, Simulator_Trail_Overflow);
+}
+
 //  Capture, replay or simulate an SPI send/receive packet, which has a packet size.
 //  One Trail = One or more SPI Commands per sensor.
 //  One SPI Command = One Send Packet + One Receive Packet
 //  Receive Packet content will be overwritten during replay.
 
 Simulator_Fails simulator_capture_size(Simulator_Control *sim, int size) {
-    //  Append the packet size to the trail.
+    //  Append the packet size to the trail.  Don't append if there was an error.
     if (size <= 0) { return showError(sim, Simulator_Invalid_Size); }
-    if ((sim->index + 1) >= MAX_TRAIL_SIZE)  { return showError(sim, Simulator_Trail_Overflow); }
+    if ((sim->index + 1) >= MAX_TRAIL_SIZE)  { return simulator_overflow(sim); }
+    if (sim->mode == Simulator_Mismatch) { return Simulator_Trail_Overflow; }
+
     sim->trail[sim->index] = (uint8_t) size;
     sim->index++;
     sim->length = sim->index;
@@ -104,9 +112,11 @@ Simulator_Fails simulator_capture_size(Simulator_Control *sim, int size) {
 }
 
 Simulator_Fails simulator_capture_packet(Simulator_Control *sim, volatile uint8_t *packet, int size) {
-    //  Append the packet content to the trail.
+    //  Append the packet content to the trail.  Don't append if there was an error.
     if (size <= 0 || packet == NULL) { return showError(sim, Simulator_Invalid_Size); }
-    if ((sim->index + size) >= MAX_TRAIL_SIZE)  { return showError(sim, Simulator_Trail_Overflow); }
+    if ((sim->index + size) >= MAX_TRAIL_SIZE)  { return simulator_overflow(sim); }
+    if (sim->mode == Simulator_Mismatch) { return Simulator_Trail_Overflow; }
+
     memcpy((void *) &(sim->trail[sim->index]), (const void *) packet, size);  //  Copy the packet.
     sim->index = sim->index + size;
     sim->length = sim->index;
