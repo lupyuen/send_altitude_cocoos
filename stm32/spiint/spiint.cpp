@@ -328,6 +328,16 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 	//  Disable DMA interrupt for SPI1.
 	//  if (port->simulator != NULL) 
 	{ debug_println("spi close"); debug_flush(); }
+
+	/* Ensure transceive is complete.
+	* This checks the state flag as well as follows the
+	* procedure on the Reference Manual (RM0008 rev 14
+	* Section 25.3.9 page 692, the note.) */
+	//  debug_println("spi_close2"); // debug_flush();
+	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
+	//  debug_println("spi_close3"); // debug_flush();
+	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
+
 	port->tx_event = NULL;
 	port->rx_event = NULL;
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -476,6 +486,16 @@ static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
 	return NULL;
 }
 
+static void update_transceive_status(volatile SPI_Control *port) {
+	//  Called by DMA ISR to update the transceive status.  Don't use any external functions.
+	if (port == NULL) { return; }
+	switch(port->transceive_status) {
+		case NONE: port->transceive_status = ONE; break;
+		case ONE: port->transceive_status = DONE; break;
+		default: break; //  Nothing.
+	}
+}
+
 volatile SPI_Control *isr_port = NULL;  //  For debug only.
 volatile Evt_t *isr_event = NULL;  //  For debug only.
 
@@ -494,14 +514,10 @@ void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
 	isr_port = port; ////
 	if (port == NULL) { return; }
-	switch(port->transceive_status) {
-		case NONE: port->transceive_status = ONE; break;
-		case ONE: port->transceive_status = DONE; break;
-		default: break; //  Nothing.
-	}
+	update_transceive_status(port);
 
 	//  For replay: Signal to Sensor Task when receive is done.
-	if (port->transceive_status == DONE && port->rx_event != NULL) {
+	if (port->rx_event != NULL) {
 		isr_event = port->rx_event; ////
 		event_ISR_signal(*port->rx_event);
 	}
@@ -532,16 +548,20 @@ void dma1_channel3_isr(void) {  //  SPI transmit completed with DMA.
 		dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 		dma_enable_channel(DMA1, DMA_CHANNEL3);
 		spi_enable_tx_dma(SPI1);
-	} else {
-		/* Increment the status to indicate one of the transfers is complete */
-		transceive_status++;  //  TODO
+		return;
+	} 
+	
+	/* Increment the status to indicate one of the transfers is complete */
+	transceive_status++;  //  TODO
 
-		//  Send signal that transmit is done.  (Not used)
-		volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
-		if (port != NULL && port->tx_event != NULL) {
-			event_ISR_signal(*port->tx_event);
-		}
+	//  Find the port and update it.
+	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
+	if (port == NULL) { return; }
+	update_transceive_status(port);
 
+	//  Send signal that transmit is done.  (Not used)
+	if (port->tx_event != NULL) {
+		event_ISR_signal(*port->tx_event);
 	}
 }
 
@@ -553,7 +573,7 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	*/
 	//  TODO: Check for timeout.
 	//  debug_println("spi_wait"); // debug_flush();
-	while (transceive_status != DONE) {}
+	while (transceive_status != DONE) {}  //  TODO
 	//  debug_println("spi_wait2"); // debug_flush();
 	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
 	//  debug_println("spi_wait3"); // debug_flush();
@@ -602,8 +622,10 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Stop if the packet was invalid.
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
 	//  Signal when rx_completed.
-	port->rx_event = &port->event;
+	volatile Evt_t *event = &port->event;
+	port->rx_event = event;
 	dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush();
+	debug_print("rx_event "); debug_println((int) *event); debug_flush();
 
 	////
 	isr_port = NULL;
@@ -615,12 +637,12 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	if (result < 0) { return NULL; }
 
 	//// for (int i = 0; i < 10; i++) { led_wait(); }
-	debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
-	debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
+	// debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
+	// debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
 	////
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
-	return &port->event;
+	return event;
 }
 
 //  Which SPI port is now sending/receiving. 1=SPI1, 2=SPI2, ...

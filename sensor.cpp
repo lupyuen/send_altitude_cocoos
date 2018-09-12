@@ -103,10 +103,12 @@ void sensor_task(void) {
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
-        debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay")); ////
+        // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay")); ////
 
-        event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
-        context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait();
+        if (context->sensor->port->transceive_status != DONE) {
+          event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
+          context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
+        }
         debug_print(context->sensor->info.name); debug_print(F(" >> Replay done ")); debug_println((int) context->sensor->port->transceive_status); debug_flush(); ////
       }
     }
