@@ -40,12 +40,12 @@ struct Simulator_Control {
 	uint8_t		length;		    //  Trail length.
     uint8_t     index;          //  Index of trail to be processed next.
     Simulator_Mode mode;        //  Simulator mode.
-    SPI_Control *port;           //  SPI port for the simulator.
+    volatile SPI_Control *port; //  SPI port for the simulator.
 	Simulator_Fails	failCode;   // Last fail code.
 };
 
 Simulator_Fails simulator_setup(void);  //  Set up the simulator system.
-Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, SPI_Control *port);  //  Set up the simulator for the sensor.
+Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, volatile SPI_Control *port);  //  Set up the simulator for the sensor.
 Simulator_Fails simulator_open(Simulator_Control *sim);  //  Begin capture, replay or simulate.
 bool simulator_should_poll_sensor(Simulator_Control *sim);  //  Return true if the Sensor Task should actually poll the sensor.
 Evt_t *simulator_replay(Simulator_Control *sim);  //  Replay the captured SPI commands.

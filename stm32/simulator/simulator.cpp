@@ -46,7 +46,11 @@ Simulator_Fails simulator_setup(void) {
     //  Set up the simulator system.
 }
 
-Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, SPI_Control *port) {
+Simulator_Fails simulator_configure(
+    Simulator_Control *sim, 
+    uint32_t id, 
+    const char *name, 
+    volatile SPI_Control *port) {
     //  Set up the simulator for the sensor.
     sim->mode = Simulator_Capture;  //  Always capture the first time.
     sim->index = 0;
@@ -142,40 +146,13 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
             break;
         case Simulator_Replay: sim->mode = Simulator_Simulate; break;  //  After replay, simulate.
         case Simulator_Simulate: sim->mode = Simulator_Replay; break;  //  After simulate, replay.
+        case Simulator_Mismatch: break;  //  If replay failed, disable the simulation.
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
-}
-
-Simulator_Fails simulator_open_capture(Simulator_Control *sim) {
-    //  Begin capture, replay or simulate.
-    simulator_open(sim);
-}
-
-Simulator_Fails simulator_open_replay(Simulator_Control *sim) {
-    //  Begin capture, replay or simulate.
-    simulator_open(sim);
-}
-
-Simulator_Fails simulator_open_simulate(Simulator_Control *sim) {
-    //  Begin capture, replay or simulate.
-    simulator_open(sim);
-}
-
-Simulator_Fails simulator_close_capture(Simulator_Control *sim) {  
-    //  End capture, replay or simulate.
-    simulator_close(sim);
-}
-
-Simulator_Fails simulator_close_replay(Simulator_Control *sim) {  
-    //  End capture, replay or simulate.
-    simulator_close(sim);
-}
-
-Simulator_Fails simulator_close_simulate(Simulator_Control *sim) {  
-    //  End capture, replay or simulate.
-    simulator_close(sim);
+    return Simulator_Ok;
 }
 
 Simulator_Fails simulator_test(Simulator_Control *sim) {  
     //  For testing only.
+    return Simulator_Ok;
 }

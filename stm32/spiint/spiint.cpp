@@ -93,7 +93,7 @@ const char *spi_error(SPI_Fails fcode) {
 	return spi_msg[icode];
 }
 
-static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
+static SPI_Fails showError(volatile SPI_Control *port, SPI_Fails fc) {
 	if (port) { port->failCode = fc; }
 	debug_print("***** Error: SPI Failed ");
 	debug_print(fc); debug_print(" / ");
@@ -198,7 +198,8 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	Excerpt From: Warren Gay. “Beginning STM32.” iBooks. 
 */
 
-SPI_Fails spi_configure(SPI_Control *port, 
+SPI_Fails spi_configure(
+	volatile SPI_Control *port, 
 	uint32_t clock, 
 	uint8_t bitOrder, 
 	uint8_t dataMode) {
@@ -277,7 +278,7 @@ SPI_Fails spi_configure(SPI_Control *port,
 	return SPI_Ok;
 }
 
-SPI_Fails spi_open(SPI_Control *port) {
+SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI1.
 	//  debug_println("spi_open"); debug_flush();
 	port->tx_event = NULL;
@@ -291,7 +292,7 @@ SPI_Fails spi_open(SPI_Control *port) {
 	return SPI_Ok;
 }
 
-SPI_Fails spi_close(SPI_Control *port) {
+SPI_Fails spi_close(volatile SPI_Control *port) {
 	//  Disable DMA interrupt for SPI1.
 	//  debug_println("spi_close"); debug_flush();
 	port->tx_event = NULL;
@@ -301,7 +302,7 @@ SPI_Fails spi_close(SPI_Control *port) {
 	return SPI_Ok;
 }
 
-static int spi_simulate_error(SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Simulate an SPI command.
 	//  Verify that tx_len and rx_len are same as captured trail.
 	//  Verify that tx_buf is same as captured trail.
@@ -313,7 +314,7 @@ static int spi_simulate_error(SPI_Control *port, SPI_Fails fc, volatile SPI_DATA
 	return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 }
 
-static int spi_simulate(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Simulate an SPI command.  In case of error, don't simulate, perform the actual transceive.
 	int captured_tx_len = simulator_simulate_size(port->simulator);
 	volatile uint8_t *captured_tx_buf = simulator_simulate_packet(port->simulator, captured_tx_len);
@@ -332,7 +333,7 @@ static int spi_simulate(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int t
 	return 0;  //  No error.
 }
 
-int spi_transceive(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
+int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
@@ -485,7 +486,7 @@ void dma1_channel3_isr(void) {
 	}
 }
 
-SPI_Fails spi_wait(SPI_Control *port) {
+SPI_Fails spi_wait(volatile SPI_Control *port) {
 	/* Wait until transceive complete.
 	* This checks the state flag as well as follows the
 	* procedure on the Reference Manual (RM0008 rev 14
@@ -502,7 +503,7 @@ SPI_Fails spi_wait(SPI_Control *port) {
 	return SPI_Ok;
 }
 
-int spi_transceive_wait(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
+int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
@@ -529,7 +530,7 @@ int spi_transceive_wait(SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int t
 	return result;
 }
 
-Evt_t *spi_transceive_replay(SPI_Control *port) {
+Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
 	//  Read the captured SPI packet for send and receive.
 	int tx_len = simulator_replay_size(port->simulator);
