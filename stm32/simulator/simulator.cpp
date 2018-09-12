@@ -143,7 +143,7 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
 Simulator_Fails simulator_close(Simulator_Control *sim) {  
     //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
-    if (sim->port) { sim->index = 0; spi_dump_trail(sim->port); }  //  Dump the trail for debug.
+    if (sim->port) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }

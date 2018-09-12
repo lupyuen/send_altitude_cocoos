@@ -1,6 +1,6 @@
 //  Simulator Module that captures, replays and simulates SPI commands for SPI sensors.
 //  We do this so that we can capture the SPI send/receive commands of Arduino sensor drivers and replay
-//  them efficiently on STM32, with multitasking.
+//  them efficiently on STM32, with multitasking.  And also for testing with simulated sensors.
 #ifndef SIMULATOR_H_
 #define SIMULATOR_H_
 #include <stdint.h>  //  For uint8_t
@@ -9,7 +9,7 @@
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.  TODO: Sync with platform.h
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.  TODO: Sync with sensor.h
-#define MAX_TRAIL_SIZE 16  //  Max number of bytes per trail.
+#define MAX_TRAIL_SIZE 32  //  Max number of bytes per trail.
 
 #ifdef __cplusplus
 extern "C" {  //  Allows functions below to be called by C and C++ code.

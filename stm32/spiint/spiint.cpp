@@ -129,6 +129,8 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 		case Simulator_Mismatch: title = "mismatch"; break;
 		default: title = "unknown";
 	}
+	int i = port->simulator->index;
+	port->simulator->index = 0;
 	for (;;) {
 		//  Read the captured SPI packet for send and receive.
 		int tx_len = simulator_replay_size(port->simulator);
@@ -142,6 +144,7 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	}
 	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
 	debug_print(" / "); debug_println((int) (port->simulator->length));
+	port->simulator->index = i;
 	return SPI_Ok;
 }
 
@@ -582,7 +585,7 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 		simulator_capture_packet(port->simulator, tx_buf, tx_len);
 		simulator_capture_size(port->simulator, rx_len);
 		simulator_capture_packet(port->simulator, rx_buf, rx_len);
-		int i = port->simulator->index; spi_dump_trail(port); port->simulator->index = i;
+		spi_dump_trail(port);
 	}
 	return result;
 }
