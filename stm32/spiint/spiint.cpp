@@ -309,8 +309,8 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 
 	//  In case of error, don't simulate.
 	showError(NULL, fc);  //  Don't set last fail.
-	//  Do an actual transceive.
-	port->simulator->mode == Simulator_Mismatch;
+	//  Do an actual transceive, don't simulate.
+	port->simulator->mode = Simulator_Mismatch;
 	return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 }
 
@@ -530,7 +530,7 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	return result;
 }
 
-Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
+volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
 	//  Read the captured SPI packet for send and receive.
 	int tx_len = simulator_replay_size(port->simulator);
@@ -545,6 +545,30 @@ Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return NULL; }
 	return &port->event;
+}
+
+static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
+	//  Print the contents of the packet.
+	debug_print(title); debug_print(" len "); debug_println(len);
+	for (int i = 0; i < len; i++) { debug_print((int) buf[i]); debug_print(" "); } 
+	debug_println(""); debug_flush();
+}
+
+SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
+	//  Dump the simulated commands to console.
+	for (;;) {
+		//  Read the captured SPI packet for send and receive.
+		int tx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
+		int rx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
+		//  Stop if the packet was invalid.
+		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
+		//  Dump the packet.
+		dump_packet("tx", tx_buf, tx_len);
+		dump_packet("rx", rx_buf, rx_len);
+	}
+	return SPI_Ok;
 }
 
 //  Which SPI port is now sending/receiving. 1=SPI1, 2=SPI2, ...

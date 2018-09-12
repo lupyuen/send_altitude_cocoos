@@ -48,7 +48,7 @@ Simulator_Fails simulator_setup(void);  //  Set up the simulator system.
 Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, volatile SPI_Control *port);  //  Set up the simulator for the sensor.
 Simulator_Fails simulator_open(Simulator_Control *sim);  //  Begin capture, replay or simulate.
 bool simulator_should_poll_sensor(Simulator_Control *sim);  //  Return true if the Sensor Task should actually poll the sensor.
-Evt_t *simulator_replay(Simulator_Control *sim);  //  Replay the captured SPI commands.
+volatile Evt_t *simulator_replay(Simulator_Control *sim);  //  Replay the captured SPI commands.
 
 //  Capture, replay or simulate an SPI send/receive packet, which has a packet size.
 //  One Trail = One or more SPI Commands per sensor.

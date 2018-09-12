@@ -64,8 +64,8 @@ struct SPI_Control {
   volatile int transceive_status;
   int rx_buf_remainder;
   Evt_t event;  //  Event to signal that replay was completed.
-  Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
-  Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
+  volatile Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
+  volatile Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
   Simulator_Control *simulator;  //  Simulator for the port.
 	SPI_Fails	failCode;   // Last fail code.
 };
@@ -77,7 +77,8 @@ SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SP
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
+volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
+SPI_Fails spi_dump_trail(volatile SPI_Control *port);  //  Dump the simulated commands to console.
 SPI_Fails spi_wait(volatile SPI_Control *port);  //  Wait until transceive complete.
 SPI_Fails spi_close(volatile SPI_Control *port);  //  Disable DMA interrupt for SPI1.
 SPI_Fails spi_test(volatile SPI_Control *port);  //  For testing only.

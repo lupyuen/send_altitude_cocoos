@@ -99,7 +99,7 @@ void sensor_task(void) {
     } else {
       //  Else we are replaying a captured SPI command.
       msg.count = 0;  //  Don't return the message yet until the simulation next round.
-      Evt_t *replay_event;
+      volatile Evt_t *replay_event;
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.

@@ -44,6 +44,7 @@ static Simulator_Fails showError(Simulator_Control *sim, Simulator_Fails fc) {
 
 Simulator_Fails simulator_setup(void) { 
     //  Set up the simulator system.
+    return Simulator_Ok;
 }
 
 Simulator_Fails simulator_configure(
@@ -62,6 +63,7 @@ Simulator_Fails simulator_configure(
         strncpy(sim->name, name, MAX_SENSOR_NAME_SIZE);
         sim->name[MAX_SENSOR_NAME_SIZE] = 0;
     }
+    return Simulator_Ok;
 }
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
@@ -69,6 +71,7 @@ Simulator_Fails simulator_open(Simulator_Control *sim) {
     sim->index = 0;
     //  Simulator depends on sensor ID, so we need to refresh the port.
     if (sim->port) { sim->port->simulator = sim; }
+    return Simulator_Ok;
 }
 
 bool simulator_should_poll_sensor(Simulator_Control *sim) {
@@ -77,7 +80,7 @@ bool simulator_should_poll_sensor(Simulator_Control *sim) {
     return true;
 }
 
-Evt_t *simulator_replay(Simulator_Control *sim) {
+volatile Evt_t *simulator_replay(Simulator_Control *sim) {
     //  Replay the captured SPI commands.  Return an event that the Sensor Task should wait for completion.
     //  Return NULL if no more packets to replay.
     if (sim->mode != Simulator_Replay || sim->port == NULL) { return NULL; }
@@ -139,6 +142,7 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
 Simulator_Fails simulator_close(Simulator_Control *sim) {  
     //  End capture, replay or simulate.
     //  Set the next mode: Capture -> Replay -> Simulate.
+    if (sim->port) { sim->index = 0; spi_dump_trail(sim->port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }
