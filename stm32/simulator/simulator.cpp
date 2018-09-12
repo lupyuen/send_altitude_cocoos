@@ -108,7 +108,7 @@ Simulator_Fails simulator_capture_packet(Simulator_Control *sim, volatile uint8_
     if (size <= 0 || packet == NULL) { return showError(sim, Simulator_Invalid_Size); }
     if ((sim->index + size) >= MAX_TRAIL_SIZE)  { return showError(sim, Simulator_Trail_Overflow); }
     memcpy((void *) &(sim->trail[sim->index]), (const void *) packet, size);  //  Copy the packet.
-    sim->index =+ size;
+    sim->index = sim->index + size;
     sim->length = sim->index;
     return Simulator_Ok;
 }
@@ -127,7 +127,7 @@ volatile uint8_t *simulator_replay_packet(Simulator_Control *sim, int size) {
     if (size <= 0) { return NULL; }
     if ((sim->index + size) >= MAX_TRAIL_SIZE || (sim->index + size) >= sim->length)  { return NULL; }
     volatile uint8_t *packet = &(sim->trail[sim->index]);
-    sim->index =+ size;
+    sim->index = sim->index + size;
     return packet;
 }
 
