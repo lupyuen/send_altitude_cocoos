@@ -192,6 +192,17 @@ static SPI_Fails spi_init_port(
 	return SPI_Ok;
 }
 
+//  _GPIO(A,4) becomes GPIOA, GPIO4.
+#define _GPIO(port, pin) \
+	GPIO ## port, \
+	GPIO ## pin
+
+//  _DMA(1,3) becomes DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ
+#define _DMA(port, channel) \
+	DMA ## port, \
+	DMA_CHANNEL ## channel, \
+	NVIC_DMA ## port ## _CHANNEL ## channel ## _IRQ
+
 volatile SPI_Control *spi_setup(uint8_t id) {
 	//  Enable SPI peripheral and GPIO clocks.  Should be called once only per SPI port. id=1 refers to SPI1.
 	debug_println("spi_setup"); debug_flush();
@@ -210,13 +221,10 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	RCC_GPIOA,
 	RCC_DMA1,
 
-	GPIOA, GPIO4,
-	GPIOA, GPIO5,
-	GPIOA, GPIO6,
-	GPIOA, GPIO7,
+	_GPIO(A,4),	_GPIO(A,5),	_GPIO(A,6),	_GPIO(A,7),
 
-	DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ,
-	DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ
+	_DMA(1,3),
+	_DMA(1,2)
 
 	);
 	}
