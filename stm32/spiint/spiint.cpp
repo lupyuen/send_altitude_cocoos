@@ -30,16 +30,6 @@
 #define SPI_DFF SPI_CR1_DFF_8BIT
 #endif
 
-//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7.  TODO: Support other ports and pins.
-#define SS_PORT GPIOA
-#define SS_PIN GPIO4
-#define SCK_PORT GPIOA
-#define SCK_PIN GPIO5
-#define MISO_PORT GPIOA
-#define MISO_PIN GPIO6
-#define MOSI_PORT GPIOA
-#define MOSI_PIN GPIO7
-
 //  TODO: Update this when running under FreeRTOS.
 #define systicks millis
 typedef uint32_t TickType_t;
@@ -163,6 +153,21 @@ static SPI_Fails spi_init_port(uint8_t id) {
 	port->ptr_SPI_I2SCFGR = &SPI1_I2SCFGR;
 	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
 	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
+
+	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7.  TODO: Support other ports and pins.
+	port->SS_PORT = GPIOA;
+	port->SS_PIN = GPIO4;
+	port->SCK_PORT = GPIOA;
+	port->SCK_PIN = GPIO5;
+	port->MISO_PORT = GPIOA;
+	port->MISO_PIN = GPIO6;
+	port->MOSI_PORT = GPIOA;
+	port->MOSI_PIN = GPIO7;
+
+
+
+
+
 	return SPI_Ok;
 }
 
@@ -264,16 +269,16 @@ SPI_Fails spi_configure(
 	port->dataMode = dataMode;
 	port->timeout = 2000;  //  Timeout is 2 seconds.
 
-	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
-	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-            GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, SS_PIN);
-	gpio_set_mode(SCK_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-            GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, SCK_PIN);
-	gpio_set_mode(MOSI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-            GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, MOSI_PIN);
-
-	gpio_set_mode(MISO_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
-			MISO_PIN);
+	//  Configure output pins for SPI: SS, SCK, MOSI.
+	gpio_set_mode(port->SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->SS_PIN);
+	gpio_set_mode(port->SCK_PORT, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->SCK_PIN);
+	gpio_set_mode(port->MOSI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->MOSI_PIN);
+	//  Configure input pin for SPI: MISO.
+	gpio_set_mode(port->MISO_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
+		port->MISO_PIN);
 	return SPI_Ok;
 }
 
