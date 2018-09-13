@@ -323,12 +323,12 @@ SPI_Fails spi_configure(
 
 SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI1.
+	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
+	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
 	if (port->simulator) { debug_println("spi open"); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
 	port->transceive_status = NONE;
-	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
-	if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
 
 	//  SPI1 RX on DMA1 Channel 2
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
@@ -656,22 +656,15 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Signal when rx_completed.
 	volatile Evt_t *event = &port->event;
 	port->rx_event = event;
-	dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush();
-	debug_print("rx_event "); debug_println((int) *event); debug_flush();
+	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
+	isr_port = NULL;  isr_event = NULL;  //  For debugging only
 
-	////
-	isr_port = NULL;
-	isr_event = NULL;
-	////
-
-	//  Send the transceive request and send the event when completed.
+	//  Send the transceive request and signal the event when completed.
 	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
 	if (result < 0) { return NULL; }
-
-	//// for (int i = 0; i < 10; i++) { led_wait(); }
+	// for (int i = 0; i < 10; i++) { led_wait(); }
 	// debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
 	// debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
-	////
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
 	return event;

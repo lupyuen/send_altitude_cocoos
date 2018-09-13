@@ -105,7 +105,7 @@ void sensor_task(void) {
           event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
           context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
         }
-        debug_print(context->sensor->info.name); debug_print(F(" >> Replay done ")); debug_println((int) context->sensor->port->transceive_status); debug_flush(); ////
+        debug_print(context->sensor->info.name); debug_print(F(" >> Replay done ")); debug_flush(); ////
       }
       context->msg->count = 0;  //  Don't return the message yet until the simulation next round.
     }

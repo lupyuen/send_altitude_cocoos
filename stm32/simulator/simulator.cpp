@@ -78,8 +78,7 @@ Simulator_Fails simulator_open(Simulator_Control *sim) {
 
     //  For Replay Mode, open the SPI port.
     if (sim->mode == Simulator_Replay) {
-        ////TODO
-        spi_configure(port, port->clock, port->bitOrder, port->dataMode);
+        ////TODO: spi_configure(port, port->clock, port->bitOrder, port->dataMode);
         spi_open(port);
     }
     return Simulator_Ok;
@@ -181,7 +180,6 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }
             else { sim->mode = Simulator_Mismatch; }  //  Nothing recorded, don't replay.
-            ////TODO: sim->mode = Simulator_Capture; ////
             break;
         case Simulator_Replay: sim->mode = Simulator_Simulate; break;  //  After replay, simulate.
         case Simulator_Simulate: sim->mode = Simulator_Replay; break;  //  After simulate, replay.
