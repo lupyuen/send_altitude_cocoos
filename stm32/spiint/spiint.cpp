@@ -161,36 +161,18 @@ static SPI_Fails spi_init_port(
 	port->tx_event = NULL; port->rx_event = NULL;
 	port->simulator = NULL;
 
-	port->SPIx = SPIx;
-	port->ptr_SPI_DR = ptr_SPI_DR;
-	port->ptr_SPI_I2SCFGR = ptr_SPI_I2SCFGR;
-	port->RCC_SPIx = (uint32_t) RCC_SPIx;
+	//  SPI port config.
+	_set(SPIx); _set(ptr_SPI_DR); _set(ptr_SPI_I2SCFGR); _set(RCC_SPIx);			             
 
-	port->ss_port = ss_port;
-	port->ss_pin = ss_pin;
-	port->ss_rcc = (uint32_t) ss_rcc;
+	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
+	_set(ss_port);   _set(ss_pin);   _set(ss_rcc);
+	_set(sck_port);  _set(sck_pin);  _set(sck_rcc);   
+	_set(miso_port); _set(miso_pin); _set(miso_rcc);  
+	_set(mosi_port); _set(mosi_pin); _set(mosi_rcc);  
 
-	port->sck_port = sck_port;
-	port->sck_pin = sck_pin;
-	port->sck_rcc = (uint32_t) sck_rcc;
-
-	port->miso_port = miso_port;
-	port->miso_pin = miso_pin;
-	port->miso_rcc = (uint32_t) miso_rcc;
-
-	port->mosi_port = mosi_port;
-	port->mosi_pin = mosi_pin;
-	port->mosi_rcc = (uint32_t) mosi_rcc;
-
-	port->tx_dma = tx_dma;
-	port->tx_channel = tx_channel;
-	port->tx_irq = tx_irq;
-	port->tx_rcc = (uint32_t) tx_rcc;
-
-	port->rx_dma = rx_dma;
-	port->rx_channel = rx_channel;
-	port->rx_irq = rx_irq;
-	port->rx_rcc = (uint32_t) rx_rcc;
+	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
+	_set(tx_dma); _set(tx_channel); _set(tx_irq); _set(tx_rcc);  
+	_set(rx_dma); _set(rx_channel); _set(rx_irq); _set(rx_rcc);  
 
 	return SPI_Ok;
 }
