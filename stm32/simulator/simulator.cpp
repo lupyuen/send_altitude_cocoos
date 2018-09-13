@@ -78,7 +78,8 @@ Simulator_Fails simulator_open(Simulator_Control *sim) {
 
     //  For Replay Mode, open the SPI port.
     if (sim->mode == Simulator_Replay) {
-        ////TODO: spi_configure(port, port->clock, port->bitOrder, port->dataMode);
+        ////TODO: 
+        spi_configure(port, port->clock, port->bitOrder, port->dataMode);  //  TODO
         spi_open(port);
     }
     return Simulator_Ok;
@@ -164,6 +165,13 @@ bool simulator_is_request_completed(Simulator_Control *sim) {
     //  Return true if last SPI command was completed.
     if (!sim->port) return true;
     return spi_is_transceive_completed(sim->port);
+}
+
+Simulator_Fails simulator_dump_packet(Simulator_Control *sim) {
+    //  Dump the last SPI packet to console.
+    if (!sim->port) return Simulator_Ok;
+    spi_dump_packet(sim->port);
+    return Simulator_Ok;
 }
 
 Simulator_Fails simulator_close(Simulator_Control *sim) {  

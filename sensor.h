@@ -93,7 +93,7 @@ struct Sensor {
 struct SensorContext {
   Sensor *sensor;           //  The sensor for the context.
   uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
-  SensorMsg *msg;           //  Temporary pointer to the message being processed. Note: May point to the stack.
+  SensorMsg msg;            //  Temporary space for composing the sensor data message.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
