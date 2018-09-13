@@ -243,14 +243,15 @@ SPI_Fails spi_configure(
 	uint32_t clock, 
 	uint8_t bitOrder, 
 	uint8_t dataMode) {
-	if (port->simulator) { debug_println("spi config"); debug_flush(); }
+	//  if (port->simulator) 
+	{ debug_println("spi config"); debug_flush(); }
 	port->clock = clock;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
-	port->tx_dma = DMA1;  //  TODO
-	port->tx_channel = DMA_CHANNEL2;
 	port->rx_dma = DMA1;
-	port->rx_channel = DMA_CHANNEL3;
+	port->rx_channel = DMA_CHANNEL2;
+	port->tx_dma = DMA1;  //  TODO
+	port->tx_channel = DMA_CHANNEL3;
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -269,7 +270,8 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI1.
 	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
 	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
-	if (port->simulator) { debug_println("spi open"); debug_flush(); }
+	//  if (port->simulator) 
+	{ debug_println("spi open"); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
 	port->transceive_status = NONE;
@@ -410,13 +412,12 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 		return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); 
 	}
 	//  Reset DMA channels.
-	dma_channel_reset(DMA1, DMA_CHANNEL2);  //  TODO
-	dma_channel_reset(DMA1, DMA_CHANNEL3);
-	//  debug_println("spi_transceive1"); // debug_flush();
+	dma_channel_reset(port->tx_dma, port->tx_channel);
+	dma_channel_reset(port->rx_dma, port->rx_channel);
 
 	//  Reset SPI data and status registers. Here we assume that the SPI peripheral is NOT busy any longer, i.e. the last activity was verified complete elsewhere in the program.
 	volatile uint8_t temp_data __attribute__ ((unused));
-	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) { temp_data = SPI_DR(SPI1); }
+	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) { temp_data = SPI_DR(SPI1); }  //  TODO
 	// debug_println("spi_transceive2"); // debug_flush();
 
 	//  Remember the last packet.
@@ -439,46 +440,46 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 
 	//  Set up rx dma, note it has higher priority to avoid overrun.
 	if (rx_len > 0) {
-		dma_set_peripheral_address(DMA1, DMA_CHANNEL2, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL2, (uint32_t)rx_buf);
-		dma_set_number_of_data(DMA1, DMA_CHANNEL2, rx_len);
-		dma_set_read_from_peripheral(DMA1, DMA_CHANNEL2);
-		dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL2);
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL2, SPI_PSIZE);
-		dma_set_memory_size(DMA1, DMA_CHANNEL2, SPI_MSIZE);
-		dma_set_priority(DMA1, DMA_CHANNEL2, DMA_CCR_PL_VERY_HIGH);
+		dma_set_peripheral_address(port->rx_dma, port->rx_channel, (uint32_t)&SPI1_DR);
+		dma_set_memory_address(port->rx_dma, port->rx_channel, (uint32_t)rx_buf);
+		dma_set_number_of_data(port->rx_dma, port->rx_channel, rx_len);
+		dma_set_read_from_peripheral(port->rx_dma, port->rx_channel);
+		dma_enable_memory_increment_mode(port->rx_dma, port->rx_channel);
+		dma_set_peripheral_size(port->rx_dma, port->rx_channel, SPI_PSIZE);
+		dma_set_memory_size(port->rx_dma, port->rx_channel, SPI_MSIZE);
+		dma_set_priority(port->rx_dma, port->rx_channel, DMA_CCR_PL_VERY_HIGH);
 	}
 
 	//  Set up tx dma (must always run tx to get clock signal).
 	if (tx_len > 0) {  //  Here we have a regular tx transfer.
-		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)tx_buf);
-		dma_set_number_of_data(DMA1, DMA_CHANNEL3, tx_len);
-		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
-		dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL3);
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
-		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
+		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
+		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)tx_buf);
+		dma_set_number_of_data(port->tx_dma, port->tx_channel, tx_len);
+		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
+		dma_enable_memory_increment_mode(port->tx_dma, port->tx_channel);
+		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
+		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
+		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
 	} else {
 		//  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
 		debug_println("WARNING: spi_transceive tx=0"); debug_flush();
-		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)(dummy_tx_buf)); // Change here
-		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_len); // Change here
-		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
-		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
-		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
+		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
+		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)(dummy_tx_buf)); // Change here
+		dma_set_number_of_data(port->tx_dma, port->tx_channel, rx_len); // Change here
+		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
+		dma_disable_memory_increment_mode(port->tx_dma, port->tx_channel); // Change here
+		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
+		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
+		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
 	}
 
 	//  Enable dma transfer complete interrupts.
-	if (rx_len > 0) { dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2); }
-	dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
+	if (rx_len > 0) { dma_enable_transfer_complete_interrupt(port->rx_dma, port->rx_channel); }
+	dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
 
 	//  Activate dma channels.
-	if (rx_len > 0) { dma_enable_channel(DMA1, DMA_CHANNEL2); }
-	dma_enable_channel(DMA1, DMA_CHANNEL3);
+	if (rx_len > 0) { dma_enable_channel(port->rx_dma, port->rx_channel); }
+	dma_enable_channel(port->tx_dma, port->tx_channel);
 
 	//  Enable the spi transfer via dma. This will immediately start the transmission, after which when the receive is complete, the receive dma will activate */
 	if (rx_len > 0) { spi_enable_rx_dma(SPI1); }
@@ -547,18 +548,18 @@ void dma1_channel3_isr(void) {  //  SPI transmit completed with DMA.
 
 	//  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
 	if (port->rx_buf_remainder > 0) {
-		dma_channel_reset(DMA1, DMA_CHANNEL3);
-		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)dummy_tx_buf); // Change here
-		dma_set_number_of_data(DMA1, DMA_CHANNEL3, port->rx_buf_remainder); // Change here
-		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
-		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
-		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
-		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
-		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
+		dma_channel_reset(port->tx_dma, port->tx_channel);
+		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
+		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)dummy_tx_buf); // Change here
+		dma_set_number_of_data(port->tx_dma, port->tx_channel, port->rx_buf_remainder); // Change here
+		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
+		dma_disable_memory_increment_mode(port->tx_dma, port->tx_channel); // Change here
+		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
+		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
+		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
 		port->rx_buf_remainder = 0; // Clear the buffer remainder to disable this section later
-		dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
-		dma_enable_channel(DMA1, DMA_CHANNEL3);
+		dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
+		dma_enable_channel(port->tx_dma, port->tx_channel);
 		spi_enable_tx_dma(SPI1);
 		return;
 	} 
