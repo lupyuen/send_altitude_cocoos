@@ -178,10 +178,9 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
     debug_println("sim close");
     //  For Replay Mode, close the SPI port.
     if (sim->port != NULL && sim->mode == Simulator_Replay) {
-        spi_dump_packet(sim->port);
         spi_close(sim->port);
     }
-    if (sim->port != NULL) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
+    if (sim->port) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }
@@ -195,7 +194,7 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
             break;
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
-    if (sim->port != NULL) { sim->port->simulator = NULL; }
+    if (sim->port) { sim->port->simulator = NULL; }
     return Simulator_Ok;
 }
 
