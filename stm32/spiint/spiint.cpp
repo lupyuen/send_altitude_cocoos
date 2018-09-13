@@ -467,12 +467,10 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	if ((tx_len > 0) && (tx_len < rx_len)) {
 		port->rx_buf_remainder = rx_len - tx_len; 
 	}
-
 	//  Set up rx dma, note it has higher priority to avoid overrun.
 	if (rx_len > 0) {  //  For rx: Read from SPI port and write into memory.
 		spi_setup_dma(port, port->rx_dma, port->rx_channel, rx_buf, rx_len, true, true);
 	}
-
 	//  Set up tx dma (must always run tx to get clock signal).
 	if (tx_len > 0) {  //  Here we have a regular tx transfer.
 		//  For tx: Read from memory and write to SPI port.
@@ -485,6 +483,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	}
 
 	//  Enable dma transfer complete interrupts.
+	//  TODO: Enable other interrupts.
 	if (rx_len > 0) { dma_enable_transfer_complete_interrupt(port->rx_dma, port->rx_channel); }
 	dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
 
@@ -524,16 +523,20 @@ static void update_transceive_status(volatile SPI_Control *port) {
 volatile SPI_Control *isr_port = NULL;  //  For debug only.
 volatile Evt_t *isr_event = NULL;  //  For debug only.
 
-void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
+void dma1_channel2_isr(void) {  //  SPI1 receive interrupt on DMA 1 channel 2.
 	//  TODO: Handle other errors.
-	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL2, DMA_TCIF) )
-		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL2, DMA_TCIF); }
-	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
-	spi_disable_rx_dma(SPI1);
-	dma_disable_channel(DMA1, DMA_CHANNEL2);
+	const uint32_t spi = SPI1;
+	const uint32_t dma = DMA1;
+  	const uint8_t channel = DMA_CHANNEL2;
+
+	if ( dma_get_interrupt_flag(dma, channel, DMA_TCIF) )
+		{ dma_clear_interrupt_flags(dma, channel, DMA_TCIF); }
+	dma_disable_transfer_complete_interrupt(dma, channel);
+	spi_disable_rx_dma(spi);
+	dma_disable_channel(dma, channel);
 
 	//  Find the port and update the status.
-	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
+	volatile SPI_Control *port = findPortByDMA(dma, channel);
 	isr_port = port; ////
 	if (port == NULL) { return; }
 	update_transceive_status(port);
@@ -545,33 +548,33 @@ void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	}
 }
 
-void dma1_channel3_isr(void) {  //  SPI transmit completed with DMA.
+void dma1_channel3_isr(void) {  //  SPI1 transmit interrupt on DMA 1 channel 3.
 	//  TODO: Handle other errors.
-	if ( dma_get_interrupt_flag(DMA1, DMA_CHANNEL3, DMA_TCIF) )
-		{ dma_clear_interrupt_flags(DMA1, DMA_CHANNEL3, DMA_TCIF); }
-	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
-	spi_disable_tx_dma(SPI1);
-	dma_disable_channel(DMA1, DMA_CHANNEL3);
+	const uint32_t spi = SPI1;
+	const uint32_t dma = DMA1;
+  	const uint8_t channel = DMA_CHANNEL3;
+
+	if ( dma_get_interrupt_flag(dma, channel, DMA_TCIF) )
+		{ dma_clear_interrupt_flags(dma, channel, DMA_TCIF); }
+	dma_disable_transfer_complete_interrupt(dma, channel);
+	spi_disable_tx_dma(spi);
+	dma_disable_channel(dma, channel);
 
 	//  Find the port.
-	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
+	volatile SPI_Control *port = findPortByDMA(dma, channel);
 	if (port == NULL) { return; }
 
 	//  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
 	if (port->rx_buf_remainder > 0) {
-		dma_channel_reset(port->tx_dma, port->tx_channel);
-		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)dummy_tx_buf); // Change here
-		dma_set_number_of_data(port->tx_dma, port->tx_channel, port->rx_buf_remainder); // Change here
-		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
-		dma_disable_memory_increment_mode(port->tx_dma, port->tx_channel); // Change here
-		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
-		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
-		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
+		volatile int rx_buf_remainder = port->rx_buf_remainder;
 		port->rx_buf_remainder = 0; // Clear the buffer remainder to disable this section later
+
+		dma_channel_reset(port->tx_dma, port->tx_channel);
+		spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_buf_remainder, false, false);
+
 		dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
 		dma_enable_channel(port->tx_dma, port->tx_channel);
-		spi_enable_tx_dma(SPI1);
+		spi_enable_tx_dma(port->SPIx);
 		return;
 	} 
 	//  Update the status.
