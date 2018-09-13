@@ -143,6 +143,29 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	return SPI_Ok;
 }
 
+static SPI_Fails spi_init_port(uint8_t id) {
+	//  Initialise the STM32 port config.
+	volatile SPI_Control *port = &allPorts[id - 1];
+	port->id = id;
+	port->tx_dma = 0; port->tx_channel = 0;
+	port->rx_dma = 0; port->rx_channel = 0;
+	port->event = event_create();
+	port->tx_event = NULL; port->rx_event = NULL;
+	port->simulator = NULL;
+
+	port->rx_dma = DMA1;
+	port->rx_channel = DMA_CHANNEL2;
+	port->tx_dma = DMA1;
+	port->tx_channel = DMA_CHANNEL3;
+
+	port->SPIx = SPI1;
+	port->ptr_SPI_DR = (uint32_t) &SPI1_DR;
+	port->ptr_SPI_I2SCFGR = &SPI1_I2SCFGR;
+	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
+	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
+	return SPI_Ok;
+}
+
 volatile SPI_Control *spi_setup(uint8_t id) {
 	debug_println("spi_setup"); debug_flush();
 	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
@@ -151,21 +174,12 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	static bool firstTime = true;
 	if (firstTime) {
 		firstTime = false;
-		for (int i = 0; i < MAX_SPI_PORTS; i++) { 
-			allPorts[i].id = i;
-			allPorts[i].tx_dma = 0;
-			allPorts[i].tx_channel = 0;
-			allPorts[i].rx_dma = 0;
-			allPorts[i].rx_channel = 0;
-			allPorts[i].event = event_create();
-			allPorts[i].tx_event = NULL;
-			allPorts[i].rx_event = NULL;
-			allPorts[i].simulator = NULL;
+		for (int i = 0; i < MAX_SPI_PORTS; i++) {
+			spi_init_port(id);
 		}
 	}
 	//  Return the port.
 	volatile SPI_Control *port = &allPorts[id - 1];
-	port->id = id;
 
 	//  Moved to platform_setup() in bluepill.cpp:
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
@@ -249,23 +263,6 @@ SPI_Fails spi_configure(
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
 	port->timeout = 2000;  //  Timeout is 2 seconds.
-
-  	//  TODO
-  	port->rx_dma = DMA1;
-	port->rx_channel = DMA_CHANNEL2;
-	port->tx_dma = DMA1;
-	port->tx_channel = DMA_CHANNEL3;
-
-	port->SPIx = SPI1;
-	port->ptr_SPI_DR = (uint32_t) &SPI1_DR;
-	port->ptr_SPI_I2SCFGR = &SPI1_I2SCFGR;
-	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
-	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
-
-
-
-
-
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
