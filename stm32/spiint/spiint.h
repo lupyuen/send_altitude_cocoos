@@ -107,11 +107,11 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
 
   uint32_t tx_dma;      //  Transmit DMA Port.
   uint8_t  tx_channel;  //  Transmit DMA Channel.
-  uint8_t  tx_irq;
+  uint8_t  tx_irq;      //  Transmit DMA Interrupt.
 
   uint32_t rx_dma;      //  Receive DMA Port.
   uint8_t  rx_channel;  //  Receive DMA Channel.
-  uint8_t  rx_irq;
+  uint8_t  rx_irq;      //  Receive DMA Interrupt.
 };
 
 //  This is the new SPI Interface.  New code should use this.

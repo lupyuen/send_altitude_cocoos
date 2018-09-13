@@ -210,22 +210,14 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	RCC_GPIOA,
 	RCC_DMA1,
 
-	GPIOA,
-	GPIO4,
-	GPIOA,
-	GPIO5,
-	GPIOA,
-	GPIO6,
-	GPIOA,
-	GPIO7,
+	GPIOA, GPIO4,
+	GPIOA, GPIO5,
+	GPIOA, GPIO6,
+	GPIOA, GPIO7,
 
-	DMA1,
-	DMA_CHANNEL3,
-	NVIC_DMA1_CHANNEL3_IRQ,
+	DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ,
+	DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ
 
-	DMA1,
-	DMA_CHANNEL2,
-	NVIC_DMA1_CHANNEL2_IRQ
 	);
 	}
 	//  Return the port.
@@ -344,7 +336,7 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 
 	//  Explicitly disable I2S in favour of SPI operation, i.e. SPI1_I2SCFGR = 0
 	if (port->ptr_SPI_I2SCFGR) { *(port->ptr_SPI_I2SCFGR) = 0; }
-	
+
 	spi_init_master(
 		port->SPIx,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
