@@ -192,22 +192,25 @@ static SPI_Fails spi_init_port(
 	return SPI_Ok;
 }
 
-//  _SPI(1) becomes SPI1, &SPI1_DR, &SPI1_I2SCFGR
+//  _SPI(1) becomes SPI1, &SPI1_DR, &SPI1_I2SCFGR, RCC_SPI1
 #define _SPI(port) \
 	SPI ## port, \
 	&SPI ## port ## _DR, \
-	&SPI ## port ## _I2SCFGR
+	&SPI ## port ## _I2SCFGR, \
+	RCC_SPI ## port
 
-//  _GPIO(A,4) becomes GPIOA, GPIO4.
+//  _GPIO(A,4) becomes GPIOA, GPIO4, RCC_GPIOA
 #define _GPIO(port, pin) \
 	GPIO ## port, \
-	GPIO ## pin
+	GPIO ## pin, \
+	RCC_GPIO ## port
 
-//  _DMA(1,3) becomes DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ
+//  _DMA(1,3) becomes DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1
 #define _DMA(port, channel) \
 	DMA ## port, \
 	DMA_CHANNEL ## channel, \
-	NVIC_DMA ## port ## _CHANNEL ## channel ## _IRQ
+	NVIC_DMA ## port ## _CHANNEL ## channel ## _IRQ, \
+	RCC_DMA ## port
 
 volatile SPI_Control *spi_setup(uint8_t id) {
 	//  Enable SPI peripheral and GPIO clocks.  Should be called once only per SPI port. id=1 refers to SPI1.
@@ -218,17 +221,8 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	static bool firstTime = true;
 	if (firstTime) {
 		firstTime = false;
-		spi_init_port(1, 	
-		_SPI(1), RCC_SPI1,
-
-		_GPIO(A,4),	RCC_GPIOA,
-		_GPIO(A,5),	RCC_GPIOA,
-		_GPIO(A,6),	RCC_GPIOA,
-		_GPIO(A,7), RCC_GPIOA,
-
-		_DMA(1,3), RCC_DMA1,
-		_DMA(1,2), RCC_DMA1
-		);
+		//  SPI spec: id, port,   SS,         SCK,        MISO,       MOSI,       TX DMA,    RX DMA
+		spi_init_port(1, _SPI(1), _GPIO(A,4), _GPIO(A,5), _GPIO(A,6), _GPIO(A,7), _DMA(1,3), _DMA(1,2));
 	}
 	//  Return the port.
 	volatile SPI_Control *port = &allPorts[id - 1];
