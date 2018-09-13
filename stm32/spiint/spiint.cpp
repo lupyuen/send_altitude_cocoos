@@ -408,6 +408,24 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	return 0;  //  No error.
 }
 
+static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode) {
+	//  Set up DMA for SPI receive and transmit.
+	dma_set_peripheral_address(dma, channel, port->ptr_SPI_DR);
+	dma_set_memory_address(dma, channel, (uint32_t) buf); // Change here
+	dma_set_number_of_data(dma, channel, len); // Change here
+
+	if (set_read_from_peripheral) { dma_set_read_from_peripheral(dma, channel); }  //  For rx: Read from SPI port and write into memory.
+	else { dma_set_read_from_memory(dma, channel); }  //  For tx and rx_remainder: Read from memory and write to SPI port.
+
+	if (enable_memory_increment_mode) { dma_enable_memory_increment_mode(dma, channel); }
+	else { dma_disable_memory_increment_mode(dma, channel); }  //  For rx_remainder: Always read from the same address, don't increment.
+
+	dma_set_peripheral_size(dma, channel, SPI_PSIZE);
+	dma_set_memory_size(dma, channel, SPI_MSIZE);
+	dma_set_priority(dma, channel, DMA_CCR_PL_HIGH);
+	return SPI_Ok;
+}
+
 int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  Send an SPI command to transmit and receive SPI data.  
 	//  If the simulator is in...
@@ -451,38 +469,19 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	}
 
 	//  Set up rx dma, note it has higher priority to avoid overrun.
-	if (rx_len > 0) {
-		dma_set_peripheral_address(port->rx_dma, port->rx_channel, port->ptr_SPI_DR);
-		dma_set_memory_address(port->rx_dma, port->rx_channel, (uint32_t)rx_buf); //
-		dma_set_number_of_data(port->rx_dma, port->rx_channel, rx_len); //
-		dma_set_read_from_peripheral(port->rx_dma, port->rx_channel);
-		dma_enable_memory_increment_mode(port->rx_dma, port->rx_channel);
-		dma_set_peripheral_size(port->rx_dma, port->rx_channel, SPI_PSIZE);
-		dma_set_memory_size(port->rx_dma, port->rx_channel, SPI_MSIZE);
-		dma_set_priority(port->rx_dma, port->rx_channel, DMA_CCR_PL_VERY_HIGH);
+	if (rx_len > 0) {  //  For rx: Read from SPI port and write into memory.
+		spi_setup_dma(port, port->rx_dma, port->rx_channel, rx_buf, rx_len, true, true);
 	}
 
 	//  Set up tx dma (must always run tx to get clock signal).
 	if (tx_len > 0) {  //  Here we have a regular tx transfer.
-		dma_set_peripheral_address(port->tx_dma, port->tx_channel, port->ptr_SPI_DR);
-		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)tx_buf);
-		dma_set_number_of_data(port->tx_dma, port->tx_channel, tx_len);
-		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
-		dma_enable_memory_increment_mode(port->tx_dma, port->tx_channel);
-		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
-		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
-		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
+		//  For tx: Read from memory and write to SPI port.
+		spi_setup_dma(port, port->tx_dma, port->tx_channel, tx_buf, tx_len, false, true);
 	} else {
 		//  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
 		debug_println("WARNING: spi_transceive tx=0"); debug_flush();
-		dma_set_peripheral_address(port->tx_dma, port->tx_channel, port->ptr_SPI_DR);
-		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)(dummy_tx_buf)); // Change here
-		dma_set_number_of_data(port->tx_dma, port->tx_channel, rx_len); // Change here
-		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
-		dma_disable_memory_increment_mode(port->tx_dma, port->tx_channel); // Change here
-		dma_set_peripheral_size(port->tx_dma, port->tx_channel, SPI_PSIZE);
-		dma_set_memory_size(port->tx_dma, port->tx_channel, SPI_MSIZE);
-		dma_set_priority(port->tx_dma, port->tx_channel, DMA_CCR_PL_HIGH);
+		//  For rx_remainder: Read from memory and write to SPI port.
+		spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_len, false, false);
 	}
 
 	//  Enable dma transfer complete interrupts.
