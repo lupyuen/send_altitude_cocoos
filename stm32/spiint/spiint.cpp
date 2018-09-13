@@ -53,7 +53,7 @@ static const char *spi_msg[] = {
 	"Invalid Port",  //  SPI_Invalid_Port
 	"Invalid Size",  //  SPI_Invalid_Size
 	"Simulation Mismatch",  //  SPI_Mismatch
-	"Read timeout"
+	"Timeout"  //  SPI_Timeout
 };
 
 static volatile SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the port control.  Volatile because the DMA ISR will lookup this array.
@@ -248,6 +248,7 @@ SPI_Fails spi_configure(
 	port->clock = clock;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
+	port->timeout = 2000;  //  Timeout is 2 seconds.
 
   	//  TODO
   	port->rx_dma = DMA1;
@@ -602,14 +603,20 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	* This checks the state flag as well as follows the
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.) */
-	//  TODO: Check for timeout.
 	//  debug_println("spi_wait"); // debug_flush();
-	while (!spi_is_transceive_completed(port)) {}  //  TODO
-	//  debug_println("spi_wait2"); // debug_flush();
-	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {}
-	//  debug_println("spi_wait3"); // debug_flush();
-	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {}
-	//  debug_println("spi_wait returned"); // debug_flush();
+	TickType_t startTime = systicks();
+	while (!spi_is_transceive_completed(port)) {
+		if (diff_ticks(startTime, systicks()) > port->timeout)
+			{ return showError(port, SPI_Timeout); }
+	}
+	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
+		if (diff_ticks(startTime, systicks()) > port->timeout)
+			{ return showError(port, SPI_Timeout); }
+	}
+	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {
+		if (diff_ticks(startTime, systicks()) > port->timeout)
+			{ return showError(port, SPI_Timeout); }
+	}
 	return SPI_Ok;
 }
 

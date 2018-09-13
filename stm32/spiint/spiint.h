@@ -49,7 +49,7 @@ enum SPI_Fails {  //  Error codes.
 	SPI_Invalid_Port,
 	SPI_Invalid_Size,
 	SPI_Mismatch,
-	SPI_Read_Timeout,
+	SPI_Timeout,
   SPI_End,  //  Insert new codes above.
 };
 
@@ -75,6 +75,7 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint32_t clock;  //  e.g. 500000 for 500 kHz
   uint8_t bitOrder;  //  e.g. MSBFIRST
   uint8_t dataMode;  //  e.g. SPI_MODE0
+  uint32_t timeout;  //  Timeout in milliseconds
 
   uint32_t tx_dma;  //  Transmit DMA Port.
   uint8_t tx_channel;  //  Transmit DMA Channel.
