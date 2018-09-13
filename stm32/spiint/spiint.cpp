@@ -411,12 +411,12 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 
 SPI_Fails spi_configure(
 	volatile SPI_Control *port, 
-	uint32_t clock, 
+	uint32_t speedMaximum, 
 	uint8_t bitOrder, 
 	uint8_t dataMode) {
 	//  if (port->simulator) 
 	{ debug_print("spi config spi"); debug_println((int) port->id); debug_flush(); }
-	port->clock = clock;
+	port->speedMaximum = speedMaximum;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
 	port->timeout = 2000;  //  Timeout is 2 seconds.
@@ -667,19 +667,19 @@ void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	//  Get the SPI port from the settings.  If not specified, use the last digitalWrite() pin.
 	uint8_t portID = settings.spi_port;
 	if (portID < 1 || portID > MAX_SPI_PORTS) { portID = currentSPIPort; }
-	debug_print("spiint begin port "); debug_println((int) portID);  debug_flush();
+	//  debug_print("spiint begin port "); debug_println((int) portID);  debug_flush();
 	if (portID < 1 || portID > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }
 	currentSPIPort = portID;
 	volatile SPI_Control *port = &allPorts[portID - 1];
 	//  SPI setup should have been called in bme280.cpp.  TODO: Verify SPI port number.
 	//  spi_setup();
-	spi_configure(port, settings.clock, settings.bitOrder, settings.dataMode);
+	spi_configure(port, settings.speedMaximum, settings.bitOrder, settings.dataMode);
 	spi_open(port);
 }
 
 uint8_t SPIInterface::transfer(uint8_t data) {
   	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Return the byte received.  Used by BME280Spi.cpp
-	debug_print("spiint transfer port "); debug_println((int) currentSPIPort);  debug_flush();
+	//  debug_print("spiint transfer port "); debug_println((int) currentSPIPort);  debug_flush();
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return 0; }
 	volatile uint8_t portID = currentSPIPort;  //  Remember in case it changes while waiting.
 	volatile SPI_Control *port = &allPorts[portID - 1];
@@ -693,7 +693,7 @@ uint8_t SPIInterface::transfer(uint8_t data) {
 
 void SPIInterface::endTransaction(void) {
 	//  Used by BME280Spi.cpp
-	debug_print("spiint end port "); debug_println((int) currentSPIPort);  debug_flush();
+	//  debug_print("spiint end port "); debug_println((int) currentSPIPort);  debug_flush();
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
 	volatile SPI_Control *port = &allPorts[currentSPIPort - 1];
 	spi_close(port);
@@ -706,15 +706,15 @@ void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin.  Used by BME280Spi.h
-	debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" val "); debug_println((int) val); debug_flush();
+	//  debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" val "); debug_println((int) val); debug_flush();
 	if (pin < 1 || pin > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
 	currentSPIPort = pin;
 }
 
-SPIInterfaceSettings::SPIInterfaceSettings(uint32_t clock0, uint8_t bitOrder0, uint8_t dataMode0) {
+SPIInterfaceSettings::SPIInterfaceSettings(uint32_t speedMaximum0, uint8_t bitOrder0, uint8_t dataMode0) {
 	//  Used by BME280Spi.cpp
 	spi_port = 0;  //  Default to unknown port.
-	clock = clock0;
+	speedMaximum = speedMaximum0;
 	bitOrder = bitOrder0;
 	dataMode = dataMode0;
 }

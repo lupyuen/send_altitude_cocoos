@@ -71,11 +71,11 @@ enum trans_status {
 struct Simulator_Control;
 
 struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
-  uint8_t id;         //  1=SPI1, 2=SPI2.
-  uint32_t clock;    //  e.g. 500000 for 500 kHz
-  uint8_t bitOrder;  //  e.g. MSBFIRST
-  uint8_t dataMode;  //  e.g. SPI_MODE0
-  uint32_t timeout;  //  Timeout in milliseconds
+  uint8_t id;         //  SPI port: 1=SPI1, 2=SPI2.
+  uint32_t speedMaximum; //  Max speed of comms, e.g. 500000 for 500 kHz.
+  uint8_t bitOrder;  //  MSBFIRST or LSBFIRST.
+  uint8_t dataMode;  //  SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3.
+  uint32_t timeout;  //  Timeout in milliseconds.
 
   //  Last packet transmitted / received.
   volatile SPI_DATA_TYPE *tx_buf;
@@ -110,7 +110,7 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
 
 //  This is the new SPI Interface.  New code should use this.
 volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
-SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
+SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
 SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
@@ -131,10 +131,10 @@ SPI_Fails spi_dump_packet(volatile SPI_Control *port);  //  Dump the last SPI pa
 //  This is the legacy SPI Interface for Arduino.  New code should NOT use this.
 class SPIInterfaceSettings {
 public:
-  SPIInterfaceSettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);  //  Used by BME280Spi.cpp
+  SPIInterfaceSettings(uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);  //  Used by BME280Spi.cpp
   // SPIInterfaceSettings();
   uint8_t spi_port;  //  SPI port for STM32: 1=SPI1, 2=SPI2
-  uint32_t clock;
+  uint32_t speedMaximum;
   uint8_t bitOrder;
   uint8_t dataMode;
 };
