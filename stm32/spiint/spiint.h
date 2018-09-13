@@ -98,6 +98,7 @@ struct SPI_Control {
   //  STM32 port configuration.
   uint32_t SPIx;
   uint32_t ptr_SPI_DR;
+  volatile uint32_t *ptr_SPI_I2SCFGR;
   uint8_t rx_NVIC_DMA_CHANNEL_IRQ;
   uint8_t tx_NVIC_DMA_CHANNEL_IRQ;
 

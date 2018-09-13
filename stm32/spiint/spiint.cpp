@@ -171,7 +171,7 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	//  rcc_spi_setup_in_hse_12mhz_out_72mhz();
 
 	//  Enable SPI1 Periph and gpio clocks
-	rcc_periph_clock_enable(RCC_SPI1);
+	rcc_periph_clock_enable(RCC_SPI1);  //  TODO
 	rcc_periph_clock_enable(RCC_GPIOA);  //  TODO: Support other ports.
 
 	//  Enable DMA1 clock
@@ -257,6 +257,7 @@ SPI_Fails spi_configure(
 
 	port->SPIx = SPI1;
 	port->ptr_SPI_DR = (uint32_t) &SPI1_DR;
+	port->ptr_SPI_I2SCFGR = &SPI1_I2SCFGR;
 	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
 	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
 
@@ -293,8 +294,10 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	spi_reset(port->SPIx);
 
 	//  Explicitly disable I2S in favour of SPI operation.
-	SPI1_I2SCFGR = 0;  //  TODO
-
+	//  SPI1_I2SCFGR = 0;
+	if (port->ptr_SPI_I2SCFGR) {
+		*(port->ptr_SPI_I2SCFGR) = 0;
+	}
 	spi_init_master(
 		port->SPIx,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
@@ -598,15 +601,14 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	/* Wait until transceive complete.
 	* This checks the state flag as well as follows the
 	* procedure on the Reference Manual (RM0008 rev 14
-	* Section 25.3.9 page 692, the note.)
-	*/
+	* Section 25.3.9 page 692, the note.) */
 	//  TODO: Check for timeout.
 	//  debug_println("spi_wait"); // debug_flush();
 	while (!spi_is_transceive_completed(port)) {}  //  TODO
 	//  debug_println("spi_wait2"); // debug_flush();
-	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
+	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {}
 	//  debug_println("spi_wait3"); // debug_flush();
-	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
+	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {}
 	//  debug_println("spi_wait returned"); // debug_flush();
 	return SPI_Ok;
 }
