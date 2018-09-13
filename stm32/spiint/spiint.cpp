@@ -399,6 +399,8 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	}
 	//  Copy the captured buffer into rx_buf.
 	memcpy((void *) rx_buf, (const void *) captured_rx_buf, rx_len);
+	//  Set the status to done so we don't wait.
+	port->transceive_status = DONE;
 	return 0;  //  No error.
 }
 
