@@ -523,12 +523,9 @@ static void update_transceive_status(volatile SPI_Control *port) {
 volatile SPI_Control *isr_port = NULL;  //  For debug only.
 volatile Evt_t *isr_event = NULL;  //  For debug only.
 
-void dma1_channel2_isr(void) {  //  SPI1 receive interrupt on DMA 1 channel 2.
+static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {  
+	//  Handle SPI receive interrupt on DMA.  Don't call any external functions.
 	//  TODO: Handle other errors.
-	const uint32_t spi = SPI1;
-	const uint32_t dma = DMA1;
-  	const uint8_t channel = DMA_CHANNEL2;
-
 	if ( dma_get_interrupt_flag(dma, channel, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(dma, channel, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(dma, channel);
@@ -548,12 +545,9 @@ void dma1_channel2_isr(void) {  //  SPI1 receive interrupt on DMA 1 channel 2.
 	}
 }
 
-void dma1_channel3_isr(void) {  //  SPI1 transmit interrupt on DMA 1 channel 3.
+static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
+	//  Handle SPI transmit interrupt on DMA.  Don't call any external functions.
 	//  TODO: Handle other errors.
-	const uint32_t spi = SPI1;
-	const uint32_t dma = DMA1;
-  	const uint8_t channel = DMA_CHANNEL3;
-
 	if ( dma_get_interrupt_flag(dma, channel, DMA_TCIF) )
 		{ dma_clear_interrupt_flags(dma, channel, DMA_TCIF); }
 	dma_disable_transfer_complete_interrupt(dma, channel);
@@ -584,6 +578,14 @@ void dma1_channel3_isr(void) {  //  SPI1 transmit interrupt on DMA 1 channel 3.
 	if (port->tx_event != NULL) {
 		event_ISR_signal(*port->tx_event);
 	}
+}
+
+void dma1_channel2_isr(void) {  //  SPI1 receive interrupt on DMA 1 channel 2.
+	handle_rx_interrupt(SPI1, DMA1, DMA_CHANNEL2);
+}
+
+void dma1_channel3_isr(void) {  //  SPI1 transmit interrupt on DMA 1 channel 3.
+	handle_tx_interrupt(SPI1, DMA1, DMA_CHANNEL3);
 }
 
 bool spi_is_transceive_completed(volatile SPI_Control *port) {
