@@ -167,8 +167,8 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	volatile SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
 
-	//  Moved to platform_setup() in bluepill.cpp.
-	//  rcc_spi_setup_in_hse_12mhz_out_72mhz();
+	//  Moved to platform_setup() in bluepill.cpp:
+	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
 
 	//  Enable SPI1 Periph and gpio clocks
 	rcc_periph_clock_enable(RCC_SPI1);  //  TODO
@@ -280,7 +280,7 @@ SPI_Fails spi_configure(
 }
 
 SPI_Fails spi_open(volatile SPI_Control *port) {
-	//  Enable DMA interrupt for SPI1.
+	//  Enable DMA interrupt for SPI port.
 	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
 	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
 	//  if (port->simulator) 

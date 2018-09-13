@@ -70,7 +70,7 @@ enum trans_status {
 
 struct Simulator_Control;
 
-struct SPI_Control {
+struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint8_t id;  //  1=SPI1, 2=SPI2, 3=SPI3.
   uint32_t clock;  //  e.g. 500000 for 500 kHz
   uint8_t bitOrder;  //  e.g. MSBFIRST
@@ -86,7 +86,7 @@ struct SPI_Control {
   int tx_len;
   volatile SPI_DATA_TYPE *rx_buf;
   int rx_len;
-  volatile int rx_buf_remainder;  //  Excess of bytes to be received over transmission length.
+  volatile int rx_buf_remainder;  //  Excess of bytes to be received after transmission.
   volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
 
   Evt_t event;  //  Event to signal that replay was completed.
