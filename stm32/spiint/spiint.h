@@ -98,10 +98,10 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
 	uint32_t RCC_SPIx;			             //  SPI Clock e.g. RCC_SPI1
 
 	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
-	uint32_t SS_PORT;   uint16_t SS_PIN;   uint32_t SS_RCC;    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
-	uint32_t SCK_PORT;  uint16_t SCK_PIN;  uint32_t SCK_RCC;   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
-	uint32_t MISO_PORT; uint16_t MISO_PIN; uint32_t MISO_RCC;  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
-	uint32_t MOSI_PORT; uint16_t MOSI_PIN; uint32_t MOSI_RCC;  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
+	uint32_t ss_port;   uint16_t ss_pin;   uint32_t ss_rcc;    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
+	uint32_t sck_port;  uint16_t sck_pin;  uint32_t sck_rcc;   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
+	uint32_t miso_port; uint16_t miso_pin; uint32_t miso_rcc;  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
+	uint32_t mosi_port; uint16_t mosi_pin; uint32_t mosi_rcc;  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
 
 	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
 	uint32_t tx_dma; uint8_t tx_channel; uint8_t tx_irq; uint32_t tx_rcc;  //  Transmit DMA e.g. DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1

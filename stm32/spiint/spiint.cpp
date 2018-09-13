@@ -133,6 +133,9 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	return SPI_Ok;
 }
 
+//  port->SPIx = SPIx;
+#define _set(x) port->x = x
+
 static SPI_Fails spi_init_port(
 	uint8_t id,
 	uint32_t SPIx,  					 //  SPI Port e.g. SPI1
@@ -141,10 +144,10 @@ static SPI_Fails spi_init_port(
 	rcc_periph_clken RCC_SPIx,			 //  SPI Clock e.g. RCC_SPI1
 
 	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
-	uint32_t SS_PORT,   uint16_t SS_PIN,   rcc_periph_clken SS_RCC,    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
-	uint32_t SCK_PORT,  uint16_t SCK_PIN,  rcc_periph_clken SCK_RCC,   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
-	uint32_t MISO_PORT, uint16_t MISO_PIN, rcc_periph_clken MISO_RCC,  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
-	uint32_t MOSI_PORT, uint16_t MOSI_PIN, rcc_periph_clken MOSI_RCC,  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
+	uint32_t ss_port,   uint16_t ss_pin,   rcc_periph_clken ss_rcc,    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
+	uint32_t sck_port,  uint16_t sck_pin,  rcc_periph_clken sck_rcc,   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
+	uint32_t miso_port, uint16_t miso_pin, rcc_periph_clken miso_rcc,  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
+	uint32_t mosi_port, uint16_t mosi_pin, rcc_periph_clken mosi_rcc,  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
 
 	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
 	uint32_t tx_dma, uint8_t tx_channel, uint8_t tx_irq, rcc_periph_clken tx_rcc,  //  Transmit DMA e.g. DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1
@@ -163,21 +166,21 @@ static SPI_Fails spi_init_port(
 	port->ptr_SPI_I2SCFGR = ptr_SPI_I2SCFGR;
 	port->RCC_SPIx = (uint32_t) RCC_SPIx;
 
-	port->SS_PORT = SS_PORT;
-	port->SS_PIN = SS_PIN;
-	port->SS_RCC = (uint32_t) SS_RCC;
+	port->ss_port = ss_port;
+	port->ss_pin = ss_pin;
+	port->ss_rcc = (uint32_t) ss_rcc;
 
-	port->SCK_PORT = SCK_PORT;
-	port->SCK_PIN = SCK_PIN;
-	port->SCK_RCC = (uint32_t) SCK_RCC;
+	port->sck_port = sck_port;
+	port->sck_pin = sck_pin;
+	port->sck_rcc = (uint32_t) sck_rcc;
 
-	port->MISO_PORT = MISO_PORT;
-	port->MISO_PIN = MISO_PIN;
-	port->MISO_RCC = (uint32_t) MISO_RCC;
+	port->miso_port = miso_port;
+	port->miso_pin = miso_pin;
+	port->miso_rcc = (uint32_t) miso_rcc;
 
-	port->MOSI_PORT = MOSI_PORT;
-	port->MOSI_PIN = MOSI_PIN;
-	port->MOSI_RCC = (uint32_t) MOSI_RCC;
+	port->mosi_port = mosi_port;
+	port->mosi_pin = mosi_pin;
+	port->mosi_rcc = (uint32_t) mosi_rcc;
 
 	port->tx_dma = tx_dma;
 	port->tx_channel = tx_channel;
@@ -233,10 +236,10 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 
 	//  Enable SPI and GPIO clocks.  TODO: Skip duplicate clocks.
 	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_SPIx);
-	rcc_periph_clock_enable((rcc_periph_clken) port->SS_RCC);
-	rcc_periph_clock_enable((rcc_periph_clken) port->SCK_RCC);
-	rcc_periph_clock_enable((rcc_periph_clken) port->MISO_RCC);
-	rcc_periph_clock_enable((rcc_periph_clken) port->MOSI_RCC);
+	rcc_periph_clock_enable((rcc_periph_clken) port->ss_rcc);
+	rcc_periph_clock_enable((rcc_periph_clken) port->sck_rcc);
+	rcc_periph_clock_enable((rcc_periph_clken) port->miso_rcc);
+	rcc_periph_clock_enable((rcc_periph_clken) port->mosi_rcc);
 
 	//  Enable DMA clocks.  TODO: Skip duplicate clocks.
 	rcc_periph_clock_enable((rcc_periph_clken) port->tx_rcc);
@@ -316,15 +319,15 @@ SPI_Fails spi_configure(
 	port->timeout = 2000;  //  Timeout is 2 seconds.
 
 	//  Configure output pins for SPI: SS, SCK, MOSI.
-	gpio_set_mode(port->SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->SS_PIN);
-	gpio_set_mode(port->SCK_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->SCK_PIN);
-	gpio_set_mode(port->MOSI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->MOSI_PIN);
+	gpio_set_mode(port->ss_port, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->ss_pin);
+	gpio_set_mode(port->sck_port, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->sck_pin);
+	gpio_set_mode(port->mosi_port, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->mosi_pin);
 	//  Configure input pin for SPI: MISO.
-	gpio_set_mode(port->MISO_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
-		port->MISO_PIN);
+	gpio_set_mode(port->miso_port, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
+		port->miso_pin);
 	return SPI_Ok;
 }
 
@@ -838,8 +841,8 @@ test_spi_configure(void) {
 	spi_set_nss_high(SPI1);
 
 	//  Set SS to high (NSS low) to select SPI interface of BME280 instead of I2C.
-	//  gpio_clear(SS_PORT, SS_PIN);
-	//  gpio_set(SS_PORT, SS_PIN);
+	//  gpio_clear(ss_port, ss_pin);
+	//  gpio_set(ss_port, ss_pin);
 
 #endif  //  NSS_HARDWARE
 }
@@ -851,8 +854,8 @@ test_read(uint8_t readAddr) {
 
 #ifndef HARDWARE_NSS
 	//  Assume SS is high.  Before reading, set SS to low (NSS high).
-	//  gpio_set(SS_PORT, SS_PIN);
-	gpio_clear(SS_PORT, SS_PIN);
+	//  gpio_set(ss_port, ss_pin);
+	gpio_clear(ss_port, ss_pin);
 #endif  //  !HARDWARE_NSS	
 
 #define DUMMY 0x00
@@ -861,8 +864,8 @@ test_read(uint8_t readAddr) {
 
 #ifndef HARDWARE_NSS
 	//  After reading, set SS to high (NSS low).
-	//  gpio_clear(SS_PORT, SS_PIN);
-	gpio_set(SS_PORT, SS_PIN);
+	//  gpio_clear(ss_port, ss_pin);
+	gpio_set(ss_port, ss_pin);
 #endif  //  !HARDWARE_NSS	
 
 	spi_disable(SPI1);
