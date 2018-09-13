@@ -77,11 +77,6 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint8_t dataMode;  //  e.g. SPI_MODE0
   uint32_t timeout;  //  Timeout in milliseconds
 
-  uint32_t tx_dma;  //  Transmit DMA Port.
-  uint8_t tx_channel;  //  Transmit DMA Channel.
-  uint32_t rx_dma;  //  Receive DMA Port.
-  uint8_t rx_channel;  //  Receive DMA Channel.
-
   //  Last packet transmitted / received.
   volatile SPI_DATA_TYPE *tx_buf;
   int tx_len;
@@ -98,7 +93,7 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
 
   //  STM32 port configuration.
   uint32_t SPIx;
-  uint32_t ptr_SPI_DR;
+  volatile uint32_t *ptr_SPI_DR;
   volatile uint32_t *ptr_SPI_I2SCFGR;
   uint8_t rx_NVIC_DMA_CHANNEL_IRQ;
   uint8_t tx_NVIC_DMA_CHANNEL_IRQ;
@@ -107,21 +102,19 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint32_t RCC_GPIOx;
   uint32_t RCC_DMAx;
 
-  uint32_t SS_PORT;  uint16_t SS_PIN;
-  uint32_t SCK_PORT; uint16_t SCK_PIN;
+  uint32_t SS_PORT;   uint16_t SS_PIN;
+  uint32_t SCK_PORT;  uint16_t SCK_PIN;
   uint32_t MISO_PORT; uint16_t MISO_PIN;
   uint32_t MOSI_PORT; uint16_t MOSI_PIN;
 
-
-
-
-
-
-
+  uint32_t tx_dma;      //  Transmit DMA Port.
+  uint8_t  tx_channel;  //  Transmit DMA Channel.
+  uint32_t rx_dma;      //  Receive DMA Port.
+  uint8_t  rx_channel;  //  Receive DMA Channel.
 };
 
 //  This is the new SPI Interface.  New code should use this.
-volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI1 peripheral and GPIOA clocks.  Should be called once only.
+volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
 SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t clock, uint8_t bitOrder, uint8_t dataMode);
 SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.

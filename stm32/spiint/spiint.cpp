@@ -133,49 +133,65 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	return SPI_Ok;
 }
 
-static SPI_Fails spi_init_port(uint8_t id) {
-	//  Initialise the STM32 port config.
+static SPI_Fails spi_init_port(
+	uint8_t id,
+	uint32_t SPIx,
+	volatile uint32_t *ptr_SPI_DR,
+	volatile uint32_t *ptr_SPI_I2SCFGR,
+	uint8_t rx_NVIC_DMA_CHANNEL_IRQ,
+	uint8_t tx_NVIC_DMA_CHANNEL_IRQ,
+
+	rcc_periph_clken RCC_SPIx,
+	rcc_periph_clken RCC_GPIOx,
+	rcc_periph_clken RCC_DMAx,
+
+	uint32_t SS_PORT,  uint16_t SS_PIN,
+	uint32_t SCK_PORT, uint16_t SCK_PIN,
+	uint32_t MISO_PORT, uint16_t MISO_PIN,
+	uint32_t MOSI_PORT, uint16_t MOSI_PIN,
+
+	uint32_t tx_dma,  	  //  Transmit DMA Port.
+	uint8_t  tx_channel,  //  Transmit DMA Channel.
+	uint32_t rx_dma,  	  //  Receive DMA Port.
+	uint8_t  rx_channel   //  Receive DMA Channel.
+	) {
+	//  Initialise the STM32 SPI port config.  id=1 refers to SPI1.
+	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
 	volatile SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
-	port->tx_dma = 0; port->tx_channel = 0;
-	port->rx_dma = 0; port->rx_channel = 0;
 	port->event = event_create();
 	port->tx_event = NULL; port->rx_event = NULL;
 	port->simulator = NULL;
 
-	port->rx_dma = DMA1;
-	port->rx_channel = DMA_CHANNEL2;
-	port->tx_dma = DMA1;
-	port->tx_channel = DMA_CHANNEL3;
+	port->SPIx = SPIx;
+	port->ptr_SPI_DR = ptr_SPI_DR;
+	port->ptr_SPI_I2SCFGR = ptr_SPI_I2SCFGR;
+	port->rx_NVIC_DMA_CHANNEL_IRQ = rx_NVIC_DMA_CHANNEL_IRQ;
+	port->tx_NVIC_DMA_CHANNEL_IRQ = tx_NVIC_DMA_CHANNEL_IRQ;
 
-	port->SPIx = SPI1;
-	port->ptr_SPI_DR = (uint32_t) &SPI1_DR;
-	port->ptr_SPI_I2SCFGR = &SPI1_I2SCFGR;
-	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
-	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
+	port->RCC_SPIx = RCC_SPIx;
+	port->RCC_GPIOx = RCC_GPIOx;
+	port->RCC_DMAx = RCC_DMAx;
 
-	port->RCC_SPIx = RCC_SPI1;
-	port->RCC_GPIOx = RCC_GPIOA;
-	port->RCC_DMAx = RCC_DMA1;
+	port->SS_PORT = SS_PORT;
+	port->SS_PIN = SS_PIN;
+	port->SCK_PORT = SCK_PORT;
+	port->SCK_PIN = SCK_PIN;
+	port->MISO_PORT = MISO_PORT;
+	port->MISO_PIN = MISO_PIN;
+	port->MOSI_PORT = MOSI_PORT;
+	port->MOSI_PIN = MOSI_PIN;
 
-	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7.  TODO: Support other ports and pins.
-	port->SS_PORT = GPIOA;
-	port->SS_PIN = GPIO4;
-	port->SCK_PORT = GPIOA;
-	port->SCK_PIN = GPIO5;
-	port->MISO_PORT = GPIOA;
-	port->MISO_PIN = GPIO6;
-	port->MOSI_PORT = GPIOA;
-	port->MOSI_PIN = GPIO7;
-
-
-
-
+	port->tx_dma = tx_dma;
+	port->tx_channel = tx_channel;
+	port->rx_dma = rx_dma;
+	port->rx_channel = rx_channel;
 
 	return SPI_Ok;
 }
 
 volatile SPI_Control *spi_setup(uint8_t id) {
+	//  Enable SPI peripheral and GPIO clocks.  Should be called once only per SPI port. id=1 refers to SPI1.
 	debug_println("spi_setup"); debug_flush();
 	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
 
@@ -183,12 +199,35 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	static bool firstTime = true;
 	if (firstTime) {
 		firstTime = false;
-		for (int i = 0; i < MAX_SPI_PORTS; i++) {
-			spi_init_port(id);
-		}
+		spi_init_port(1, 	
+	SPI1,
+	&SPI1_DR,
+	&SPI1_I2SCFGR,
+	NVIC_DMA1_CHANNEL2_IRQ,
+	NVIC_DMA1_CHANNEL3_IRQ,
+
+	RCC_SPI1,
+	RCC_GPIOA,
+	RCC_DMA1,
+
+	GPIOA,
+	GPIO4,
+	GPIOA,
+	GPIO5,
+	GPIOA,
+	GPIO6,
+	GPIOA,
+	GPIO7,
+
+	DMA1,
+	DMA_CHANNEL3,
+	DMA1,
+	DMA_CHANNEL2
+	);
 	}
 	//  Return the port.
 	volatile SPI_Control *port = &allPorts[id - 1];
+	if (port->id != id) { showError(NULL, SPI_Invalid_Port); return NULL; }
 
 	//  Moved to platform_setup() in bluepill.cpp:
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
@@ -424,7 +463,7 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 
 static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode) {
 	//  Set up DMA for SPI receive and transmit.
-	dma_set_peripheral_address(dma, channel, port->ptr_SPI_DR);
+	dma_set_peripheral_address(dma, channel, (uint32_t) port->ptr_SPI_DR);
 	dma_set_memory_address(dma, channel, (uint32_t) buf); // Change here
 	dma_set_number_of_data(dma, channel, len); // Change here
 
