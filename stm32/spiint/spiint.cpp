@@ -133,7 +133,7 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 	return SPI_Ok;
 }
 
-//  port->SPIx = SPIx;
+//  _set(SPIx) becomes port->SPIx = SPIx;
 #define _set(x) port->x = x
 
 static SPI_Fails spi_init_port(
