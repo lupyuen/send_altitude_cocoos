@@ -77,17 +77,14 @@ void sensor_task(void) {
     //  concurrent access to the single shared I2C Bus on Arduino Uno.
     debug(context->sensor->info.name, F(" >> Wait for semaphore")); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
+    context = (SensorContext *) task_get_data();  //  Must fetch the context pointer again after the wait.
     debug(context->sensor->info.name, F(" >> Got semaphore")); ////
 
-    //  We have to fetch the context pointer again after the wait.
-    context = (SensorContext *) task_get_data();
-
-    //  Prepare a sensor data message for copying the sensor data.
-    //  TODO: Save and retrieve msg from context.
-    SensorMsg msg;
-    msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
-    strncpy(msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
-    msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
+    //  Prepare a sensor data message on the stack for copying the sensor data.
+    SensorMsg msg;  context->msg = &msg;  //  Note: This message points to stack. Use temporarily only.
+    context->msg->super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
+    strncpy(context->msg->name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
+    context->msg->name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
     //  Begin to capture, replay or simulate the sensor SPI commands.
     simulator_open(&context->sensor->simulator);
@@ -95,17 +92,17 @@ void sensor_task(void) {
     //  If this is the first time we are polling the sensor, or if this is a simulated sensor...
     if (simulator_should_poll_sensor(&context->sensor->simulator)) {
       //  Poll for the sensor data and copy into the sensor message.  This will also capture or simulate the sensor SPI commands.
-      msg.count = context->sensor->info.poll_sensor_func(msg.data, MAX_SENSOR_DATA_SIZE);
-    } else {
-      //  Else we are replaying a captured SPI command.
-      msg.count = 0;  //  Don't return the message yet until the simulation next round.
+      context->msg->count = context->sensor->info.poll_sensor_func(context->msg->data, MAX_SENSOR_DATA_SIZE);
+
+    } else {  //  Else we are replaying a captured SPI command.
+      context->msg->count = 0;  //  Don't return the message yet until the simulation next round.
       volatile Evt_t *replay_event;
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
         // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay")); ////
 
-        if (context->sensor->port->transceive_status != DONE) {
+        if (!simulator_is_request_completed(&context->sensor->simulator)) {  //  Replay only if not completed.
           event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
           context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
         }
@@ -123,16 +120,17 @@ void sensor_task(void) {
     //  TODO: Save and retrieve msg from context.
 
     //  Do we have new data?
-    if (msg.count > 0) {
+    if (context->msg->count > 0) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
       //  debug(msg.name, F(" >> Send msg")); ////
-      debug_print(msg.name); debug_print(F(" >> Send msg ")); 
-      if (msg.count > 0) { debug_println(msg.data[0]); }
+      debug_print(context->msg->name); debug_print(F(" >> Send msg ")); 
+      if (context->msg->count > 0) { debug_println(context->msg->data[0]); }
       else { debug_println("(empty)"); }
       debug_flush();
-      //  Note: msg_post() will block if the receiver's queue is full.
-      msg_post_async(context->receive_task_id, msg);
+      //  Note: We use msg_post_async() instead because msg_post() will block if the receiver's queue is full.
+      msg_post_async(context->receive_task_id, context->msg);
     }
+    context->msg = NULL;  //  Erase the temporary message on stack.
 
     //  Wait a short while before polling the sensor again.
     debug(context->sensor->info.name, F(" >> Wait interval")); ////

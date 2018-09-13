@@ -70,14 +70,17 @@ Simulator_Fails simulator_configure(
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the port.
     debug_println("sim open");
-    if (sim->port == NULL) { return showError(sim, Simulator_Missing_Port); }
+    volatile SPI_Control *port = sim->port;
+    if (port == NULL) { return showError(sim, Simulator_Missing_Port); }
     sim->index = 0;
     //  Simulator depends on sensor ID, so we need to refresh the port.
-    sim->port->simulator = sim;
+    port->simulator = sim;
 
     //  For Replay Mode, open the SPI port.
     if (sim->mode == Simulator_Replay) {
-        spi_open(sim->port);
+        ////TODO
+        spi_configure(port, port->clock, port->bitOrder, port->dataMode);
+        spi_open(port);
     }
     return Simulator_Ok;
 }
@@ -158,12 +161,19 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
     return simulator_replay_packet(sim, size);
 }
 
+bool simulator_is_request_completed(Simulator_Control *sim) {
+    //  Return true if last SPI command was completed.
+    if (!sim->port) return true;
+    return spi_is_transceive_completed(sim->port);
+}
+
 Simulator_Fails simulator_close(Simulator_Control *sim) {  
     //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
     debug_println("sim close");
     //  For Replay Mode, close the SPI port.
     if (sim->port != NULL && sim->mode == Simulator_Replay) {
+        spi_dump_packet(sim->port);
         spi_close(sim->port);
     }
     if (sim->port != NULL) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.

@@ -72,15 +72,23 @@ struct Simulator_Control;
 
 struct SPI_Control {
   uint8_t id;  //  1=SPI1, 2=SPI2, 3=SPI3.
-  uint32_t clock;
-  uint8_t bitOrder;
-  uint8_t dataMode;
+  uint32_t clock;  //  e.g. 500000 for 500 kHz
+  uint8_t bitOrder;  //  e.g. MSBFIRST
+  uint8_t dataMode;  //  e.g. SPI_MODE0
+
   uint32_t tx_dma;  //  Transmit DMA Port.
   uint8_t tx_channel;  //  Transmit DMA Channel.
   uint32_t rx_dma;  //  Receive DMA Port.
   uint8_t rx_channel;  //  Receive DMA Channel.
-  volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
+
+  //  Last packet transmitted / received.
+  volatile SPI_DATA_TYPE *tx_buf;
+  int tx_len;
+  volatile SPI_DATA_TYPE *rx_buf;
+  int rx_len;
   volatile int rx_buf_remainder;  //  Excess of bytes to be received over transmission length.
+  volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
+
   Evt_t event;  //  Event to signal that replay was completed.
   volatile Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
   volatile Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
@@ -96,10 +104,12 @@ SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SP
 int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
-SPI_Fails spi_dump_trail(volatile SPI_Control *port);  //  Dump the simulated commands to console.
+bool spi_is_transceive_completed(volatile SPI_Control *port);  //  Return true if last SPI command was completed.
 SPI_Fails spi_wait(volatile SPI_Control *port);  //  Wait until transceive complete.
 SPI_Fails spi_close(volatile SPI_Control *port);  //  Disable DMA interrupt for SPI1.
 SPI_Fails spi_test(volatile SPI_Control *port);  //  For testing only.
+SPI_Fails spi_dump_trail(volatile SPI_Control *port);  //  Dump the captured / replayed / simulated SPI packets to console.
+SPI_Fails spi_dump_packet(volatile SPI_Control *port);  //  Dump the last SPI packet to console.
 
 #ifdef __cplusplus
 }  //  End of extern C scope.
