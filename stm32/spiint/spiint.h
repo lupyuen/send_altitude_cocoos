@@ -70,8 +70,8 @@ enum trans_status {
 
 struct Simulator_Control;
 
-struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
-  uint8_t id;         //  1=SPI1, 2=SPI2, 3=SPI3.
+struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
+  uint8_t id;         //  1=SPI1, 2=SPI2.
   uint32_t clock;    //  e.g. 500000 for 500 kHz
   uint8_t bitOrder;  //  e.g. MSBFIRST
   uint8_t dataMode;  //  e.g. SPI_MODE0
@@ -133,7 +133,7 @@ class SPIInterfaceSettings {
 public:
   SPIInterfaceSettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode);  //  Used by BME280Spi.cpp
   // SPIInterfaceSettings();
-  uint8_t spi_port;  //  SPI port for STM32: 1=SPI1, 2=SPI2, 3=SPI3
+  uint8_t spi_port;  //  SPI port for STM32: 1=SPI1, 2=SPI2
   uint32_t clock;
   uint8_t bitOrder;
   uint8_t dataMode;

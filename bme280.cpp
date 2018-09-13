@@ -45,6 +45,8 @@ void bme280_setup(uint8_t port) {
 #ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
     settings.spiCsPin = port;  //  Set the SPI port.
     bme = BME280Spi(settings);
+    debug_print("bme port"); debug_println((int) port);
+    debug_print("bme2 port"); debug_println((int) settings.spiCsPin);
 #else  //  If we are using I2C version of BME280...
     uint8_t addr = i2cAddresses[i];  //  Fetch the next I2C address to be scanned.
     settings.bme280Addr = addr;
