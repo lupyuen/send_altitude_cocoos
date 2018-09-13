@@ -366,11 +366,15 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 	* This checks the state flag as well as follows the
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.) */
-	//  debug_println("spi_close2"); // debug_flush();
-	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {}
-	//  debug_println("spi_close3"); // debug_flush();
-	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {}
-
+	TickType_t startTime = systicks();
+	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
+		if (diff_ticks(startTime, systicks()) > port->timeout)
+			{ return showError(port, SPI_Timeout); }
+	}
+	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {
+		if (diff_ticks(startTime, systicks()) > port->timeout)
+			{ return showError(port, SPI_Timeout); }
+	}
 	port->tx_event = NULL;
 	port->rx_event = NULL;
  	nvic_disable_irq(port->rx_NVIC_DMA_CHANNEL_IRQ);
