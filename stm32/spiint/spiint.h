@@ -94,6 +94,20 @@ struct SPI_Control {
   volatile Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
   Simulator_Control *simulator;  //  Simulator for the port.
 	SPI_Fails	failCode;   // Last fail code.
+
+  //  STM32 port configuration.
+  uint32_t SPIx;
+  uint32_t ptr_SPI_DR;
+  uint8_t rx_NVIC_DMA_CHANNEL_IRQ;
+  uint8_t tx_NVIC_DMA_CHANNEL_IRQ;
+
+
+
+
+
+
+
+
 };
 
 //  This is the new SPI Interface.  New code should use this.

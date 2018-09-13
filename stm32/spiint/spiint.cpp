@@ -248,10 +248,22 @@ SPI_Fails spi_configure(
 	port->clock = clock;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
-	port->rx_dma = DMA1;
+
+  	//  TODO
+  	port->rx_dma = DMA1;
 	port->rx_channel = DMA_CHANNEL2;
-	port->tx_dma = DMA1;  //  TODO
+	port->tx_dma = DMA1;
 	port->tx_channel = DMA_CHANNEL3;
+
+	port->SPIx = SPI1;
+	port->ptr_SPI_DR = (uint32_t) &SPI1_DR;
+	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
+	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
+
+
+
+
+
 
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7
 	gpio_set_mode(SS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -278,13 +290,13 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 
 	//  Must configure the port every time or replay will fail.
 	//  Reset SPI, SPI_CR1 register cleared, SPI is disabled.
-	spi_reset(SPI1);
+	spi_reset(port->SPIx);
 
 	//  Explicitly disable I2S in favour of SPI operation.
-	SPI1_I2SCFGR = 0;
+	SPI1_I2SCFGR = 0;  //  TODO
 
 	spi_init_master(
-		SPI1,
+		port->SPIx,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
 		// SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
 
@@ -325,14 +337,14 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 #endif  //  NSS_HARDWARE
 
 	//  Enable SPI1 peripheral.
-	spi_enable(SPI1);
+	spi_enable(port->SPIx);
 	
 	//  SPI1 RX on DMA1 Channel 2
- 	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
-	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
+ 	nvic_set_priority(port->rx_NVIC_DMA_CHANNEL_IRQ, 0);
+	nvic_enable_irq(port->rx_NVIC_DMA_CHANNEL_IRQ);
 	//  SPI1 TX on DMA1 Channel 3
-	nvic_set_priority(NVIC_DMA1_CHANNEL3_IRQ, 0);
-	nvic_enable_irq(NVIC_DMA1_CHANNEL3_IRQ);
+	nvic_set_priority(port->tx_NVIC_DMA_CHANNEL_IRQ, 0);
+	nvic_enable_irq(port->tx_NVIC_DMA_CHANNEL_IRQ);
 	return SPI_Ok;
 }
 
@@ -345,14 +357,14 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 	* procedure on the Reference Manual (RM0008 rev 14
 	* Section 25.3.9 page 692, the note.) */
 	//  debug_println("spi_close2"); // debug_flush();
-	while (!(SPI_SR(SPI1) & SPI_SR_TXE)) {}
+	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {}
 	//  debug_println("spi_close3"); // debug_flush();
-	while (SPI_SR(SPI1) & SPI_SR_BSY) {}
+	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {}
 
 	port->tx_event = NULL;
 	port->rx_event = NULL;
- 	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
- 	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
+ 	nvic_disable_irq(port->rx_NVIC_DMA_CHANNEL_IRQ);
+ 	nvic_disable_irq(port->tx_NVIC_DMA_CHANNEL_IRQ);
 	return SPI_Ok;
 }
 
@@ -417,7 +429,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 
 	//  Reset SPI data and status registers. Here we assume that the SPI peripheral is NOT busy any longer, i.e. the last activity was verified complete elsewhere in the program.
 	volatile uint8_t temp_data __attribute__ ((unused));
-	while (SPI_SR(SPI1) & (SPI_SR_RXNE | SPI_SR_OVR)) { temp_data = SPI_DR(SPI1); }  //  TODO
+	while (SPI_SR(port->SPIx) & (SPI_SR_RXNE | SPI_SR_OVR)) { temp_data = SPI_DR(port->SPIx); }
 	// debug_println("spi_transceive2"); // debug_flush();
 
 	//  Remember the last packet.
@@ -440,9 +452,9 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 
 	//  Set up rx dma, note it has higher priority to avoid overrun.
 	if (rx_len > 0) {
-		dma_set_peripheral_address(port->rx_dma, port->rx_channel, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(port->rx_dma, port->rx_channel, (uint32_t)rx_buf);
-		dma_set_number_of_data(port->rx_dma, port->rx_channel, rx_len);
+		dma_set_peripheral_address(port->rx_dma, port->rx_channel, port->ptr_SPI_DR);
+		dma_set_memory_address(port->rx_dma, port->rx_channel, (uint32_t)rx_buf); //
+		dma_set_number_of_data(port->rx_dma, port->rx_channel, rx_len); //
 		dma_set_read_from_peripheral(port->rx_dma, port->rx_channel);
 		dma_enable_memory_increment_mode(port->rx_dma, port->rx_channel);
 		dma_set_peripheral_size(port->rx_dma, port->rx_channel, SPI_PSIZE);
@@ -452,7 +464,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 
 	//  Set up tx dma (must always run tx to get clock signal).
 	if (tx_len > 0) {  //  Here we have a regular tx transfer.
-		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
+		dma_set_peripheral_address(port->tx_dma, port->tx_channel, port->ptr_SPI_DR);
 		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)tx_buf);
 		dma_set_number_of_data(port->tx_dma, port->tx_channel, tx_len);
 		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
@@ -463,7 +475,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	} else {
 		//  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
 		debug_println("WARNING: spi_transceive tx=0"); debug_flush();
-		dma_set_peripheral_address(port->tx_dma, port->tx_channel, (uint32_t)&SPI1_DR);
+		dma_set_peripheral_address(port->tx_dma, port->tx_channel, port->ptr_SPI_DR);
 		dma_set_memory_address(port->tx_dma, port->tx_channel, (uint32_t)(dummy_tx_buf)); // Change here
 		dma_set_number_of_data(port->tx_dma, port->tx_channel, rx_len); // Change here
 		dma_set_read_from_memory(port->tx_dma, port->tx_channel);
@@ -482,8 +494,8 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	dma_enable_channel(port->tx_dma, port->tx_channel);
 
 	//  Enable the spi transfer via dma. This will immediately start the transmission, after which when the receive is complete, the receive dma will activate */
-	if (rx_len > 0) { spi_enable_rx_dma(SPI1); }
-    spi_enable_tx_dma(SPI1);
+	if (rx_len > 0) { spi_enable_rx_dma(port->SPIx); }
+    spi_enable_tx_dma(port->SPIx);
 
 	int result = 0;
 	// debug_print("spi_transceive returned "); debug_println(result); debug_flush();
