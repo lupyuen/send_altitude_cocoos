@@ -154,6 +154,10 @@ static SPI_Fails spi_init_port(uint8_t id) {
 	port->rx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL2_IRQ;
 	port->tx_NVIC_DMA_CHANNEL_IRQ = NVIC_DMA1_CHANNEL3_IRQ;
 
+	port->RCC_SPIx = RCC_SPI1;
+	port->RCC_GPIOx = RCC_GPIOA;
+	port->RCC_DMAx = RCC_DMA1;
+
 	//  Configure GPIOs: SS=PA4, SCK=PA5, MISO=PA6 and MOSI=PA7.  TODO: Support other ports and pins.
 	port->SS_PORT = GPIOA;
 	port->SS_PIN = GPIO4;
@@ -189,12 +193,12 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	//  Moved to platform_setup() in bluepill.cpp:
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
 
-	//  Enable SPI1 Periph and gpio clocks
-	rcc_periph_clock_enable(RCC_SPI1);  //  TODO
-	rcc_periph_clock_enable(RCC_GPIOA);  //  TODO: Support other ports.
+	//  Enable SPI and GPIO clocks.
+	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_SPIx);
+	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_GPIOx);  //  TODO: Support multiple GPIO ports.
 
-	//  Enable DMA1 clock
-	rcc_periph_clock_enable(RCC_DMA1);
+	//  Enable DMA clock.
+	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_DMAx);
 	return port;
 }
 

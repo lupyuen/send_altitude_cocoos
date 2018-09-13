@@ -103,6 +103,10 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint8_t rx_NVIC_DMA_CHANNEL_IRQ;
   uint8_t tx_NVIC_DMA_CHANNEL_IRQ;
 
+  uint32_t RCC_SPIx;
+  uint32_t RCC_GPIOx;
+  uint32_t RCC_DMAx;
+
   uint32_t SS_PORT;  uint16_t SS_PIN;
   uint32_t SCK_PORT; uint16_t SCK_PIN;
   uint32_t MISO_PORT; uint16_t MISO_PIN;
