@@ -178,6 +178,60 @@ bool spi_is_transceive_completed(volatile SPI_Control *port) {
 #define SPI_DFF SPI_CR1_DFF_8BIT
 #endif
 
+#define kHz 1000
+#define MHz 1000000
+#define Baudrate_Col 0
+#define SPI1_Frequency_Col 1  //  Same as SPI ID
+#define SPI2_Frequency_Col 2  //  Same as SPI ID
+
+const uint32_t baudrateDivisors[][3] = {
+	//  Divisor Macro, 				  SPI1 Frequency,             SPI2 Frequency
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_2,   (uint32_t) (36 * MHz), 	  (uint32_t) (18 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_4,   (uint32_t) (18 * MHz), 	  (uint32_t) (9 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_8,   (uint32_t) (9 * MHz), 	  (uint32_t) (4.5 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_16,  (uint32_t) (4.5 * MHz), 	  (uint32_t) (2.25 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_32,  (uint32_t) (2.25 * MHz), 	  (uint32_t) (1.125 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_64,  (uint32_t) (1.125 * MHz),   (uint32_t) (562.5 * kHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_128, (uint32_t) (562.5 * kHz),   (uint32_t) (281.25 * kHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_256, (uint32_t) (281.25 * kHz),  (uint32_t) (140.625 * kHz) },
+	{ 0, 0, 0 }  //  Last row.
+};
+
+static uint32_t spi_get_baudrate(volatile SPI_Control *port) {
+	//  Return the SPI baudrate given the max speed in the port settings.
+	uint32_t baudrate = 0;
+	for (int i = 0; baudrateDivisors[i][Baudrate_Col] > 0; i++) {
+		//  Get the frequency for the SPI port.
+		const uint32_t *row = baudrateDivisors[i];
+		uint32_t baudrate = row[Baudrate_Col];
+		const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
+		if (port->speedMaximum >= freq) { return baudrate; }
+	}
+	return baudrate;  //  No match. Return the lowest baudrate.
+}
+
+static uint32_t spi_get_clock_polarity(volatile SPI_Control *port) {
+	//  Return the SPI Clock Polarity (CPOL) given the SPI mode in the port settings.
+	switch (port->dataMode) {
+		case SPI_MODE0: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+		case SPI_MODE1: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+		case SPI_MODE2: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+		case SPI_MODE3: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+		default: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+	}
+}
+
+static uint32_t spi_get_clock_phase(volatile SPI_Control *port) {
+	//  Return the SPI Clock Phase (CPHA) given the SPI mode in the port settings.
+	switch (port->dataMode) {
+		case SPI_MODE0: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+		case SPI_MODE1: return SPI_CR1_CPHA_CLK_TRANSITION_2;
+		case SPI_MODE2: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+		case SPI_MODE3: return SPI_CR1_CPHA_CLK_TRANSITION_2;
+		default: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+	}
+}
+
 SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI port.
 	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
@@ -195,22 +249,16 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Explicitly disable I2S in favour of SPI operation, i.e. SPI1_I2SCFGR = 0
 	if (port->ptr_SPI_I2SCFGR) { *(port->ptr_SPI_I2SCFGR) = 0; }
 
-	spi_init_master(
-		port->SPIx,
-		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
-		// SPI_CR1_BAUDRATE_FPCLK_DIV_128, ////  SPI1 at 562.5 kHz
-
-		//  SPI_MODE0:
-		//  SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE, ////
-		//  SPI_CR1_CPHA_CLK_TRANSITION_1, ////
-
-		//  SPI_MODE3:
-		SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE,
-		SPI_CR1_CPHA_CLK_TRANSITION_2,
-
-		SPI_DFF,
-		SPI_CR1_MSBFIRST
-	);
+	//  Set the SPI port baudrate, clock polarity, clock phase and bit order.
+	uint32_t baudrate = spi_get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
+	uint32_t clock_polarity = spi_get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
+	uint32_t clock_phase = spi_get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
+	uint32_t bitOrder = (port->bitOrder == MSBFIRST) ? SPI_CR1_MSBFIRST : SPI_CR1_LSBFIRST;
+	spi_init_master(port->SPIx, baudrate, clock_polarity, clock_phase, SPI_DFF, bitOrder);
+	debug_print("spi set baud "); debug_print((int) port->speedMaximum); debug_print(" -> "); debug_print((int) baudrate);
+	debug_print(", cpol "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_polarity);
+	debug_print(", cpha "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_phase);
+	debug_print(", order "); debug_print((int) port->bitOrder); debug_print(" -> "); debug_println((int) bitOrder);
 
 #define HARDWARE_NSS //  Software NSS doesn't work.
 #ifdef HARDWARE_NSS
@@ -349,65 +397,6 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 
 //////////////////////////////////////////////////////////////////////////
 //  SPI Port Configuration
-
-/* TODO: Set up SPI:
-	SPI Mode
-	Clock Polarity
-	Clock Phase
-	0 =
-	SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
-	SPI_CR1_CPHA_CLK_TRANSITION_1
-	1 =
-	SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
-	SPI_CR1_CPHA_CLK_TRANSITION_2
-	2 =
-	SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE
-	SPI_CR1_CPHA_CLK_TRANSITION_1
-	3 =
-	SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE
-	SPI_CR1_CPHA_CLK_TRANSITION_2
-	”
-	Excerpt From: Warren Gay. “Beginning STM32.”
-
-	“Divisor
-	Macro
-	SPI1 Frequency
-	SPI2 Frequency
-	2
-	SPI_CR1_BAUDRATE_FPCLK_DIV_2 =
-	36 MHz
-	18 MHz
-	4
-	SPI_CR1_BAUDRATE_FPCLK_DIV_4 =
-	18 MHz
-	9 MHz
-	8
-	SPI_CR1_BAUDRATE_FPCLK_DIV_8 =
-	9 MHz
-	4.5 MHz
-	16
-	SPI_CR1_BAUDRATE_FPCLK_DIV_16 =
-	4.5 MHz
-	2.25 MHz
-	32
-	SPI_CR1_BAUDRATE_FPCLK_DIV_32 =
-	2.25 MHz
-	1.125 MHz
-	64
-	SPI_CR1_BAUDRATE_FPCLK_DIV_64 =
-	1.125 MHz
-	562.5 kHz
-	128
-	SPI_CR1_BAUDRATE_FPCLK_DIV_128 =
-	562.5 kHz
-	281.25 kHz
-	256
-	SPI_CR1_BAUDRATE_FPCLK_DIV_256 =
-	281.25 kHz
-	140.625 kHz”
-
-	Excerpt From: Warren Gay. “Beginning STM32.” iBooks. 
-*/
 
 SPI_Fails spi_configure(
 	volatile SPI_Control *port, 
