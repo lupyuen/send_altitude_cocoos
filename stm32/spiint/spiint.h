@@ -71,8 +71,8 @@ enum trans_status {
 struct Simulator_Control;
 
 struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
-  uint8_t id;  //  1=SPI1, 2=SPI2, 3=SPI3.
-  uint32_t clock;  //  e.g. 500000 for 500 kHz
+  uint8_t id;         //  1=SPI1, 2=SPI2, 3=SPI3.
+  uint32_t clock;    //  e.g. 500000 for 500 kHz
   uint8_t bitOrder;  //  e.g. MSBFIRST
   uint8_t dataMode;  //  e.g. SPI_MODE0
   uint32_t timeout;  //  Timeout in milliseconds
@@ -85,33 +85,27 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   volatile int rx_buf_remainder;  //  Excess of bytes to be received after transmission.
   volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
 
-  Evt_t event;  //  Event to signal that replay was completed.
-  volatile Evt_t *tx_event;  //  If not NULL, signal this event when transmit has been completed.
-  volatile Evt_t *rx_event;  //  If not NULL, signal this event when receive has been completed.
-  Simulator_Control *simulator;  //  Simulator for the port.
-	SPI_Fails	failCode;   // Last fail code.
+  Evt_t event;                   //  Event to signal to Sensor Task that replay was completed.
+  volatile Evt_t *tx_event;      //  If not NULL, signal this event when transmit has been completed.
+  volatile Evt_t *rx_event;      //  If not NULL, signal this event when receive has been completed.
+  Simulator_Control *simulator;  //  Simulator for the port that will capture, replay and simulate SPI commands.
+	SPI_Fails	failCode;            //  Last fail code.
 
   //  STM32 port configuration.
-  uint32_t SPIx;
-  volatile uint32_t *ptr_SPI_DR;
-  volatile uint32_t *ptr_SPI_I2SCFGR;
+	uint32_t SPIx;  					           //  SPI Port e.g. SPI1
+	volatile uint32_t *ptr_SPI_DR;  	   //  SPI DR e.g. &SPI1_DR
+	volatile uint32_t *ptr_SPI_I2SCFGR;  //  SPI I2S Config e.g. &SPI1_I2SCFGR
+	uint32_t RCC_SPIx;			             //  SPI Clock e.g. RCC_SPI1
 
-  uint32_t RCC_SPIx;
-  uint32_t RCC_GPIOx;
-  uint32_t RCC_DMAx;
+	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
+	uint32_t SS_PORT;   uint16_t SS_PIN;   uint32_t SS_RCC;    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
+	uint32_t SCK_PORT;  uint16_t SCK_PIN;  uint32_t SCK_RCC;   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
+	uint32_t MISO_PORT; uint16_t MISO_PIN; uint32_t MISO_RCC;  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
+	uint32_t MOSI_PORT; uint16_t MOSI_PIN; uint32_t MOSI_RCC;  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
 
-  uint32_t SS_PORT;   uint16_t SS_PIN;
-  uint32_t SCK_PORT;  uint16_t SCK_PIN;
-  uint32_t MISO_PORT; uint16_t MISO_PIN;
-  uint32_t MOSI_PORT; uint16_t MOSI_PIN;
-
-  uint32_t tx_dma;      //  Transmit DMA Port.
-  uint8_t  tx_channel;  //  Transmit DMA Channel.
-  uint8_t  tx_irq;      //  Transmit DMA Interrupt.
-
-  uint32_t rx_dma;      //  Receive DMA Port.
-  uint8_t  rx_channel;  //  Receive DMA Channel.
-  uint8_t  rx_irq;      //  Receive DMA Interrupt.
+	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
+	uint32_t tx_dma; uint8_t tx_channel; uint8_t tx_irq; uint32_t tx_rcc;  //  Transmit DMA e.g. DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1
+	uint32_t rx_dma; uint8_t rx_channel; uint8_t rx_irq; uint32_t rx_rcc;  //  Receive DMA e.g. DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ, RCC_DMA1
 };
 
 //  This is the new SPI Interface.  New code should use this.

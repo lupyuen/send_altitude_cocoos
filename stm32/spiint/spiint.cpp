@@ -135,26 +135,20 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 
 static SPI_Fails spi_init_port(
 	uint8_t id,
-	uint32_t SPIx,  					 //  SPI Port, e.g. SPI1
-	volatile uint32_t *ptr_SPI_DR,  	 //  SPI DR, e.g. &SPI1_DR
-	volatile uint32_t *ptr_SPI_I2SCFGR,  //  SPI I2C Config, e.g. &SPI1_I2SCFGR
+	uint32_t SPIx,  					 //  SPI Port e.g. SPI1
+	volatile uint32_t *ptr_SPI_DR,  	 //  SPI DR e.g. &SPI1_DR
+	volatile uint32_t *ptr_SPI_I2SCFGR,  //  SPI I2C Config e.g. &SPI1_I2SCFGR
+	rcc_periph_clken RCC_SPIx,			 //  SPI Clock e.g. RCC_SPI1
 
-	rcc_periph_clken RCC_SPIx,
-	rcc_periph_clken RCC_GPIOx,
-	rcc_periph_clken RCC_DMAx,
+	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
+	uint32_t SS_PORT,   uint16_t SS_PIN,   rcc_periph_clken SS_RCC,    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
+	uint32_t SCK_PORT,  uint16_t SCK_PIN,  rcc_periph_clken SCK_RCC,   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
+	uint32_t MISO_PORT, uint16_t MISO_PIN, rcc_periph_clken MISO_RCC,  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
+	uint32_t MOSI_PORT, uint16_t MOSI_PIN, rcc_periph_clken MOSI_RCC,  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
 
-	uint32_t SS_PORT,  uint16_t SS_PIN,
-	uint32_t SCK_PORT, uint16_t SCK_PIN,
-	uint32_t MISO_PORT, uint16_t MISO_PIN,
-	uint32_t MOSI_PORT, uint16_t MOSI_PIN,
-
-	uint32_t tx_dma,  	  //  Transmit DMA Port, e.g. DMA1
-	uint8_t  tx_channel,  //  Transmit DMA Channel, e.g. DMA_CHANNEL3
-	uint8_t  tx_irq,	  //  Transmit DMA Interrupt, e.g. NVIC_DMA1_CHANNEL3_IRQ
-
-	uint32_t rx_dma,  	  //  Receive DMA Port, e.g. DMA1
-	uint8_t  rx_channel,  //  Receive DMA Channel, e.g. DMA_CHANNEL2
-	uint8_t  rx_irq		  //  Receive DMA Interrupt, e.g. NVIC_DMA1_CHANNEL2_IRQ
+	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
+	uint32_t tx_dma, uint8_t tx_channel, uint8_t tx_irq, rcc_periph_clken tx_rcc,  //  Transmit DMA e.g. DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1
+	uint32_t rx_dma, uint8_t rx_channel, uint8_t rx_irq, rcc_periph_clken rx_rcc   //  Receive DMA e.g. DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ, RCC_DMA1
 	) {
 	//  Initialise the STM32 SPI port config.  id=1 refers to SPI1.
 	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
@@ -167,27 +161,33 @@ static SPI_Fails spi_init_port(
 	port->SPIx = SPIx;
 	port->ptr_SPI_DR = ptr_SPI_DR;
 	port->ptr_SPI_I2SCFGR = ptr_SPI_I2SCFGR;
-
-	port->RCC_SPIx = RCC_SPIx;
-	port->RCC_GPIOx = RCC_GPIOx;
-	port->RCC_DMAx = RCC_DMAx;
+	port->RCC_SPIx = (uint32_t) RCC_SPIx;
 
 	port->SS_PORT = SS_PORT;
 	port->SS_PIN = SS_PIN;
+	port->SS_RCC = (uint32_t) SS_RCC;
+
 	port->SCK_PORT = SCK_PORT;
 	port->SCK_PIN = SCK_PIN;
+	port->SCK_RCC = (uint32_t) SCK_RCC;
+
 	port->MISO_PORT = MISO_PORT;
 	port->MISO_PIN = MISO_PIN;
+	port->MISO_RCC = (uint32_t) MISO_RCC;
+
 	port->MOSI_PORT = MOSI_PORT;
 	port->MOSI_PIN = MOSI_PIN;
+	port->MOSI_RCC = (uint32_t) MOSI_RCC;
 
 	port->tx_dma = tx_dma;
 	port->tx_channel = tx_channel;
 	port->tx_irq = tx_irq;
+	port->tx_rcc = (uint32_t) tx_rcc;
 
 	port->rx_dma = rx_dma;
 	port->rx_channel = rx_channel;
 	port->rx_irq = rx_irq;
+	port->rx_rcc = (uint32_t) rx_rcc;
 
 	return SPI_Ok;
 }
@@ -219,17 +219,16 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	if (firstTime) {
 		firstTime = false;
 		spi_init_port(1, 	
-	_SPI(1),
+		_SPI(1), RCC_SPI1,
 
-	RCC_SPI1,
-	RCC_GPIOA,
-	RCC_DMA1,
+		_GPIO(A,4),	RCC_GPIOA,
+		_GPIO(A,5),	RCC_GPIOA,
+		_GPIO(A,6),	RCC_GPIOA,
+		_GPIO(A,7), RCC_GPIOA,
 
-	_GPIO(A,4),	_GPIO(A,5),	_GPIO(A,6),	_GPIO(A,7),
-
-	_DMA(1,3), _DMA(1,2)
-
-	);
+		_DMA(1,3), RCC_DMA1,
+		_DMA(1,2), RCC_DMA1
+		);
 	}
 	//  Return the port.
 	volatile SPI_Control *port = &allPorts[id - 1];
@@ -238,12 +237,16 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	//  Moved to platform_setup() in bluepill.cpp:
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
 
-	//  Enable SPI and GPIO clocks.
+	//  Enable SPI and GPIO clocks.  TODO: Skip duplicate clocks.
 	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_SPIx);
-	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_GPIOx);  //  TODO: Support multiple GPIO ports.
+	rcc_periph_clock_enable((rcc_periph_clken) port->SS_RCC);
+	rcc_periph_clock_enable((rcc_periph_clken) port->SCK_RCC);
+	rcc_periph_clock_enable((rcc_periph_clken) port->MISO_RCC);
+	rcc_periph_clock_enable((rcc_periph_clken) port->MOSI_RCC);
 
-	//  Enable DMA clock.
-	rcc_periph_clock_enable((rcc_periph_clken) port->RCC_DMAx);
+	//  Enable DMA clocks.  TODO: Skip duplicate clocks.
+	rcc_periph_clock_enable((rcc_periph_clken) port->tx_rcc);
+	rcc_periph_clock_enable((rcc_periph_clken) port->rx_rcc);
 	return port;
 }
 
