@@ -78,8 +78,6 @@ Simulator_Fails simulator_open(Simulator_Control *sim) {
 
     //  For Replay Mode, open the SPI port.
     if (sim->mode == Simulator_Replay) {
-        ////TODO: 
-        spi_configure(port, port->clock, port->bitOrder, port->dataMode);  //  TODO
         spi_open(port);
     }
     return Simulator_Ok;

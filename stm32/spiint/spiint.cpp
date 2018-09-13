@@ -40,16 +40,11 @@
 #define MOSI_PORT GPIOA
 #define MOSI_PIN GPIO7
 
-volatile int transceive_status;  //  TODO: Allocate per port.
-
-/* Global for dummy tx dma transfer */
-int rx_buf_remainder = 0;  //  TODO: Allocate per port.
-
-SPI_DATA_TYPE dummy_tx_buf = 0xdd;
-
 //  TODO: Update this when running under FreeRTOS.
 #define systicks millis
 typedef uint32_t TickType_t;
+
+static SPI_DATA_TYPE dummy_tx_buf[MAX_TRAIL_SIZE];  //  TODO
 
 //  Messages for each fail code.
 static const char *spi_msg[] = {
@@ -168,8 +163,7 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 			allPorts[i].simulator = NULL;
 		}
 	}
-
-	//  Remember the port ID for later.  We remember only the first port.
+	//  Return the port.
 	volatile SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
 
@@ -268,11 +262,23 @@ SPI_Fails spi_configure(
 
 	gpio_set_mode(MISO_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
 			MISO_PIN);
+	return SPI_Ok;
+}
 
-	/* Reset SPI, SPI_CR1 register cleared, SPI is disabled */
+SPI_Fails spi_open(volatile SPI_Control *port) {
+	//  Enable DMA interrupt for SPI1.
+	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
+	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
+	if (port->simulator) { debug_println("spi open"); debug_flush(); }
+	port->tx_event = NULL;
+	port->rx_event = NULL;
+	port->transceive_status = NONE;
+
+	//  Must configure the port every time or replay will fail.
+	//  Reset SPI, SPI_CR1 register cleared, SPI is disabled.
 	spi_reset(SPI1);
 
-	/* Explicitly disable I2S in favour of SPI operation */
+	//  Explicitly disable I2S in favour of SPI operation.
 	SPI1_I2SCFGR = 0;
 
 	spi_init_master(
@@ -316,20 +322,9 @@ SPI_Fails spi_configure(
 	spi_set_nss_high(SPI1);
 #endif  //  NSS_HARDWARE
 
-	/* Enable SPI1 periph. */
+	//  Enable SPI1 peripheral.
 	spi_enable(SPI1);
-	return SPI_Ok;
-}
-
-SPI_Fails spi_open(volatile SPI_Control *port) {
-	//  Enable DMA interrupt for SPI1.
-	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
-	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
-	if (port->simulator) { debug_println("spi open"); debug_flush(); }
-	port->tx_event = NULL;
-	port->rx_event = NULL;
-	port->transceive_status = NONE;
-
+	
 	//  SPI1 RX on DMA1 Channel 2
  	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
 	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
@@ -356,11 +351,6 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 	port->rx_event = NULL;
  	nvic_disable_irq(NVIC_DMA1_CHANNEL2_IRQ);
  	nvic_disable_irq(NVIC_DMA1_CHANNEL3_IRQ);
-
-	//  For Replay Mode: Show the last SPI packet transmitted / received.
-	if (port->simulator && port->simulator->mode == Simulator_Replay) {
-		//dump_packets("replayed", port->tx_buf, port->tx_len, port->rx_buf, port->rx_len);
-	}	
 	return SPI_Ok;
 }
 
@@ -381,7 +371,7 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Simulate an SPI command.  This means we have just finished the replay, now we simulate to feed the replay SPI data into the driver.
 	//  In case of error, don't simulate, perform the actual transceive.
-	if (port->simulator != NULL) { debug_println("spi sim"); debug_flush(); }
+	//  if (port->simulator != NULL) { debug_println("spi sim"); debug_flush(); }
 	if (port->simulator == NULL) {
 		return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);  //  Don't simulate.
 	}
@@ -434,22 +424,16 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	port->rx_buf = rx_buf; port->rx_len = rx_len;
 
 	//  Reset status flag appropriately (both 0 case caught above).
-	transceive_status = NONE;
 	port->transceive_status = NONE;
-	if (rx_len < 1) { 
-		transceive_status = ONE; 
-		port->transceive_status = ONE;
-	}
+	if (rx_len < 1) { port->transceive_status = ONE; }
 
 	/* Determine tx length case to change behaviour
 	 * If tx_len >= rx_len, then normal case, run both DMAs with normal settings
 	 * If rx_len == 0, just don't run the rx DMA at all
 	 * If tx_len == 0, use a dummy buf and set the tx dma to transfer the same amount as the rx_len, to ensure everything is clocked in
 	 * If 0 < tx_len < rx_len, first do a normal case, then on the tx finished interrupt, set up a new dummy buf tx dma transfer for the remaining required clock cycles (handled in tx dma complete interrupt) */
-	rx_buf_remainder = 0;
 	port->rx_buf_remainder = 0;
-	if ((tx_len > 0) && (tx_len < rx_len)) { 
-		rx_buf_remainder = rx_len - tx_len; 
+	if ((tx_len > 0) && (tx_len < rx_len)) {
 		port->rx_buf_remainder = rx_len - tx_len; 
 	}
 
@@ -479,7 +463,7 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 		//  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
 		debug_println("WARNING: spi_transceive tx=0"); debug_flush();
 		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)(&dummy_tx_buf)); // Change here
+		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)(dummy_tx_buf)); // Change here
 		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_len); // Change here
 		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
 		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
@@ -536,10 +520,7 @@ void dma1_channel2_isr(void) {  //  SPI receive completed with DMA.
 	spi_disable_rx_dma(SPI1);
 	dma_disable_channel(DMA1, DMA_CHANNEL2);
 
-	/* Increment the status to indicate one of the transfers is complete */
-	transceive_status++;  //  TODO
-
-	//  Find the port and update it.
+	//  Find the port and update the status.
 	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL2);  //  TODO
 	isr_port = port; ////
 	if (port == NULL) { return; }
@@ -559,33 +540,29 @@ void dma1_channel3_isr(void) {  //  SPI transmit completed with DMA.
 	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 	spi_disable_tx_dma(SPI1);
 	dma_disable_channel(DMA1, DMA_CHANNEL3);
-	/* TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining
-	 * rx data */
-	if (rx_buf_remainder > 0) {
+
+	//  Find the port.
+	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
+	if (port == NULL) { return; }
+
+	//  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
+	if (port->rx_buf_remainder > 0) {
 		dma_channel_reset(DMA1, DMA_CHANNEL3);
 		dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&SPI1_DR);
-		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)(&dummy_tx_buf)); // Change here
-		dma_set_number_of_data(DMA1, DMA_CHANNEL3, rx_buf_remainder); // Change here
+		dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)dummy_tx_buf); // Change here
+		dma_set_number_of_data(DMA1, DMA_CHANNEL3, port->rx_buf_remainder); // Change here
 		dma_set_read_from_memory(DMA1, DMA_CHANNEL3);
 		dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL3); // Change here
 		dma_set_peripheral_size(DMA1, DMA_CHANNEL3, SPI_PSIZE);
 		dma_set_memory_size(DMA1, DMA_CHANNEL3, SPI_MSIZE);
 		dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
-
-		rx_buf_remainder = 0; // Clear the buffer remainder to disable this section later
-
+		port->rx_buf_remainder = 0; // Clear the buffer remainder to disable this section later
 		dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 		dma_enable_channel(DMA1, DMA_CHANNEL3);
 		spi_enable_tx_dma(SPI1);
 		return;
 	} 
-	
-	/* Increment the status to indicate one of the transfers is complete */
-	transceive_status++;  //  TODO
-
-	//  Find the port and update it.
-	volatile SPI_Control *port = findPortByDMA(DMA1, DMA_CHANNEL3);  //  TODO
-	if (port == NULL) { return; }
+	//  Update the status.
 	update_transceive_status(port);
 
 	//  Send signal that transmit is done.  (Not used)
@@ -629,8 +606,8 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
 	} else {
 		//  If no simulator, or simulator is in other modes, wait for transceive response.
-		spi_wait(port);		
-		if (port->simulator) { dump_packets("spi", tx_buf, tx_len, rx_buf, rx_len); }
+		spi_wait(port);
+		if (port->simulator) { dump_packets(get_mode_name(port), tx_buf, tx_len, rx_buf, rx_len); }
 	}
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Capture) {
 		//  If simulator is in Capture Mode, capture the SPI command for replay and simulation later.
@@ -645,7 +622,7 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
 	//  Read the captured SPI packet for send and receive.
-	if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
+	//  if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
 	if (port->simulator == NULL) { showError(port, SPI_Missing_Simulator); return NULL; }  //  No simulator.
 	int tx_len = simulator_replay_size(port->simulator);
 	volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
