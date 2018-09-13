@@ -135,9 +135,9 @@ SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
 
 static SPI_Fails spi_init_port(
 	uint8_t id,
-	uint32_t SPIx,
-	volatile uint32_t *ptr_SPI_DR,
-	volatile uint32_t *ptr_SPI_I2SCFGR,
+	uint32_t SPIx,  					 //  SPI Port, e.g. SPI1
+	volatile uint32_t *ptr_SPI_DR,  	 //  SPI DR, e.g. &SPI1_DR
+	volatile uint32_t *ptr_SPI_I2SCFGR,  //  SPI I2C Config, e.g. &SPI1_I2SCFGR
 
 	rcc_periph_clken RCC_SPIx,
 	rcc_periph_clken RCC_GPIOx,
@@ -148,13 +148,13 @@ static SPI_Fails spi_init_port(
 	uint32_t MISO_PORT, uint16_t MISO_PIN,
 	uint32_t MOSI_PORT, uint16_t MOSI_PIN,
 
-	uint32_t tx_dma,  	  //  Transmit DMA Port.
-	uint8_t  tx_channel,  //  Transmit DMA Channel.
-	uint8_t  tx_irq,
+	uint32_t tx_dma,  	  //  Transmit DMA Port, e.g. DMA1
+	uint8_t  tx_channel,  //  Transmit DMA Channel, e.g. DMA_CHANNEL3
+	uint8_t  tx_irq,	  //  Transmit DMA Interrupt, e.g. NVIC_DMA1_CHANNEL3_IRQ
 
-	uint32_t rx_dma,  	  //  Receive DMA Port.
-	uint8_t  rx_channel,   //  Receive DMA Channel.
-	uint8_t  rx_irq
+	uint32_t rx_dma,  	  //  Receive DMA Port, e.g. DMA1
+	uint8_t  rx_channel,  //  Receive DMA Channel, e.g. DMA_CHANNEL2
+	uint8_t  rx_irq		  //  Receive DMA Interrupt, e.g. NVIC_DMA1_CHANNEL2_IRQ
 	) {
 	//  Initialise the STM32 SPI port config.  id=1 refers to SPI1.
 	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
@@ -192,6 +192,12 @@ static SPI_Fails spi_init_port(
 	return SPI_Ok;
 }
 
+//  _SPI(1) becomes SPI1, &SPI1_DR, &SPI1_I2SCFGR
+#define _SPI(port) \
+	SPI ## port, \
+	&SPI ## port ## _DR, \
+	&SPI ## port ## _I2SCFGR
+
 //  _GPIO(A,4) becomes GPIOA, GPIO4.
 #define _GPIO(port, pin) \
 	GPIO ## port, \
@@ -213,9 +219,7 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	if (firstTime) {
 		firstTime = false;
 		spi_init_port(1, 	
-	SPI1,
-	&SPI1_DR,
-	&SPI1_I2SCFGR,
+	_SPI(1),
 
 	RCC_SPI1,
 	RCC_GPIOA,
@@ -223,8 +227,7 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 
 	_GPIO(A,4),	_GPIO(A,5),	_GPIO(A,6),	_GPIO(A,7),
 
-	_DMA(1,3),
-	_DMA(1,2)
+	_DMA(1,3), _DMA(1,2)
 
 	);
 	}
