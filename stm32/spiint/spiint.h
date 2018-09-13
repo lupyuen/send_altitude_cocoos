@@ -95,8 +95,6 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
   uint32_t SPIx;
   volatile uint32_t *ptr_SPI_DR;
   volatile uint32_t *ptr_SPI_I2SCFGR;
-  uint8_t rx_NVIC_DMA_CHANNEL_IRQ;
-  uint8_t tx_NVIC_DMA_CHANNEL_IRQ;
 
   uint32_t RCC_SPIx;
   uint32_t RCC_GPIOx;
@@ -109,8 +107,11 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2, SPI3.
 
   uint32_t tx_dma;      //  Transmit DMA Port.
   uint8_t  tx_channel;  //  Transmit DMA Channel.
+  uint8_t  tx_irq;
+
   uint32_t rx_dma;      //  Receive DMA Port.
   uint8_t  rx_channel;  //  Receive DMA Channel.
+  uint8_t  rx_irq;
 };
 
 //  This is the new SPI Interface.  New code should use this.

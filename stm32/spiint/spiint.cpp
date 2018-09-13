@@ -138,8 +138,6 @@ static SPI_Fails spi_init_port(
 	uint32_t SPIx,
 	volatile uint32_t *ptr_SPI_DR,
 	volatile uint32_t *ptr_SPI_I2SCFGR,
-	uint8_t rx_NVIC_DMA_CHANNEL_IRQ,
-	uint8_t tx_NVIC_DMA_CHANNEL_IRQ,
 
 	rcc_periph_clken RCC_SPIx,
 	rcc_periph_clken RCC_GPIOx,
@@ -152,8 +150,11 @@ static SPI_Fails spi_init_port(
 
 	uint32_t tx_dma,  	  //  Transmit DMA Port.
 	uint8_t  tx_channel,  //  Transmit DMA Channel.
+	uint8_t  tx_irq,
+
 	uint32_t rx_dma,  	  //  Receive DMA Port.
-	uint8_t  rx_channel   //  Receive DMA Channel.
+	uint8_t  rx_channel,   //  Receive DMA Channel.
+	uint8_t  rx_irq
 	) {
 	//  Initialise the STM32 SPI port config.  id=1 refers to SPI1.
 	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
@@ -166,8 +167,6 @@ static SPI_Fails spi_init_port(
 	port->SPIx = SPIx;
 	port->ptr_SPI_DR = ptr_SPI_DR;
 	port->ptr_SPI_I2SCFGR = ptr_SPI_I2SCFGR;
-	port->rx_NVIC_DMA_CHANNEL_IRQ = rx_NVIC_DMA_CHANNEL_IRQ;
-	port->tx_NVIC_DMA_CHANNEL_IRQ = tx_NVIC_DMA_CHANNEL_IRQ;
 
 	port->RCC_SPIx = RCC_SPIx;
 	port->RCC_GPIOx = RCC_GPIOx;
@@ -184,8 +183,11 @@ static SPI_Fails spi_init_port(
 
 	port->tx_dma = tx_dma;
 	port->tx_channel = tx_channel;
+	port->tx_irq = tx_irq;
+
 	port->rx_dma = rx_dma;
 	port->rx_channel = rx_channel;
+	port->rx_irq = rx_irq;
 
 	return SPI_Ok;
 }
@@ -203,8 +205,6 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 	SPI1,
 	&SPI1_DR,
 	&SPI1_I2SCFGR,
-	NVIC_DMA1_CHANNEL2_IRQ,
-	NVIC_DMA1_CHANNEL3_IRQ,
 
 	RCC_SPI1,
 	RCC_GPIOA,
@@ -221,8 +221,11 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 
 	DMA1,
 	DMA_CHANNEL3,
+	NVIC_DMA1_CHANNEL3_IRQ,
+
 	DMA1,
-	DMA_CHANNEL2
+	DMA_CHANNEL2,
+	NVIC_DMA1_CHANNEL2_IRQ
 	);
 	}
 	//  Return the port.
@@ -335,15 +338,13 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	port->rx_event = NULL;
 	port->transceive_status = NONE;
 
-	//  Must configure the port every time or replay will fail.
+	//  Note: Must configure the port every time or replay will fail.
 	//  Reset SPI, SPI_CR1 register cleared, SPI is disabled.
 	spi_reset(port->SPIx);
 
-	//  Explicitly disable I2S in favour of SPI operation.
-	//  SPI1_I2SCFGR = 0;
-	if (port->ptr_SPI_I2SCFGR) {
-		*(port->ptr_SPI_I2SCFGR) = 0;
-	}
+	//  Explicitly disable I2S in favour of SPI operation, i.e. SPI1_I2SCFGR = 0
+	if (port->ptr_SPI_I2SCFGR) { *(port->ptr_SPI_I2SCFGR) = 0; }
+	
 	spi_init_master(
 		port->SPIx,
 		SPI_CR1_BAUDRATE_FPCLK_DIV_256, ////  SPI1 at 281.25 kHz
@@ -388,12 +389,13 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable SPI1 peripheral.
 	spi_enable(port->SPIx);
 	
-	//  SPI1 RX on DMA1 Channel 2
- 	nvic_set_priority(port->rx_NVIC_DMA_CHANNEL_IRQ, 0);
-	nvic_enable_irq(port->rx_NVIC_DMA_CHANNEL_IRQ);
-	//  SPI1 TX on DMA1 Channel 3
-	nvic_set_priority(port->tx_NVIC_DMA_CHANNEL_IRQ, 0);
-	nvic_enable_irq(port->tx_NVIC_DMA_CHANNEL_IRQ);
+	//  Enable interrupts on SPI RX DMA channel.
+ 	nvic_set_priority(port->rx_irq, 0);
+	nvic_enable_irq(port->rx_irq);
+
+	//  Enable interrupts on SPI TX DMA channel.
+	nvic_set_priority(port->tx_irq, 0);
+	nvic_enable_irq(port->tx_irq);
 	return SPI_Ok;
 }
 
@@ -416,8 +418,8 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 	}
 	port->tx_event = NULL;
 	port->rx_event = NULL;
- 	nvic_disable_irq(port->rx_NVIC_DMA_CHANNEL_IRQ);
- 	nvic_disable_irq(port->tx_NVIC_DMA_CHANNEL_IRQ);
+ 	nvic_disable_irq(port->rx_irq);
+ 	nvic_disable_irq(port->tx_irq);
 	return SPI_Ok;
 }
 
