@@ -13,7 +13,7 @@
 #include <stdlib.h>  //  For size_t
 #include <cocoos.h>  //  For Evt_t
 
-#define MAX_SPI_PORTS 3  //  Define 3 SPI ports: SPI1, SPI2, SPI3.
+#define MAX_SPI_PORTS 2  //  Define 2 SPI ports: SPI1, SPI2.
 
 #define USE_16BIT_SPI_TRANSFERS 0  //  Uncomment for 8-bit SPI transfer.
 //  #define USE_16BIT_SPI_TRANSFERS 1  //  Uncomment for 16-bit SPI transfer.
