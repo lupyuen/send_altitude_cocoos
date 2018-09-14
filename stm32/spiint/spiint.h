@@ -53,19 +53,16 @@ enum SPI_Fails {  //  Error codes.
   SPI_End,  //  Insert new codes above.
 };
 
-/* This is for the counter state flag */
-enum cnt_state {
-	TX_UP_RX_HOLD = 0,
-	TX_HOLD_RX_UP,
-	TX_DOWN_RX_HOLD,
-	TX_HOLD_RX_DOWN
-};
+#define MAX_TRANS_STATUS 6  //  How many history entries to keep.
 
-/* This is a global spi state flag */
-enum trans_status {
-	NONE = 0,
-	ONE,
-	DONE
+enum Trans_Status {  //  Status of the SPI transceive request.
+	TRANS_NONE = 0,
+  TRANS_TX_COMPLETE,  //  Transmit Complete
+  TRANS_TX_ERROR,     //  Transmit Error
+  TRANS_TX_HALFDONE,  //  Transmit Half-done
+  TRANS_RX_COMPLETE,  //  Receive Complete
+  TRANS_RX_ERROR,     //  Receive Error
+  TRANS_RX_HALFDONE,  //  Receive Half-done
 };
 
 struct Simulator_Control;
@@ -82,8 +79,9 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
   int tx_len;
   volatile SPI_DATA_TYPE *rx_buf;
   int rx_len;
-  volatile int rx_buf_remainder;  //  Excess of bytes to be received after transmission.
-  volatile trans_status transceive_status;  //  Status of SPI transmit/receive command.
+  volatile int rx_remainder;  //  Excess of bytes to be received after transmission.
+  volatile Trans_Status transceive_status;  //  Status of SPI transmit/receive command.
+  volatile Trans_Status transceive_history[MAX_TRANS_STATUS];  //  History of transceive status.
 
   Evt_t event;                   //  Event to signal to Sensor Task that replay was completed.
   volatile Evt_t *tx_event;      //  If not NULL, signal this event when transmit has been completed.
