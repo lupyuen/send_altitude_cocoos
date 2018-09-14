@@ -20,13 +20,19 @@
 #define systicks millis
 typedef uint32_t TickType_t;
 
+static SPI_Fails spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode);
+static uint32_t get_baudrate(volatile SPI_Control *port);
+static uint32_t get_frequency(volatile SPI_Control *port);
+static uint32_t get_clock_polarity(volatile SPI_Control *port);
+static uint32_t get_clock_phase(volatile SPI_Control *port);
+static uint32_t get_bit_order(volatile SPI_Control *port);
+static void dump_config(volatile SPI_Control *port);
+static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len);
 static inline TickType_t diff_ticks(TickType_t early, TickType_t later);
 static SPI_Fails showError(volatile SPI_Control *port, SPI_Fails fc);
 static const char *get_mode_name(volatile SPI_Control *port);
-static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len);
-static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode);
 
 static SPI_DATA_TYPE dummy_tx_buf[MAX_TRAIL_SIZE];
 static volatile SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the port control.  Volatile because the DMA ISR will lookup this array.
@@ -34,7 +40,7 @@ static volatile SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the por
 //////////////////////////////////////////////////////////////////////////
 //  SPI Transceive Operations
 
-int spi_transceive(
+SPI_Fails spi_transceive(
 	volatile SPI_Control *port, 
 	volatile SPI_DATA_TYPE *tx_buf, 
 	int tx_len, 
@@ -48,18 +54,14 @@ int spi_transceive(
 	//  Replay mode: We replay the transmit/receive SPI command recorded in the simulator trail. Record the received data into the trail.
 	//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-	//  Return -1 in case of error.
+
 	/////if (port->simulator != NULL) { dump_packet("spi >>", tx_buf, tx_len); }
 	//  Check for 0 length in both tx and rx.
-	if ((rx_len < 1) && (tx_len < 1)) { showError(port, SPI_Invalid_Size); return -1; }
+	if ((rx_len < 1) && (tx_len < 1)) { return showError(port, SPI_Invalid_Size); }
 	//  If this is Simulate Mode, return the data received in Replay Mode.
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Simulate) { 
 		return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); 
 	}
-	//  Signal this event when receive is completed.
-	port->rx_event = completed_event;
-	port->tx_event = NULL;
-
 	//  Reset DMA channels.
 	dma_channel_reset(port->tx_dma, port->tx_channel);
 	dma_channel_reset(port->rx_dma, port->rx_channel);
@@ -67,11 +69,14 @@ int spi_transceive(
 	//  Reset SPI data and status registers. Here we assume that the SPI peripheral is NOT busy any longer, i.e. the last activity was verified complete elsewhere in the program.
 	volatile uint8_t temp_data __attribute__ ((unused));
 	while (SPI_SR(port->SPIx) & (SPI_SR_RXNE | SPI_SR_OVR)) { temp_data = SPI_DR(port->SPIx); }
-	// debug_println("spi_transceive2"); // debug_flush();
 
 	//  Remember the last packet.
 	port->tx_buf = tx_buf; port->tx_len = tx_len;
 	port->rx_buf = rx_buf; port->rx_len = rx_len;
+
+	//  Signal this event when receive is completed.
+	port->rx_event = completed_event;
+	port->tx_event = NULL;
 
 	//  Reset status flag appropriately (both 0 case caught above).
 	port->transceive_status = NONE;
@@ -83,51 +88,41 @@ int spi_transceive(
 	 * If tx_len == 0, use a dummy buf and set the tx dma to transfer the same amount as the rx_len, to ensure everything is clocked in
 	 * If 0 < tx_len < rx_len, first do a normal case, then on the tx finished interrupt, set up a new dummy buf tx dma transfer for the remaining required clock cycles (handled in tx dma complete interrupt) */
 	port->rx_buf_remainder = 0;
-	if ((tx_len > 0) && (tx_len < rx_len)) {
-		port->rx_buf_remainder = rx_len - tx_len; 
-	}
-	//  Set up rx dma, note it has higher priority to avoid overrun.
-	if (rx_len > 0) {  //  For rx: Read from SPI port and write into memory.
-		spi_setup_dma(port, port->rx_dma, port->rx_channel, rx_buf, rx_len, true, true);
-	}
-	//  Set up tx dma (must always run tx to get clock signal).
+	if ((tx_len > 0) && (tx_len < rx_len)) { port->rx_buf_remainder = rx_len - tx_len; }
+
+	//  Set up rx DMA, note it has higher priority to avoid overrun.  Read from SPI port and write into memory.
+	if (rx_len > 0) { spi_setup_dma(port, port->rx_dma, port->rx_channel, rx_buf, rx_len, true, true); }
+
+	//  Set up tx DMA (must always run tx to get clock signal). Read from memory and write to SPI port.
 	if (tx_len > 0) {  //  Here we have a regular tx transfer.
-		//  For tx: Read from memory and write to SPI port.
 		spi_setup_dma(port, port->tx_dma, port->tx_channel, tx_buf, tx_len, false, true);
-	} else {
-		//  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
+	} else {  //  TODO: Here we aren't transmitting any real data, use the dummy buffer and set the length to the rx_len to get all rx data in, while not incrementing the memory pointer
 		debug_println("WARNING: spi_transceive tx=0"); debug_flush();
-		//  For rx_remainder: Read from memory and write to SPI port.
 		spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_len, false, false);
 	}
 
-	//  Enable dma transfer complete interrupts.
-	//  TODO: Enable other interrupts.
+	//  Enable DMA transfer complete interrupts.  TODO: Enable other interrupts.
 	if (rx_len > 0) { dma_enable_transfer_complete_interrupt(port->rx_dma, port->rx_channel); }
 	dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
 
-	//  Activate dma channels.
+	//  Activate DMA channels.
 	if (rx_len > 0) { dma_enable_channel(port->rx_dma, port->rx_channel); }
 	dma_enable_channel(port->tx_dma, port->tx_channel);
 
-	//  Enable the spi transfer via dma. This will immediately start the transmission, after which when the receive is complete, the receive dma will activate */
+	//  Enable the SPI transfer via DMA. This will immediately start the transmission, after which when the receive is complete, the receive DMA will activate.
 	if (rx_len > 0) { spi_enable_rx_dma(port->SPIx); }
     spi_enable_tx_dma(port->SPIx);
-
-	int result = 0;
-	// debug_print("spi_transceive returned "); debug_println(result); debug_flush();
-    return result;
+	return SPI_Ok;
 }
 
-int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
-	//  This call blocks until the result is received.  Should only be used for legacy Arduino code.
+SPI_Fails spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
+	//  This function blocks until the result is received.  Should only be used for legacy Arduino code.
 	//  New code should call spi_transceive() and pass an event to be signalled.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-	//  Return -1 in case of error.
 
 	//  Start a transceive.
-	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);
-	if (result < 0) { return result; }
+	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);
+	if (result != SPI_Ok) { return result; }
 	//  Wait for transceive to complete if necessary.
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Replay ) {
 		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
@@ -143,14 +138,12 @@ int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 		simulator_capture_size(port->simulator, rx_len);
 		simulator_capture_packet(port->simulator, rx_buf, rx_len);
 	}
-	return result;
+	return SPI_Ok;
 }
 
 SPI_Fails spi_wait(volatile SPI_Control *port) {
-	/* Wait until transceive complete.
-	* This checks the state flag as well as follows the
-	* procedure on the Reference Manual (RM0008 rev 14
-	* Section 25.3.9 page 692, the note.) */
+	//  Wait until transceive complete, or when timeout is reached. This function blocks and should be avoided in multitasking programs.
+	//  This checks the state flag as well as follows the procedure on the Reference Manual (RM0008 rev 14 Section 25.3.9 page 692, the note.)
 	//  debug_println("spi_wait"); // debug_flush();
 	TickType_t startTime = systicks();
 	while (!spi_is_transceive_completed(port)) {
@@ -219,7 +212,6 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 #ifdef HARDWARE_NSS
 	//  Set NSS management to hardware. Important! You must have a pullup resistor on the NSS line in order that the NSS (/CS) SPI output
  	//  functions correctly as a chip select. The SPI peripheral configures NSS pin as an open drain output.
-	//  debug_println("spi_configure hardware nss"); debug_flush();
 	spi_disable_software_slave_management(port->SPIx);
 	spi_enable_ss_output(port->SPIx);
 #else
@@ -243,12 +235,9 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 }
 
 SPI_Fails spi_close(volatile SPI_Control *port) {
-	//  Disable DMA interrupts for SPI port.
+	//  Close the SPI port.  Disable DMA interrupts for SPI port.
 	if (port->simulator) { debug_print("spi close spi"); debug_println((int) port->id); debug_flush(); }
-	/* Ensure transceive is complete.
-	* This checks the state flag as well as follows the
-	* procedure on the Reference Manual (RM0008 rev 14
-	* Section 25.3.9 page 692, the note.) */
+	//  Ensure transceive is complete.  This checks the state flag as well as follows the procedure on the Reference Manual (RM0008 rev 14 Section 25.3.9 page 692, the note.)
 	TickType_t startTime = systicks();
 	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
@@ -270,7 +259,7 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 
 volatile SPI_Control *isr_port = NULL;  //  For debug only.
 volatile Evt_t *isr_event = NULL;  //  For debug only.
-static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+static SPI_Fails spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
@@ -287,8 +276,8 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	isr_port = NULL;  isr_event = NULL;  //  For debugging only
 
 	//  Send the transceive request and signal the event when completed.
-	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
-	if (result < 0) { return NULL; }
+	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
+	if (result != SPI_Ok) { return NULL; }
 	// for (int i = 0; i < 10; i++) { led_wait(); }
 	// debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
 	// debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
@@ -297,7 +286,7 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	return &port->event;
 }
 
-static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+static SPI_Fails spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Simulate an SPI command.  This means we have just finished the replay, now we simulate to feed the replay SPI data into the driver.
 	//  In case of error, don't simulate, perform the actual transceive.
 	//  if (port->simulator != NULL) { debug_println("spi sim"); debug_flush(); }
@@ -320,10 +309,10 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	memcpy((void *) rx_buf, (const void *) captured_rx_buf, rx_len);
 	//  Set the status to done so we don't wait.
 	port->transceive_status = DONE;
-	return 0;  //  No error.
+	return SPI_Ok;  //  No error.
 }
 
-static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+static SPI_Fails spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
 	//  Error while simulating an SPI command.
 	//  Verify that tx_len and rx_len are same as captured trail.
 	//  Verify that tx_buf is same as captured trail.
@@ -451,20 +440,9 @@ static uint32_t get_clock_phase(volatile SPI_Control *port) {
 }
 
 static uint32_t get_bit_order(volatile SPI_Control *port) {
+	//  Return the SPI bit order given the SPI port settings.
 	if (port->bitOrder == LSBFIRST) { return SPI_CR1_LSBFIRST; }
 	return SPI_CR1_MSBFIRST;
-}
-
-static void dump_config(volatile SPI_Control *port) {
-	uint32_t freq = get_frequency(port);
-	uint32_t baudrate = get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
-	uint32_t clock_polarity = get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
-	uint32_t clock_phase = get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
-	uint32_t bit_order = get_bit_order(port);			 //  e.g. SPI_CR1_MSBFIRST
-	debug_print("spi set baud "); debug_print((int) port->speedMaximum); debug_print(" -> "); debug_print((int) baudrate);
-	debug_print(", cpol "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_polarity);
-	debug_print(", cpha "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_phase);
-	debug_print(", order "); debug_print((int) port->bitOrder); debug_print(" -> "); debug_println((int) bit_order);	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -680,15 +658,15 @@ static volatile uint8_t rx_buffer[MAX_SPI_PORTS];
 void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	//  Used by BME280Spi.cpp
 	//  Get the SPI port from the settings.  If not specified, use the last digitalWrite() pin.
-	uint8_t portID = settings.spi_port;
+	uint8_t portID = settings.port;
 	if (portID < 1 || portID > MAX_SPI_PORTS) { portID = currentSPIPort; }
 	//  debug_print("spiint begin port "); debug_println((int) portID);  debug_flush();
 	if (portID < 1 || portID > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }
 	currentSPIPort = portID;
 	volatile SPI_Control *port = &allPorts[portID - 1];
 	//  SPI setup should have been called in bme280.cpp.  TODO: Verify SPI port number.
-	//  spi_setup();
-	spi_configure(port, settings.speedMaximum, settings.bitOrder, settings.dataMode);
+	SPI_Fails result = spi_configure(port, settings.speedMaximum, settings.bitOrder, settings.dataMode);
+	if (result != SPI_Ok) { return; }
 	spi_open(port);
 }
 
@@ -696,13 +674,13 @@ uint8_t SPIInterface::transfer(uint8_t data) {
   	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Return the byte received.  Used by BME280Spi.cpp
 	//  debug_print("spiint transfer port "); debug_println((int) currentSPIPort);  debug_flush();
 	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return 0; }
-	volatile uint8_t portID = currentSPIPort;  //  Remember in case it changes while waiting.
+	volatile uint8_t portID = currentSPIPort;
 	volatile SPI_Control *port = &allPorts[portID - 1];
 
 	tx_buffer[portID - 1] = data;
 	rx_buffer[portID - 1] = 0x22;  //  Means uninitialised.
-	int result = spi_transceive_wait(port, &tx_buffer[portID - 1], 1, &rx_buffer[portID - 1], 1);
-	if (result < 0) { return 0; }
+	SPI_Fails result = spi_transceive_wait(port, &tx_buffer[portID - 1], 1, &rx_buffer[portID - 1], 1);
+	if (result != SPI_Ok) { return 0; }
 	return rx_buffer[portID - 1];
 }
 
@@ -728,7 +706,7 @@ void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 
 SPIInterfaceSettings::SPIInterfaceSettings(uint32_t speedMaximum0, uint8_t bitOrder0, uint8_t dataMode0) {
 	//  Used by BME280Spi.cpp
-	spi_port = 0;  //  Default to unknown port.
+	port = 0;  //  Default to unknown port.
 	speedMaximum = speedMaximum0;
 	bitOrder = bitOrder0;
 	dataMode = dataMode0;
@@ -736,6 +714,90 @@ SPIInterfaceSettings::SPIInterfaceSettings(uint32_t speedMaximum0, uint8_t bitOr
 
 //////////////////////////////////////////////////////////////////////////
 //  Logging and Error Handling Functions
+
+static void dump_frequency(uint32_t freq);
+
+static void dump_config(volatile SPI_Control *port) {
+	//  Dump the SPI port config to console.
+	uint32_t freq = get_frequency(port);
+	uint32_t baudrate = get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
+	uint32_t clock_polarity = get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
+	uint32_t clock_phase = get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
+	uint32_t bit_order = get_bit_order(port);			 //  e.g. SPI_CR1_MSBFIRST
+
+	debug_print("  freq "); dump_frequency(port->speedMaximum); debug_print(" -> "); dump_frequency(freq);
+	debug_print(" ["); debug_print((int) baudrate); debug_println("]");
+
+	debug_print("  pol "); debug_print((int) port->dataMode); debug_print(" -> "); 
+	debug_println(clock_polarity == SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE ? "clk0" 
+		: clock_polarity == SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE ? "clk1"
+		: "*** UNKNOWN");
+
+	debug_print("  phase "); debug_print((int) port->dataMode); debug_print(" -> "); 
+	debug_println(clock_phase == SPI_CR1_CPHA_CLK_TRANSITION_1 ? "trn1"
+		: clock_polarity == SPI_CR1_CPHA_CLK_TRANSITION_2 ? "trn2"
+		: "*** UNKNOWN");
+
+	debug_print("  order "); debug_print((int) port->bitOrder); debug_print(" -> "); 
+	debug_println(bit_order == SPI_CR1_MSBFIRST ? "msb" 
+		: bit_order == SPI_CR1_LSBFIRST ? "lsb"
+		: "*** UNKNOWN");
+}
+
+static void dump_frequency(uint32_t freq) {
+	//  Dump the frequency to console e.g. 1.12M, 562.5k.
+	if (freq >= 1000000) { debug_print((float) (freq / 1000000.0)); debug_print("M"); }
+	else if (freq >= 1000) { debug_print((float) (freq / 1000.0)); debug_print("k"); }
+	else { debug_print((int) freq); }
+}
+
+SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
+	//  Dump the simulated commands to console.
+	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
+	const char *title = get_mode_name(port);
+	int i = port->simulator->index;
+	port->simulator->index = 0;
+	debug_print(title); debug_print(" ");
+	for (;;) {
+		//  Read the captured SPI packet for send and receive.
+		int tx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
+		int rx_len = simulator_replay_size(port->simulator);
+		volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
+		//  Stop if the packet was invalid.
+		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
+		//  Dump the packet.
+		dump_packet(">>", tx_buf, tx_len);
+		dump_packet("<<", rx_buf, rx_len);
+	}
+	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
+	debug_print(" / "); debug_println((int) (port->simulator->length)); debug_flush();
+	port->simulator->index = i;
+	return SPI_Ok;
+}
+
+SPI_Fails spi_dump_packet(volatile SPI_Control *port) {
+	//  Dump the last SPI packet to console.
+	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
+	const char *title = get_mode_name(port);
+	dump_packets(title, port->tx_buf, port->tx_len, port->rx_buf, port->rx_len);
+	return SPI_Ok;
+}
+
+static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
+	//  Print the contents of the packets.
+	debug_print(title); debug_print(" >> ");
+	for (int i = 0; i < tx_len; i++) { debug_printhex(tx_buf[i]); debug_print(" "); }
+	debug_print("<< ");
+	for (int i = 0; i < rx_len; i++) { debug_printhex(rx_buf[i]); debug_print(" "); } 
+	debug_println(""); // debug_flush();
+}
+
+static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
+	//  Print the contents of the packet.
+	debug_print(title); debug_print(" ");
+	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
+}
 
 //  Messages for each fail code.
 static const char *spi_msg[] = {
@@ -781,54 +843,6 @@ static const char *get_mode_name(volatile SPI_Control *port) {
 		default: title = "unknown";
 	}
 	return title;
-}
-
-static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len) {
-	//  Print the contents of the packet.
-	debug_print(title); debug_print(" ");
-	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
-}
-
-static void dump_packets(const char *title, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
-	//  Print the contents of the packets.
-	debug_print(title); debug_print(" >> ");
-	for (int i = 0; i < tx_len; i++) { debug_printhex(tx_buf[i]); debug_print(" "); }
-	debug_print("<< ");
-	for (int i = 0; i < rx_len; i++) { debug_printhex(rx_buf[i]); debug_print(" "); } 
-	debug_println(""); // debug_flush();
-}
-
-SPI_Fails spi_dump_packet(volatile SPI_Control *port) {
-	//  Dump the last SPI packet to console.
-	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
-	const char *title = get_mode_name(port);
-	dump_packets(title, port->tx_buf, port->tx_len, port->rx_buf, port->rx_len);
-	return SPI_Ok;
-}
-
-SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
-	//  Dump the simulated commands to console.
-	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
-	const char *title = get_mode_name(port);
-	int i = port->simulator->index;
-	port->simulator->index = 0;
-	debug_print(title); debug_print(" ");
-	for (;;) {
-		//  Read the captured SPI packet for send and receive.
-		int tx_len = simulator_replay_size(port->simulator);
-		volatile uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
-		int rx_len = simulator_replay_size(port->simulator);
-		volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
-		//  Stop if the packet was invalid.
-		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
-		//  Dump the packet.
-		dump_packet(">>", tx_buf, tx_len);
-		dump_packet("<<", rx_buf, rx_len);
-	}
-	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
-	debug_print(" / "); debug_println((int) (port->simulator->length)); debug_flush();
-	port->simulator->index = i;
-	return SPI_Ok;
 }
 
 //////////////////////////////////////////////////////////////////////////
