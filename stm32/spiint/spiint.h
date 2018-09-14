@@ -57,12 +57,12 @@ enum SPI_Fails {  //  Error codes.
 
 enum Trans_Status {  //  Status of the SPI transceive request.
 	TRANS_NONE = 0,
+  TRANS_TX_HALFDONE,  //  Transmit Half-done
   TRANS_TX_COMPLETE,  //  Transmit Complete
   TRANS_TX_ERROR,     //  Transmit Error
-  TRANS_TX_HALFDONE,  //  Transmit Half-done
+  TRANS_RX_HALFDONE,  //  Receive Half-done
   TRANS_RX_COMPLETE,  //  Receive Complete
   TRANS_RX_ERROR,     //  Receive Error
-  TRANS_RX_HALFDONE,  //  Receive Half-done
 };
 
 struct Simulator_Control;
