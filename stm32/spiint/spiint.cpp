@@ -196,7 +196,7 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
 	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
 	//  if (port->simulator) 
-	{ debug_print("spi open spi"); debug_println((int) port->id); debug_flush(); }
+	{ debug_print("spi open spi"); debug_println((int) port->id); dump_config(port); debug_flush(); }
 	port->tx_event = NULL;
 	port->rx_event = NULL;
 	port->transceive_status = NONE;
@@ -209,41 +209,27 @@ SPI_Fails spi_open(volatile SPI_Control *port) {
 	if (port->ptr_SPI_I2SCFGR) { *(port->ptr_SPI_I2SCFGR) = 0; }
 
 	//  Set the SPI port baudrate, clock polarity, clock phase and bit order.
-	uint32_t baudrate = spi_get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
-	uint32_t clock_polarity = spi_get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
-	uint32_t clock_phase = spi_get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
-	uint32_t bitOrder = (port->bitOrder == MSBFIRST) ? SPI_CR1_MSBFIRST : SPI_CR1_LSBFIRST;
-	spi_init_master(port->SPIx, baudrate, clock_polarity, clock_phase, SPI_DFF, bitOrder);
-	debug_print("spi set baud "); debug_print((int) port->speedMaximum); debug_print(" -> "); debug_print((int) baudrate);
-	debug_print(", cpol "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_polarity);
-	debug_print(", cpha "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_phase);
-	debug_print(", order "); debug_print((int) port->bitOrder); debug_print(" -> "); debug_println((int) bitOrder);
+	uint32_t baudrate = get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
+	uint32_t clock_polarity = get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
+	uint32_t clock_phase = get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
+	uint32_t bit_order = get_bit_order(port);			 //  e.g. SPI_CR1_MSBFIRST
+	spi_init_master(port->SPIx, baudrate, clock_polarity, clock_phase, SPI_DFF, bit_order);
 
 #define HARDWARE_NSS //  Software NSS doesn't work.
 #ifdef HARDWARE_NSS
-	//  Set NSS management to hardware.
-	//  Important!  	You must have a pullup resistor on the NSS
- 	//  line in order that the NSS (/CS) SPI output
- 	//  functions correctly as a chip select. The
- 	//  SPI peripheral configures NSS pin as an
- 	//  open drain output.
+	//  Set NSS management to hardware. Important! You must have a pullup resistor on the NSS line in order that the NSS (/CS) SPI output
+ 	//  functions correctly as a chip select. The SPI peripheral configures NSS pin as an open drain output.
 	//  debug_println("spi_configure hardware nss"); debug_flush();
-	spi_disable_software_slave_management(SPI1);
-	spi_enable_ss_output(SPI1);
+	spi_disable_software_slave_management(port->SPIx);
+	spi_enable_ss_output(port->SPIx);
 #else
-	/*
-	 * Set NSS management to software.
-	 *
-	 * Note:
-	 * Setting nss high is very important, even if we are controlling the GPIO
-	 * ourselves this bit needs to be at least set to 1, otherwise the spi
-	 * peripheral will not send any data out.
-	 */
-	spi_enable_software_slave_management(SPI1);
-	spi_set_nss_high(SPI1);
+	//  Set NSS management to software. Note: Setting nss high is very important, even if we are controlling the GPIO
+	//  ourselves this bit needs to be at least set to 1, otherwise the spi peripheral will not send any data out.
+	spi_enable_software_slave_management(port->SPIx);
+	spi_set_nss_high(port->SPIx);
 #endif  //  NSS_HARDWARE
 
-	//  Enable SPI1 peripheral.
+	//  Enable SPI peripheral.
 	spi_enable(port->SPIx);
 	
 	//  Enable interrupts on SPI RX DMA channel.
@@ -416,20 +402,33 @@ const uint32_t baudrateDivisors[][3] = {
 	{ 0, 0, 0 }  //  Last row.
 };
 
-static uint32_t spi_get_baudrate(volatile SPI_Control *port) {
-	//  Return the SPI baudrate given the max speed in the port settings.
-	uint32_t baudrate = 0;
+static const uint32_t *match_baudrate(volatile SPI_Control *port) {
+	//  Return the SPI baudrate row given the max speed in the port settings.
+	const uint32_t *row = baudrateDivisors[0];
 	for (int i = 0; baudrateDivisors[i][Baudrate_Col] > 0; i++) {
 		//  Get the frequency for the SPI port.
-		const uint32_t *row = baudrateDivisors[i];
-		uint32_t baudrate = row[Baudrate_Col];
+		row = baudrateDivisors[i];
 		const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
-		if (port->speedMaximum >= freq) { return baudrate; }
+		if (port->speedMaximum >= freq) { return row; }
 	}
-	return baudrate;  //  No match. Return the lowest baudrate.
+	return row;  //  No match. Return the lowest baudrate.
 }
 
-static uint32_t spi_get_clock_polarity(volatile SPI_Control *port) {
+static uint32_t get_baudrate(volatile SPI_Control *port) {
+	//  Return the SPI baudrate given the max speed in the port settings.
+	const uint32_t *row = match_baudrate(port);
+	const uint32_t baudrate = row[Baudrate_Col];
+	return baudrate;
+}
+
+static uint32_t get_frequency(volatile SPI_Control *port) {
+	//  Return the SPI frequency given the max speed in the port settings.
+	const uint32_t *row = match_baudrate(port);
+	const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
+	return freq;
+}
+
+static uint32_t get_clock_polarity(volatile SPI_Control *port) {
 	//  Return the SPI Clock Polarity (CPOL) given the SPI mode in the port settings.
 	switch (port->dataMode) {
 		case SPI_MODE0: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
@@ -440,7 +439,7 @@ static uint32_t spi_get_clock_polarity(volatile SPI_Control *port) {
 	}
 }
 
-static uint32_t spi_get_clock_phase(volatile SPI_Control *port) {
+static uint32_t get_clock_phase(volatile SPI_Control *port) {
 	//  Return the SPI Clock Phase (CPHA) given the SPI mode in the port settings.
 	switch (port->dataMode) {
 		case SPI_MODE0: return SPI_CR1_CPHA_CLK_TRANSITION_1;
@@ -449,6 +448,23 @@ static uint32_t spi_get_clock_phase(volatile SPI_Control *port) {
 		case SPI_MODE3: return SPI_CR1_CPHA_CLK_TRANSITION_2;
 		default: return SPI_CR1_CPHA_CLK_TRANSITION_1;
 	}
+}
+
+static uint32_t get_bit_order(volatile SPI_Control *port) {
+	if (port->bitOrder == LSBFIRST) { return SPI_CR1_LSBFIRST; }
+	return SPI_CR1_MSBFIRST;
+}
+
+static void dump_config(volatile SPI_Control *port) {
+	uint32_t freq = get_frequency(port);
+	uint32_t baudrate = get_baudrate(port);  	   		 //  e.g. SPI_CR1_BAUDRATE_FPCLK_DIV_256
+	uint32_t clock_polarity = get_clock_polarity(port);  //  e.g. SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE
+	uint32_t clock_phase = get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
+	uint32_t bit_order = get_bit_order(port);			 //  e.g. SPI_CR1_MSBFIRST
+	debug_print("spi set baud "); debug_print((int) port->speedMaximum); debug_print(" -> "); debug_print((int) baudrate);
+	debug_print(", cpol "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_polarity);
+	debug_print(", cpha "); debug_print((int) port->dataMode); debug_print(" -> "); debug_print((int) clock_phase);
+	debug_print(", order "); debug_print((int) port->bitOrder); debug_print(" -> "); debug_println((int) bit_order);	
 }
 
 //////////////////////////////////////////////////////////////////////////
