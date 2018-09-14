@@ -394,7 +394,7 @@ const uint32_t baudrateDivisors[][3] = {
 static const uint32_t *match_baudrate(volatile SPI_Control *port) {
 	//  Return the SPI baudrate row given the max speed in the port settings.
 	const uint32_t *row = baudrateDivisors[0];
-	for (int i = 0; baudrateDivisors[i][Baudrate_Col] > 0; i++) {
+	for (int i = 0; baudrateDivisors[i][SPI1_Frequency_Col] > 0; i++) {
 		//  Get the frequency for the SPI port.
 		row = baudrateDivisors[i];
 		const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
@@ -550,6 +550,10 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 
 //////////////////////////////////////////////////////////////////////////
 //  DMA Interrupt Service Routines
+
+//  DMA_TCIF — Transfer Complete Interrupt Flag
+//  DMA_TEIF — Transfer Error Interrupt Flag
+//  DMA_THIF — Transfer Half-done Interrupt Flag
 
 static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
 static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
@@ -725,6 +729,20 @@ static void dump_config(volatile SPI_Control *port) {
 	uint32_t clock_phase = get_clock_phase(port);     	 //  e.g. SPI_CR1_CPHA_CLK_TRANSITION_1
 	uint32_t bit_order = get_bit_order(port);			 //  e.g. SPI_CR1_MSBFIRST
 
+	//  Don't dump if same as last dump.
+	static uint32_t last_freq = 0;
+	static uint32_t last_baudrate = 0;
+	static uint32_t last_clock_polarity = 0;
+	static uint32_t last_clock_phase = 0;
+	static uint32_t last_bit_order = 0;
+	if (freq == last_freq && baudrate == last_baudrate && clock_polarity == last_clock_polarity && clock_phase == last_clock_phase
+		&& bit_order == last_bit_order) { return; }
+	last_freq = freq;
+	last_baudrate = baudrate;
+	last_clock_polarity = clock_polarity;
+	last_clock_phase = clock_phase;
+	last_bit_order = bit_order;
+
 	debug_print("  freq "); dump_frequency(port->speedMaximum); debug_print(" -> "); dump_frequency(freq);
 	debug_print(" ["); debug_print((int) baudrate); debug_println("]");
 
@@ -742,13 +760,6 @@ static void dump_config(volatile SPI_Control *port) {
 	debug_println(bit_order == SPI_CR1_MSBFIRST ? "msb" 
 		: bit_order == SPI_CR1_LSBFIRST ? "lsb"
 		: "*** UNKNOWN");
-}
-
-static void dump_frequency(uint32_t freq) {
-	//  Dump the frequency to console e.g. 1.12M, 562.5k.
-	if (freq >= 1000000) { debug_print((float) (freq / 1000000.0)); debug_print("M"); }
-	else if (freq >= 1000) { debug_print((float) (freq / 1000.0)); debug_print("k"); }
-	else { debug_print((int) freq); }
 }
 
 SPI_Fails spi_dump_trail(volatile SPI_Control *port) {
@@ -797,6 +808,13 @@ static void dump_packet(const char *title, volatile SPI_DATA_TYPE *buf, int len)
 	//  Print the contents of the packet.
 	debug_print(title); debug_print(" ");
 	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
+}
+
+static void dump_frequency(uint32_t freq) {
+	//  Dump the frequency to console e.g. 1.12M, 562.5k.
+	if (freq >= 1000000) { debug_print((float) (freq / 1000000.0)); debug_print("M"); }
+	else if (freq >= 1000) { debug_print((float) (freq / 1000.0)); debug_print("k"); }
+	else { debug_print((int) freq); }
 }
 
 //  Messages for each fail code.
