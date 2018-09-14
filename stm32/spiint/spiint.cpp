@@ -24,6 +24,7 @@ static SPI_Fails spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE
 static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode);
 static void enable_interrupts(uint32_t dma, uint8_t channel);
 static void disable_interrupts(uint32_t dma, uint8_t channel);
+static void update_transceive_status(volatile SPI_Control *port, Trans_Status new_status = (Trans_Status) -1);
 static uint32_t get_baudrate(volatile SPI_Control *port);
 static uint32_t get_frequency(volatile SPI_Control *port);
 static uint32_t get_clock_polarity(volatile SPI_Control *port);
@@ -566,7 +567,6 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
 static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
 static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel);
-static void update_transceive_status(volatile SPI_Control *port, Trans_Status new_status = (Trans_Status) -1);
 static void add_transceive_status(volatile SPI_Control *port, Trans_Status new_status);
 
 //  SPI1 receive interrupt on DMA port 1 channel 2.
