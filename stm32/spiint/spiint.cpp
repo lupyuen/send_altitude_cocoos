@@ -133,8 +133,7 @@ SPI_Fails spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE
 		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
 	} else {
 		//  If no simulator, or simulator is in other modes, wait for transceive response.
-		spi_wait(port);
-		dump_history(port);
+		spi_wait(port);  dump_history(port);
 		if (port->simulator) { dump_packets(get_mode_name(port), tx_buf, tx_len, rx_buf, rx_len); }
 	}
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Capture) {
@@ -154,22 +153,35 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	TickType_t startTime = systicks();
 	while (!spi_is_transceive_completed(port)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
 	}
 	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
 	}
 	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
 	}
 	return SPI_Ok;
 }
 
 bool spi_is_transceive_completed(volatile SPI_Control *port) {
-    //  Return true if last SPI command was completed.
-	if (port->transceive_status == TRANS_RX_COMPLETE) return true;
+    //  Return true if last SPI command was completed successfully or with error.
+	if (port->transceive_status == TRANS_RX_COMPLETE
+		|| port->transceive_status == TRANS_TIMEOUT
+		|| port->transceive_status == TRANS_TX_ERROR
+		|| port->transceive_status == TRANS_RX_ERROR) {
+		return true;
+	}
+	return false;
+}
+
+bool spi_is_transceive_successful(volatile SPI_Control *port) {
+    //  Return true if last SPI command was completed successfully.
+	if (port->transceive_status == TRANS_RX_COMPLETE) {
+		return true;
+	}
 	return false;
 }
 
@@ -263,8 +275,6 @@ SPI_Fails spi_close(volatile SPI_Control *port) {
 //////////////////////////////////////////////////////////////////////////
 //  SPI Command Simulation
 
-volatile SPI_Control *isr_port = NULL;  //  For debug only.
-volatile Evt_t *isr_event = NULL;  //  For debug only.
 static SPI_Fails spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
@@ -279,14 +289,10 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	//  Stop if the packet was invalid.
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
 	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
-	isr_port = NULL;  isr_event = NULL;  //  For debugging only
 
 	//  Send the transceive request and signal the event when completed.
 	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
 	if (result != SPI_Ok) { return NULL; }
-	// for (int i = 0; i < 10; i++) { led_wait(); }
-	// debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
-	// debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
 	return &port->event;
@@ -579,7 +585,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle SPI transmit interrupt on DMA.  Don't call any external functions.
 	volatile SPI_Control *port = findPortByDMA(dma, channel);  //  Find the port.
 
-	//  Handle transmit half-done.
+	//  Handle transmit half-done.  Do nothing.
 	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
 		if (port) { update_transceive_status(port, TRANS_TX_HALFDONE); }
@@ -588,6 +594,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle transmit complete.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TCIF);
+		//  Disable interrupts and shutdown DMA.
 		disable_interrupts(dma, channel);
 		spi_disable_tx_dma(spi);
 		dma_disable_channel(dma, channel);
@@ -613,28 +620,37 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle transmit error.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TEIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_TEIF);
-		if (port) { update_transceive_status(port, TRANS_TX_ERROR); }
+		//  Disable interrupts and shutdown DMA.
+		disable_interrupts(dma, channel);
+		spi_disable_tx_dma(spi);
+		dma_disable_channel(dma, channel);
+		if (port) {  //  Update the error status.
+			update_transceive_status(port, TRANS_TX_ERROR);
+			//  Send event signals that transmit and receive are done.
+			if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
+			if (port->rx_event != NULL) { event_ISR_signal(*port->rx_event); }
+		}
 	}
 }
 
 static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {  
 	//  Handle SPI receive interrupt on DMA.  Don't call any external functions.
-	volatile SPI_Control *port = findPortByDMA(dma, channel);  isr_port = port;  //  Find the port.
+	volatile SPI_Control *port = findPortByDMA(dma, channel);  //  Find the port.
 
-	//  Handle receive half-done.
+	//  Handle receive half-done.  Do nothing.
 	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
 		if (port) { update_transceive_status(port, TRANS_RX_HALFDONE); }
 	}
 
 	//  Handle receive complete.
-	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) { 
+	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TCIF);
+		//  Disable interrupts and shutdown DMA.
 		disable_interrupts(dma, channel);
 		spi_disable_rx_dma(spi);
 		dma_disable_channel(dma, channel);
-		if (port) {
-			//  Update the receive complete status.
+		if (port) {  //  Update the receive complete status.
 			update_transceive_status(port);
 			//  For simulator replay: Signal to Sensor Task when receive is done.
 			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
@@ -644,7 +660,15 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle receive error.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TEIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_TEIF);
-		if (port) { update_transceive_status(port, TRANS_RX_ERROR); }
+		//  Disable interrupts and shutdown DMA.
+		disable_interrupts(dma, channel);
+		spi_disable_rx_dma(spi);
+		dma_disable_channel(dma, channel);
+		if (port) {  //  Update the error status.
+			update_transceive_status(port, TRANS_RX_ERROR); 
+			//  For simulator replay: Signal to Sensor Task when receive is done.
+			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
+		}
 	}
 }
 
@@ -686,7 +710,12 @@ static void update_transceive_status(volatile SPI_Control *port, Trans_Status ne
 		//  Record the changed status.
 		if (port->transceive_status != old_status) { add_transceive_status(port, port->transceive_status); }
 	} else {
-		//  Record the new status.
+		//  Record the new status if error.  Ignore the half done status.
+		if (new_status == TRANS_TIMEOUT
+			|| new_status == TRANS_TX_ERROR
+			|| new_status == TRANS_RX_ERROR) {
+			port->transceive_status = new_status;
+		}
 		add_transceive_status(port, new_status);
 	}
 }
