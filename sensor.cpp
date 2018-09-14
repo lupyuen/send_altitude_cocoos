@@ -86,6 +86,7 @@ void sensor_task(void) {
 
     //  Begin to capture, replay or simulate the sensor SPI commands.
     simulator_open(&context->sensor->simulator);
+    context->msg.count = 0;  //  Assume that sensor has no data available.
 
     //  If this is the first time we are polling the sensor, or if this is a simulated sensor...
     if (simulator_should_poll_sensor(&context->sensor->simulator)) {
@@ -93,7 +94,6 @@ void sensor_task(void) {
       context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
     } else {  //  Else we are replaying a captured SPI command.
-      context->msg.count = 0;  //  Don't return the replay message yet until the simulation next round.
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
