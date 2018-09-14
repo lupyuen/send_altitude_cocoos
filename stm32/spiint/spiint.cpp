@@ -580,6 +580,12 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle SPI transmit interrupt on DMA.  Don't call any external functions.
 	volatile SPI_Control *port = findPortByDMA(dma, channel);  //  Find the port.
 
+	//  Handle transmit half-done.
+	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
+		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
+		if (port) { update_transceive_status(port, TRANS_TX_HALFDONE); }
+	}
+	
 	//  Handle transmit complete.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TCIF);
@@ -610,16 +616,17 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TEIF);
 		if (port) { update_transceive_status(port, TRANS_TX_ERROR); }
 	}
-	//  Handle transmit half-done.
-	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
-		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
-		if (port) { update_transceive_status(port, TRANS_TX_HALFDONE); }
-	}
 }
 
 static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {  
 	//  Handle SPI receive interrupt on DMA.  Don't call any external functions.
 	volatile SPI_Control *port = findPortByDMA(dma, channel);  isr_port = port;  //  Find the port.
+
+	//  Handle receive half-done.
+	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
+		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
+		if (port) { update_transceive_status(port, TRANS_RX_HALFDONE); }
+	}
 
 	//  Handle receive complete.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) { 
@@ -642,11 +649,6 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	if (dma_get_interrupt_flag(dma, channel, DMA_TEIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_TEIF);
 		if (port) { update_transceive_status(port, TRANS_RX_ERROR); }
-	}
-	//  Handle receive half-done.
-	if (dma_get_interrupt_flag(dma, channel, DMA_HTIF)) { 
-		dma_clear_interrupt_flags(dma, channel, DMA_HTIF);
-		if (port) { update_transceive_status(port, TRANS_RX_HALFDONE); }
 	}
 }
 
