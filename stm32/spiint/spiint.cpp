@@ -34,7 +34,14 @@ static volatile SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the por
 //////////////////////////////////////////////////////////////////////////
 //  SPI Transceive Operations
 
-int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
+int spi_transceive(
+	volatile SPI_Control *port, 
+	volatile SPI_DATA_TYPE *tx_buf, 
+	int tx_len, 
+	volatile SPI_DATA_TYPE *rx_buf, 
+	int rx_len, 
+	volatile Evt_t *completed_event  //  Event to be signalled upon completing the request.  NULL if no event.
+	) {	
 	//  Send an SPI command to transmit and receive SPI data.  
 	//  If the simulator is in...
 	//  Capture Mode: We capture the transmit/receive data into the simulator trail.
@@ -49,6 +56,10 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Simulate) { 
 		return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); 
 	}
+	//  Signal this event when receive is completed.
+	port->rx_event = completed_event;
+	port->tx_event = NULL;
+
 	//  Reset DMA channels.
 	dma_channel_reset(port->tx_dma, port->tx_channel);
 	dma_channel_reset(port->rx_dma, port->rx_channel);
@@ -109,11 +120,13 @@ int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, i
 }
 
 int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {	
+	//  This call blocks until the result is received.  Should only be used for legacy Arduino code.
+	//  New code should call spi_transceive() and pass an event to be signalled.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 	//  Return -1 in case of error.
 
 	//  Start a transceive.
-	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
+	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);
 	if (result < 0) { return result; }
 	//  Wait for transceive to complete if necessary.
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Replay ) {
@@ -177,60 +190,6 @@ bool spi_is_transceive_completed(volatile SPI_Control *port) {
 #define SPI_MSIZE DMA_CCR_MSIZE_8BIT
 #define SPI_DFF SPI_CR1_DFF_8BIT
 #endif
-
-#define kHz 1000
-#define MHz 1000000
-#define Baudrate_Col 0
-#define SPI1_Frequency_Col 1  //  Same as SPI ID
-#define SPI2_Frequency_Col 2  //  Same as SPI ID
-
-const uint32_t baudrateDivisors[][3] = {
-	//  Divisor Macro, 				  SPI1 Frequency,             SPI2 Frequency
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_2,   (uint32_t) (36 * MHz), 	  (uint32_t) (18 * MHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_4,   (uint32_t) (18 * MHz), 	  (uint32_t) (9 * MHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_8,   (uint32_t) (9 * MHz), 	  (uint32_t) (4.5 * MHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_16,  (uint32_t) (4.5 * MHz), 	  (uint32_t) (2.25 * MHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_32,  (uint32_t) (2.25 * MHz), 	  (uint32_t) (1.125 * MHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_64,  (uint32_t) (1.125 * MHz),   (uint32_t) (562.5 * kHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_128, (uint32_t) (562.5 * kHz),   (uint32_t) (281.25 * kHz) },
-	{ SPI_CR1_BAUDRATE_FPCLK_DIV_256, (uint32_t) (281.25 * kHz),  (uint32_t) (140.625 * kHz) },
-	{ 0, 0, 0 }  //  Last row.
-};
-
-static uint32_t spi_get_baudrate(volatile SPI_Control *port) {
-	//  Return the SPI baudrate given the max speed in the port settings.
-	uint32_t baudrate = 0;
-	for (int i = 0; baudrateDivisors[i][Baudrate_Col] > 0; i++) {
-		//  Get the frequency for the SPI port.
-		const uint32_t *row = baudrateDivisors[i];
-		uint32_t baudrate = row[Baudrate_Col];
-		const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
-		if (port->speedMaximum >= freq) { return baudrate; }
-	}
-	return baudrate;  //  No match. Return the lowest baudrate.
-}
-
-static uint32_t spi_get_clock_polarity(volatile SPI_Control *port) {
-	//  Return the SPI Clock Polarity (CPOL) given the SPI mode in the port settings.
-	switch (port->dataMode) {
-		case SPI_MODE0: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
-		case SPI_MODE1: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
-		case SPI_MODE2: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
-		case SPI_MODE3: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
-		default: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
-	}
-}
-
-static uint32_t spi_get_clock_phase(volatile SPI_Control *port) {
-	//  Return the SPI Clock Phase (CPHA) given the SPI mode in the port settings.
-	switch (port->dataMode) {
-		case SPI_MODE0: return SPI_CR1_CPHA_CLK_TRANSITION_1;
-		case SPI_MODE1: return SPI_CR1_CPHA_CLK_TRANSITION_2;
-		case SPI_MODE2: return SPI_CR1_CPHA_CLK_TRANSITION_1;
-		case SPI_MODE3: return SPI_CR1_CPHA_CLK_TRANSITION_2;
-		default: return SPI_CR1_CPHA_CLK_TRANSITION_1;
-	}
-}
 
 SPI_Fails spi_open(volatile SPI_Control *port) {
 	//  Enable DMA interrupt for SPI port.
@@ -338,21 +297,18 @@ volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port) {
 	volatile uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
 	//  Stop if the packet was invalid.
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
-	//  Signal when rx_completed.
-	volatile Evt_t *event = &port->event;
-	port->rx_event = event;
 	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
 	isr_port = NULL;  isr_event = NULL;  //  For debugging only
 
 	//  Send the transceive request and signal the event when completed.
-	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
+	int result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
 	if (result < 0) { return NULL; }
 	// for (int i = 0; i < 10; i++) { led_wait(); }
 	// debug_print("*** isr_port: "); debug_println(isr_port == NULL ? "NULL" : "OK");
 	// debug_print("*** isr_event: "); debug_println(isr_event == NULL ? "NULL" : "OK");
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
-	return event;
+	return &port->event;
 }
 
 static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len) {
@@ -360,7 +316,7 @@ static int spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_b
 	//  In case of error, don't simulate, perform the actual transceive.
 	//  if (port->simulator != NULL) { debug_println("spi sim"); debug_flush(); }
 	if (port->simulator == NULL) {
-		return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);  //  Don't simulate.
+		return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);  //  Don't simulate.
 	}
 	int captured_tx_len = simulator_simulate_size(port->simulator);
 	volatile uint8_t *captured_tx_buf = simulator_simulate_packet(port->simulator, captured_tx_len);
@@ -392,7 +348,7 @@ static int spi_simulate_error(volatile SPI_Control *port, SPI_Fails fc, volatile
 	if (port->simulator != NULL) {
 		port->simulator->mode = Simulator_Mismatch;
 	}
-	return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len);
+	return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -439,6 +395,60 @@ static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t
 	dma_set_memory_size(dma, channel, SPI_MSIZE);
 	dma_set_priority(dma, channel, DMA_CCR_PL_HIGH);
 	return SPI_Ok;
+}
+
+#define kHz 1000
+#define MHz 1000000
+#define Baudrate_Col 0
+#define SPI1_Frequency_Col 1  //  Same as SPI ID
+#define SPI2_Frequency_Col 2  //  Same as SPI ID
+
+const uint32_t baudrateDivisors[][3] = {
+	//  Divisor Macro, 				  SPI1 Frequency,             SPI2 Frequency
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_2,   (uint32_t) (36 * MHz), 	  (uint32_t) (18 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_4,   (uint32_t) (18 * MHz), 	  (uint32_t) (9 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_8,   (uint32_t) (9 * MHz), 	  (uint32_t) (4.5 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_16,  (uint32_t) (4.5 * MHz), 	  (uint32_t) (2.25 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_32,  (uint32_t) (2.25 * MHz), 	  (uint32_t) (1.125 * MHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_64,  (uint32_t) (1.125 * MHz),   (uint32_t) (562.5 * kHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_128, (uint32_t) (562.5 * kHz),   (uint32_t) (281.25 * kHz) },
+	{ SPI_CR1_BAUDRATE_FPCLK_DIV_256, (uint32_t) (281.25 * kHz),  (uint32_t) (140.625 * kHz) },
+	{ 0, 0, 0 }  //  Last row.
+};
+
+static uint32_t spi_get_baudrate(volatile SPI_Control *port) {
+	//  Return the SPI baudrate given the max speed in the port settings.
+	uint32_t baudrate = 0;
+	for (int i = 0; baudrateDivisors[i][Baudrate_Col] > 0; i++) {
+		//  Get the frequency for the SPI port.
+		const uint32_t *row = baudrateDivisors[i];
+		uint32_t baudrate = row[Baudrate_Col];
+		const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
+		if (port->speedMaximum >= freq) { return baudrate; }
+	}
+	return baudrate;  //  No match. Return the lowest baudrate.
+}
+
+static uint32_t spi_get_clock_polarity(volatile SPI_Control *port) {
+	//  Return the SPI Clock Polarity (CPOL) given the SPI mode in the port settings.
+	switch (port->dataMode) {
+		case SPI_MODE0: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+		case SPI_MODE1: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+		case SPI_MODE2: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+		case SPI_MODE3: return SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+		default: return SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+	}
+}
+
+static uint32_t spi_get_clock_phase(volatile SPI_Control *port) {
+	//  Return the SPI Clock Phase (CPHA) given the SPI mode in the port settings.
+	switch (port->dataMode) {
+		case SPI_MODE0: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+		case SPI_MODE1: return SPI_CR1_CPHA_CLK_TRANSITION_2;
+		case SPI_MODE2: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+		case SPI_MODE3: return SPI_CR1_CPHA_CLK_TRANSITION_2;
+		default: return SPI_CR1_CPHA_CLK_TRANSITION_1;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

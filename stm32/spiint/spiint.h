@@ -113,7 +113,7 @@ volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPI
 SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
 SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
+int spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len, volatile Evt_t *completed_event);
 int spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
 bool spi_is_transceive_completed(volatile SPI_Control *port);  //  Return true if last SPI command was completed.

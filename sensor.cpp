@@ -77,7 +77,7 @@ void sensor_task(void) {
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
-    //  concurrent access to the single shared I2C Bus on Arduino Uno or Blue Pill.
+    //  concurrent access to the single shared I2C or SPI port on Arduino Uno or Blue Pill.
     context = (SensorContext *) task_get_data();  //  Must refetch the context after task_wait().
     debug(context->sensor->info.name, F(" >> Wait for semaphore")); ////
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
@@ -110,7 +110,7 @@ void sensor_task(void) {
     //  End the capture, replay or simulation of the sensor SPI commands.
     simulator_close(&context->sensor->simulator);
 
-    //  We are done with the I2C Bus.  Release the semaphore so that another task can fetch the sensor data.
+    //  We are done with the I2C or SPI port.  Release the semaphore so that another task can fetch the sensor data on the port.
     debug(context->sensor->info.name, F(" >> Release semaphore")); ////
     sem_signal(i2cSemaphore);
     context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
