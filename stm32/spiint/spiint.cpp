@@ -22,6 +22,8 @@ typedef uint32_t TickType_t;
 
 static SPI_Fails spi_simulate(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 static SPI_Fails spi_setup_dma(volatile SPI_Control *port, uint32_t dma, uint8_t channel, volatile SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode);
+static void enable_interrupts(uint32_t dma, uint8_t channel);
+static void disable_interrupts(uint32_t dma, uint8_t channel);
 static uint32_t get_baudrate(volatile SPI_Control *port);
 static uint32_t get_frequency(volatile SPI_Control *port);
 static uint32_t get_clock_polarity(volatile SPI_Control *port);
@@ -103,9 +105,10 @@ SPI_Fails spi_transceive(
 		spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_len, false, false);
 	}
 
-	//  Enable DMA transfer complete interrupts.  TODO: Enable other interrupts.
-	if (rx_len > 0) { dma_enable_transfer_complete_interrupt(port->rx_dma, port->rx_channel); }
-	dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
+	//  Enable DMA receive complete, error and half-done interrupts.
+	if (rx_len > 0) { enable_interrupts(port->rx_dma, port->rx_channel);  }
+	//  Enable DMA transmit complete, error and half-done interrupts.
+	enable_interrupts(port->tx_dma, port->tx_channel);
 
 	//  Activate DMA channels.
 	if (rx_len > 0) { dma_enable_channel(port->rx_dma, port->rx_channel); }
@@ -554,10 +557,6 @@ volatile SPI_Control *spi_setup(uint8_t id) {
 //////////////////////////////////////////////////////////////////////////
 //  DMA Interrupt Service Routines
 
-//  DMA_TCIF - Transfer Complete Interrupt Flag
-//  DMA_TEIF - Transfer Error Interrupt Flag
-//  DMA_HTIF - Transfer Half-done Interrupt Flag
-
 static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
 static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel);
 static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel);
@@ -589,7 +588,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle transmit complete.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TCIF);
-		dma_disable_transfer_complete_interrupt(dma, channel);
+		disable_interrupts(dma, channel);
 		spi_disable_tx_dma(spi);
 		dma_disable_channel(dma, channel);
 		if (port) {
@@ -604,7 +603,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				port->rx_remainder = 0; // Clear the buffer remainder to skip this section later
 				dma_channel_reset(port->tx_dma, port->tx_channel);
 				spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_remainder, false, false);
-				dma_enable_transfer_complete_interrupt(port->tx_dma, port->tx_channel);
+				enable_interrupts(port->tx_dma, port->tx_channel);
 				dma_enable_channel(port->tx_dma, port->tx_channel);
 				spi_enable_tx_dma(port->SPIx);
 			}
@@ -631,17 +630,14 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 	//  Handle receive complete.
 	if (dma_get_interrupt_flag(dma, channel, DMA_TCIF)) { 
 		dma_clear_interrupt_flags(dma, channel, DMA_TCIF);
-		dma_disable_transfer_complete_interrupt(dma, channel);
+		disable_interrupts(dma, channel);
 		spi_disable_rx_dma(spi);
 		dma_disable_channel(dma, channel);
 		if (port) {
 			//  Update the receive complete status.
 			update_transceive_status(port);
 			//  For simulator replay: Signal to Sensor Task when receive is done.
-			if (port->rx_event) {
-				isr_event = port->rx_event; ////
-				event_ISR_signal(*port->rx_event);
-			}
+			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
 	}
 
@@ -650,6 +646,20 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		dma_clear_interrupt_flags(dma, channel, DMA_TEIF);
 		if (port) { update_transceive_status(port, TRANS_RX_ERROR); }
 	}
+}
+
+static void enable_interrupts(uint32_t dma, uint8_t channel) {
+	//  Enable DMA transfer complete, error and half-done interrupts for the DMA port and channel.
+	dma_enable_transfer_complete_interrupt(dma, channel); 
+	dma_enable_transfer_error_interrupt(dma, channel);
+	dma_enable_half_transfer_interrupt(dma, channel);
+}
+
+static void disable_interrupts(uint32_t dma, uint8_t channel) {
+	//  Disable DMA transfer complete, error and half-done interrupts for the DMA port and channel.
+	dma_disable_transfer_complete_interrupt(dma, channel); 
+	dma_disable_transfer_error_interrupt(dma, channel);
+	dma_disable_half_transfer_interrupt(dma, channel);
 }
 
 static volatile SPI_Control *findPortByDMA(uint32_t dma, uint8_t channel) {
