@@ -53,6 +53,8 @@ enum SPI_Fails {  //  Error codes.
   SPI_End,  //  Insert new codes above.
 };
 
+#define kHz 1000  //  For defining the SPI port speed.
+#define MHz 1000000
 #define MAX_TRANS_STATUS 6  //  How many history entries to keep.
 
 enum Trans_Status {  //  Status of the SPI transceive request.
@@ -76,25 +78,25 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
   uint32_t timeout;  //  Timeout in milliseconds.
 
   //  Last packet transmitted / received.
-  volatile SPI_DATA_TYPE *tx_buf;
+  SPI_DATA_TYPE *tx_buf;
   int tx_len;
-  volatile SPI_DATA_TYPE *rx_buf;
+  SPI_DATA_TYPE *rx_buf;
   int rx_len;
-  volatile int rx_remainder;  //  Excess of bytes to be received after transmission.
-  volatile Trans_Status transceive_status;  //  Status of SPI transmit/receive command.
-  volatile Trans_Status transceive_history[MAX_TRANS_STATUS];  //  History of transceive status.
+  volatile int rx_remainder;  //  Excess of bytes to be received after transmission.  Declared volatile because it's updated by the interrupt service routine.
+  volatile Trans_Status transceive_status;  //  Status of SPI transmit/receive command.  Declared volatile because it's updated by the interrupt service routine.
+  volatile Trans_Status transceive_history[MAX_TRANS_STATUS];  //  History of transceive status.  Declared volatile because it's updated by the interrupt service routine.
 
   Evt_t event;                   //  Event to signal to Sensor Task that replay was completed.
-  volatile Evt_t *tx_event;      //  If not NULL, signal this event when transmit has been completed.
-  volatile Evt_t *rx_event;      //  If not NULL, signal this event when receive has been completed.
+  Evt_t *tx_event;               //  If not NULL, signal this event when transmit has been completed.
+  Evt_t *rx_event;               //  If not NULL, signal this event when receive has been completed.
   Simulator_Control *simulator;  //  Simulator for the port that will capture, replay and simulate SPI commands.
 	SPI_Fails	failCode;            //  Last fail code.
 
   //  STM32 port configuration.
-	uint32_t SPIx;  					           //  SPI Port e.g. SPI1
-	volatile uint32_t *ptr_SPI_DR;  	   //  SPI DR e.g. &SPI1_DR
-	volatile uint32_t *ptr_SPI_I2SCFGR;  //  SPI I2S Config e.g. &SPI1_I2SCFGR
-	uint32_t RCC_SPIx;			             //  SPI Clock e.g. RCC_SPI1
+	uint32_t SPIx;  					            //  SPI Port e.g. SPI1
+	volatile uint32_t *ptr_SPI_DR;  	    //  SPI DR e.g. &SPI1_DR
+	volatile uint32_t *ptr_SPI_I2SCFGR;   //  SPI I2S Config e.g. &SPI1_I2SCFGR
+	uint32_t RCC_SPIx;			              //  SPI Clock e.g. RCC_SPI1
 
 	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
 	uint32_t ss_port;   uint16_t ss_pin;   uint32_t ss_rcc;    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
@@ -108,20 +110,20 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
 };
 
 //  This is the new SPI Interface.  New code should use this.
-volatile SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
-SPI_Fails spi_configure(volatile SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
-SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SPI1.
+SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
+SPI_Fails spi_configure(SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
+SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-SPI_Fails spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len, volatile Evt_t *completed_event);
-SPI_Fails spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
-volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
-bool spi_is_transceive_complete(volatile SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
-bool spi_is_transceive_successful(volatile SPI_Control *port);  //  Return true if last SPI command was successful.
-SPI_Fails spi_wait(volatile SPI_Control *port);  //  Wait until transceive complete.
-SPI_Fails spi_close(volatile SPI_Control *port);  //  Disable DMA interrupt for SPI1.
-SPI_Fails spi_test(volatile SPI_Control *port);  //  For testing only.
-SPI_Fails spi_dump_trail(volatile SPI_Control *port);  //  Dump the captured / replayed / simulated SPI packets to console.
-SPI_Fails spi_dump_packet(volatile SPI_Control *port);  //  Dump the last SPI packet to console.
+SPI_Fails spi_transceive(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len, Evt_t *completed_event);
+SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+Evt_t *spi_transceive_replay(SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
+bool spi_is_transceive_complete(SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
+bool spi_is_transceive_successful(SPI_Control *port);  //  Return true if last SPI command was successful.
+SPI_Fails spi_wait(SPI_Control *port);  //  Wait until transceive complete.
+SPI_Fails spi_close(SPI_Control *port);  //  Disable DMA interrupt for SPI1.
+SPI_Fails spi_test(SPI_Control *port);  //  For testing only.
+SPI_Fails spi_dump_trail(SPI_Control *port);  //  Dump the captured / replayed / simulated SPI packets to console.
+SPI_Fails spi_dump_packet(SPI_Control *port);  //  Dump the last SPI packet to console.
 
 #ifdef __cplusplus
 }  //  End of extern C scope.

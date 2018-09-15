@@ -73,8 +73,8 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  volatile Evt_t *replay_event = NULL;
-  volatile Evt_t *sensor_event = NULL;
+  Evt_t *replay_event = NULL;
+  Evt_t *sensor_event = NULL;
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
@@ -94,12 +94,13 @@ void sensor_task(void) {
       //  Poll for the sensor data and copy into the sensor message.  This will also capture or simulate the sensor SPI commands.
       context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
+      //  If sensor is not ready to return data, this must be an event-based async sensor e.g. SPI temperature sensor.
       if (context->msg.count == SENSOR_NOT_READY) {
-        sensor_event = context->sensor->info.event;
+        //  Validate sensor event and event functions.
         if (context->sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), context->sensor->info.name); return; }
         if (context->sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for"), context->sensor->info.name); return; }
         if (context->sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for"), context->sensor->info.name); return; }
-
+        sensor_event = context->sensor->info.event;
         for (;;) {          
           //  Process any sensor data received. If processing is complete, get the sensor data.
           context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);

@@ -45,7 +45,7 @@ Simulator_Fails simulator_configure(
     Simulator_Control *sim, 
     uint32_t id, 
     const char *name, 
-    volatile SPI_Control *port) {
+    SPI_Control *port) {
     //  Set up the simulator for the sensor.
     sim->mode = Simulator_Capture;  //  Always capture the first time.
     sim->index = 0;
@@ -63,7 +63,7 @@ Simulator_Fails simulator_configure(
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the port.
     debug_println("sim open");
-    volatile SPI_Control *port = sim->port;
+    SPI_Control *port = sim->port;
     if (port == NULL) { return showError(sim, Simulator_Missing_Port); }
     sim->index = 0;
     //  Simulator depends on sensor ID, so we need to refresh the port.
@@ -82,7 +82,7 @@ bool simulator_should_poll_sensor(Simulator_Control *sim) {
     return true;
 }
 
-volatile Evt_t *simulator_replay(Simulator_Control *sim) {
+Evt_t *simulator_replay(Simulator_Control *sim) {
     //  Replay the captured SPI commands.  Return an event that the Sensor Task should wait for completion.
     //  Return NULL if no more packets to replay.
     if (sim->mode != Simulator_Replay || sim->port == NULL) { return NULL; }
@@ -113,7 +113,7 @@ Simulator_Fails simulator_capture_size(Simulator_Control *sim, int size) {
     return Simulator_Ok;
 }
 
-Simulator_Fails simulator_capture_packet(Simulator_Control *sim, volatile uint8_t *packet, int size) {
+Simulator_Fails simulator_capture_packet(Simulator_Control *sim, uint8_t *packet, int size) {
     //  Append the packet content to the trail.  Don't append if there was an error.
     if (size <= 0 || packet == NULL) { return showError(sim, Simulator_Invalid_Size); }
     if ((sim->index + size) >= MAX_TRAIL_SIZE)  { return simulator_overflow(sim); }
@@ -134,11 +134,11 @@ int simulator_replay_size(Simulator_Control *sim) {
     return size;
 }
 
-volatile uint8_t *simulator_replay_packet(Simulator_Control *sim, int size) {
+uint8_t *simulator_replay_packet(Simulator_Control *sim, int size) {
     //  Return NULL in case of error.
     if (size <= 0) { return NULL; }
     if ((sim->index + size) >= MAX_TRAIL_SIZE || (sim->index + size) >= sim->length)  { return NULL; }
-    volatile uint8_t *packet = &(sim->trail[sim->index]);
+    uint8_t *packet = &(sim->trail[sim->index]);
     sim->index = sim->index + size;
     return packet;
 }
@@ -148,7 +148,7 @@ int simulator_simulate_size(Simulator_Control *sim) {
     return simulator_replay_size(sim);
 }
 
-volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
+uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
     return simulator_replay_packet(sim, size);
 }
 

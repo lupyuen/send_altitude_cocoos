@@ -46,11 +46,11 @@ struct SensorInfo {
     //  Return the number of floats copied.  If no data is available, return 0.
     //  If sensor is not ready to return data, return SENSOR_NOT_READY.
     uint8_t (*poll_sensor_func)(float *data, uint8_t size),
-    //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+    //  For Event Sensors: Resume the processing of received sensor data.  Copy the received sensor data into the provided data buffer.
     //  Return the number of floats copied.  If no data is available, return 0.
-    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for event to be signalled.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for sensor event to be signalled.
     uint8_t (*resume_sensor_func)(float *data, uint8_t size) = NULL,
-    //  Return true if the processing is complete and new sensor data is available.
+    //  For Event Sensors: Return true if the processing is complete and new sensor data is available.
     bool (*is_sensor_ready_func)(void) = NULL);
   #endif // __cplusplus
 
@@ -61,11 +61,11 @@ struct SensorInfo {
   //  Return the number of floats copied.  If no data is available, return 0.
   //  If sensor is not ready to return data, return SENSOR_NOT_READY.
   uint8_t (*poll_sensor_func)(float *data, uint8_t size);
-  //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+  //  For Event Sensors: Resume the processing of received sensor data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
   //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for sensor event to be signalled.
   uint8_t (*resume_sensor_func)(float *data, uint8_t size);
-  //  Return true if the processing is complete and new sensor data is available.
+  //  For Event Sensors: Return true if the processing is complete and new sensor data is available.
   bool (*is_sensor_ready_func)(void);
 
   //  The following fields are private to sensor.cpp.
@@ -99,11 +99,11 @@ struct Sensor {
     //  Return the number of floats copied.  If no data is available, return 0.
     //  If sensor is not ready to return data, return SENSOR_NOT_READY.
     uint8_t (*poll_sensor_func)(float *data, uint8_t size),
-    //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+    //  For Event Sensors: Resume the processing of received sensor data.  Copy the received sensor data into the provided data buffer.
     //  Return the number of floats copied.  If no data is available, return 0.
-    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for event to be signalled.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for sensor event to be signalled.
     uint8_t (*resume_sensor_func)(float *data, uint8_t size) = NULL,
-    //  Return true if the processing is complete and new sensor data is available.
+    //  For Event Sensors: Return true if the processing is complete and new sensor data is available.
     bool (*is_sensor_ready_func)(void) = NULL,
     void (*next_channel_func)(void) = NULL,  //  TODO: Set sensor to measure next channel.
     void (*prev_channel_func)(void) = NULL   //  TODO: Set sensor to measure previous channel.
@@ -112,7 +112,7 @@ struct Sensor {
 
   SensorInfo info;              //  For accessing sensor data
   SensorControl control;        //  For controlling the sensor
-  volatile SPI_Control *port;   //  For SPI port used by sensor.
+  SPI_Control *port;            //  For SPI port used by sensor.
   Simulator_Control simulator;  //  For simulating the sensor.  Must be in static memory, not stack memory.
 };
 
