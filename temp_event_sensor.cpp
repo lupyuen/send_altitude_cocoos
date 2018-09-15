@@ -116,12 +116,29 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
   spi_close(sensor.port);  
   if (!spi_is_transceive_successful(sensor.port)) { return 0; }  //  An error occurred.  Stop the processing.
 
-  //  Process the received SPI data into sensor data.
-  //  TODO: sensorData[0] = bme.temp(tempUnit);  //  Get temperature in Celsius.
+  //  Process the received SPI data in rx_buf to get sensor data.  Based on https://github.com/finitespace/BME280/blob/master/src/BME280.cpp
   debug_print(sensor.info.name); spi_dump_packet(sensor.port);
+  uint8_t *rx_data = &rx_buf[6];  //  Response starts at the 6th byte.
+  uint32_t rawTemp = ((uint32_t) rx_data[3] << 12) | ((uint32_t) rx_data[4] << 4) | ((uint32_t) rx_data[5] >> 4);
+  sensorData[0] = rawTemp / 100.0;
+
+#if NOTUSED
+  uint8_t *m_dig = &rx_buf[6];  //  Response starts at the 6th byte.
+  int32_t var1, var2, final;
+  uint16_t  dig_T1 = (m_dig[1] << 8) | m_dig[0];
+  int16_t   dig_T2 = (m_dig[3] << 8) | m_dig[2];
+  int16_t   dig_T3 = (m_dig[5] << 8) | m_dig[4];
+  var1 = ((((raw >> 3) - ((int32_t)dig_T1 << 1))) * ((int32_t)dig_T2)) >> 11;
+  var2 = (((((raw >> 4) - ((int32_t)dig_T1)) * ((raw >> 4) - ((int32_t)dig_T1))) >> 12) * ((int32_t)dig_T3)) >> 14;
+  int32_t t_fine = var1 + var2;
+  final = (t_fine * 5 + 128) >> 8;
+
+  const bool useCelsius = true;
+  sensorData[0] = useCelsius ? final/100.0 : final/100.0*9.0/5.0 + 32.0;
+#endif
 
   //  Simulated sensor.
-  sensorData[0] = 12.3 + rand() % 10;
+  //  sensorData[0] = 12.3 + rand() % 10;
 
   //  Copy the received sensor data and return the number of floats copied.
   return receive_sensor_data(sensorData, sensorDataSize, data, size);
