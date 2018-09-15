@@ -3,8 +3,8 @@
 //  The other sensors are Polling-based Sensors, which will block the program until the sensor data is available.
 //  Event Sensors are better for multitasking.
 //  Caller must use a semaphore to prevent concurrent access to the SPI port.
-#ifndef TEMP_SENSOR_H_
-#define TEMP_SENSOR_H_
+#ifndef TEMP_EVENT_SENSOR_H_
+#define TEMP_EVENT_SENSOR_H_
 
 #include "platform.h"
 #include "sensor.h"
@@ -21,4 +21,4 @@ SensorContext *setup_temp_event_sensor(  //  Set up the sensor parameters.
 
 END_EXTERN_C  //  End of extern C scope.
 #endif  //  STM32
-#endif  //  TEMP_SENSOR_H_
+#endif  //  TEMP_EVENT_SENSOR_H_

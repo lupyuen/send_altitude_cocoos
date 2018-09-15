@@ -93,6 +93,7 @@ void sensor_task(void) {
     //  concurrent access to the single shared I2C or SPI port on Arduino Uno or Blue Pill.
     context = (SensorContext *) task_get_data();  //  Must refetch the context after task_wait().
     debug(context->sensor->info.name, F(" >> Wait for semaphore"));
+    //  TODO
     sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
     context = (SensorContext *) task_get_data();  //  Must fetch the context pointer again after the wait.
     debug(context->sensor->info.name, F(" >> Got semaphore"));
@@ -110,16 +111,13 @@ void sensor_task(void) {
       if (context->msg.count == SENSOR_NOT_READY) {
         if (!is_valid_event_sensor(context->sensor)) { return; }  //  Stop if this is not an Event Sensor.
         for (;;) {          
+          // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
+          sem_wait(context->sensor->info.semaphore);  //  Wait for sensor processing to complete.  TODO: timeout.
+          context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait().
+
           //  Process any sensor data received. If processing is complete, get the sensor data.
           context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
           if (context->msg.count != SENSOR_NOT_READY) { break; }  //  If processing is complete, exit the loop to send the sensor data.
-          // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
-
-          if (!context->sensor->info.is_sensor_ready_func()) {  //  If sensor request has not completed...
-            sensor_semaphore = &context->sensor->info.semaphore;
-            sem_wait(*sensor_semaphore);  //  Wait for sensor processing to complete.  TODO: timeout.
-            context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
-          }          
         }
       }
 
@@ -127,12 +125,10 @@ void sensor_task(void) {
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_semaphore = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_semaphore == NULL) { break; }  //  No more packets to replay.
+        // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
 
-        if (!simulator_is_request_complete(&context->sensor->simulator)) {  //  If replay has not completed...
-          debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
-          sem_wait(*replay_semaphore);  //  Wait for replay to complete.  TODO: timeout.
-          context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait();
-        }
+        sem_wait(*replay_semaphore);  //  Wait for replay to complete.  TODO: timeout.
+        context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait().
         debug_print(context->sensor->info.name); debug_print(F(" >> ")); simulator_dump_packet(&context->sensor->simulator); debug_flush();
       }
     }

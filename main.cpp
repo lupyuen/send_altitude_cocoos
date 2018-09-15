@@ -13,12 +13,13 @@
 #include "wisol.h"
 #include "sensor.h"
 #include "aggregate.h"
-#include "temp_sensor.h"   //  Temperature sensor (BME280)
-#include "humid_sensor.h"  //  Humidity sensor (BME280)
-#include "alt_sensor.h"    //  Altitude sensor (BME280)
-#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
+#include "temp_sensor.h"        //  Temperature sensor (BME280 I2C)
+#include "humid_sensor.h"       //  Humidity sensor (BME280 I2C)
+#include "alt_sensor.h"         //  Altitude sensor (BME280 I2C)
+#include "temp_event_sensor.h"  //  Temperature event-based sensor (BME280 SPI)
+#ifdef GYRO_SENSOR  //  Use simulated gyro sensor.
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
-#endif
+#endif  //  GYRO_SENSOR
 
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
@@ -118,7 +119,11 @@ static void sensor_setup(uint8_t task_id) {
   //  Set up the sensors and get their sensor contexts.
   ////TODO: const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
   const int pollInterval = 10000;  //  Poll the sensor every 10000 milliseconds.
+#ifndef STM32
+  SensorContext *tempContext = setup_temp_event_sensor(pollInterval, task_id);
+#else
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
+#endif  //  STM32
   ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
   ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
 #ifdef GYRO_SENSOR  //  Use simumated gyro sensor.

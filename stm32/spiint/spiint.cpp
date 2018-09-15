@@ -914,7 +914,6 @@ SPI_Fails spi_dump_trail(SPI_Control *port) {
 
 SPI_Fails spi_dump_packet(SPI_Control *port) {
 	//  Dump the last SPI packet to console.
-	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
 	const char *title = get_mode_name(port);
 	dump_packets(title, port->tx_buf, port->tx_len, port->rx_buf, port->rx_len);
 	return SPI_Ok;
@@ -987,7 +986,7 @@ static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
 }
 
 static const char *get_mode_name(SPI_Control *port) {
-	const char *title = "unknown";
+	const char *title = "";
 	if (!port->simulator) { return title; }
 	switch (port->simulator->mode) {
 		case Simulator_Capture: title = "captured"; break;

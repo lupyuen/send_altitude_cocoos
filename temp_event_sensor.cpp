@@ -15,7 +15,7 @@
 static void init_sensor(void);
 static uint8_t poll_sensor(float *data, uint8_t size);
 static uint8_t resume_sensor(float *data, uint8_t size);
-static bool poll_sensor(void);
+static bool is_sensor_ready(void);
 
 //  Number of floats that this sensor returns as sensor data.
 #define sensorDataSize 1
@@ -92,11 +92,11 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   if (result != SPI_Ok) { return 0; }  //  An error has occurred.  Stop the processing.
 
   //  Send the SPI transceive command to read sensor data from BME280.  Sensor event will be signalled when done.
-  SPI_Fails result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, sensor.info.event);
+  result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, NULL, &sensor.info.semaphore);
   if (result != SPI_Ok) {    //  An error has occurred.  Stop the processing.
     spi_close(sensor.port);  //  Close the SPI port.
     return 0; 
-  }  
+  }
 
   //  Return SENSOR_NOT_READY so that Event Task will wait for the sensor event to be signalled and call resume_sensor().
   return SENSOR_NOT_READY;
@@ -133,7 +133,7 @@ static bool is_sensor_ready(void) {
   return spi_is_transceive_complete(sensor.port);
 }
 
-SensorContext *setup_temp_sensor(
+SensorContext *setup_temp_event_sensor(
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {
