@@ -94,15 +94,20 @@ void sensor_task(void) {
       //  Poll for the sensor data and copy into the sensor message.  This will also capture or simulate the sensor SPI commands.
       context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
-#define SENSOR_NOT_READY 0xff
       if (context->msg.count == SENSOR_NOT_READY) {
-        for (;;) {
-          sensor_event = context->sensor->info.process_sensor_func();
-          if (sensor_event == NULL) { break; }
+        sensor_event = context->sensor->info.event;
+        if (context->sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), context->sensor->info.name); return; }
+        if (context->sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for"), context->sensor->info.name); return; }
+        if (context->sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for"), context->sensor->info.name); return; }
+
+        for (;;) {          
+          //  Process any sensor data received. If processing is complete, get the sensor data.
+          context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
+          if (context->msg.count != SENSOR_NOT_READY) { break; }  //  If processing is complete, exit the loop to send the sensor data.
           // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
 
-          if (!context->sensor->info.is_request_complete()) {  //  If sensor request has not completed...
-            event_wait_timeout(*sensor_event, 10000);  //  Wait for replay to complete or for timeout.
+          if (!context->sensor->info.is_sensor_ready_func()) {  //  If sensor request has not completed...
+            event_wait_timeout(*sensor_event, 10000);  //  Wait for sensor request to complete or for timeout.
             context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
           }          
         }
@@ -162,10 +167,14 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
 //  SensorInfo constructor for C++ only.
 SensorInfo::SensorInfo(
   const char name0[],
-  uint8_t (*poll_sensor_func0)(float *data, uint8_t size)
+  uint8_t (*poll_sensor_func0)(float *data, uint8_t size),
+  uint8_t (*resume_sensor_func0)(float *data, uint8_t size),
+  bool (*is_sensor_ready_func0)(void)
 ) {
   name = name0;
   poll_sensor_func = poll_sensor_func0;
+  resume_sensor_func = resume_sensor_func0;
+  is_sensor_ready_func = is_sensor_ready_func0;
 }
 
 //  SensorInfo constructor for C++ only.
@@ -184,10 +193,12 @@ Sensor::Sensor(
   const char name[],
   void (*init_sensor_func)(void),
   uint8_t (*poll_sensor_func)(float *data, uint8_t size),
+  uint8_t (*resume_sensor_func)(float *data, uint8_t size),
+  bool (*is_sensor_ready_func)(void),
   void (*next_channel_func)(void),
   void (*prev_channel_func)(void)
 ): 
-  info(name, poll_sensor_func),
+  info(name, poll_sensor_func, resume_sensor_func, is_sensor_ready_func),
   control(init_sensor_func, next_channel_func, prev_channel_func) {
 }
 

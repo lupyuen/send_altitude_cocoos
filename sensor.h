@@ -27,66 +27,93 @@ BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 #define MAX_SENSOR_NAME_SIZE 3  //  Max number of letters/digits in sensor name.
 #define BEGIN_SENSOR_NAME "000"  //  If sensor name is this, then this is the Begin Step that runs at startup.
 #define RESPONSE_SENSOR_NAME "RES"  //  This is the response message sent by UART Task to Network Task.
+#define SENSOR_NOT_READY 0xff       //  poll_sensor and resume_sensor functions will return SENSOR_NOT_READY when sensor data is not ready.
 
 //  Messages sent by Sensor Task containing sensor data will be in this format.
 struct SensorMsg {
-  Msg_t super;  //  Required for all cocoOS messages.
+  Msg_t super;                          //  Required for all cocoOS messages.
   char name[MAX_SENSOR_NAME_SIZE + 1];  //  3-character name of sensor e.g. tmp, hmd. Includes terminating null.
-  float data[MAX_SENSOR_DATA_SIZE];  //  Array of float sensor data values returned by the sensor.
-  uint8_t count;  //  Number of float sensor data values returned by the sensor.
+  float data[MAX_SENSOR_DATA_SIZE];     //  Array of float sensor data values returned by the sensor.
+  uint8_t count;                        //  Number of float sensor data values returned by the sensor.
 };
 
 //  Interface for getting sensor data, by polling and by events.
 struct SensorInfo {
+  #ifdef __cplusplus
+  SensorInfo(            //  Constructor for C++
+    const char name0[],  //  Name of the sensor.
+    //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
+    //  Return the number of floats copied.  If no data is available, return 0.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY.
+    uint8_t (*poll_sensor_func)(float *data, uint8_t size),
+    //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+    //  Return the number of floats copied.  If no data is available, return 0.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for event to be signalled.
+    uint8_t (*resume_sensor_func)(float *data, uint8_t size) = NULL,
+    //  Return true if the processing is complete and new sensor data is available.
+    bool (*is_sensor_ready_func)(void) = NULL);
+  #endif // __cplusplus
+
+  //  The following fields are set by the sensor.
   const char* name;  //  Name of the sensor.
   uint8_t size;      //  How many floats that this sensor will return as sensor data.
   //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
+  //  If sensor is not ready to return data, return SENSOR_NOT_READY.
   uint8_t (*poll_sensor_func)(float *data, uint8_t size);
-  Evt_t *event;  //  Event to be signalled when new sensor data is available.
-  uint8_t id;  //  Unique sensor ID.
-  uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
+  //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+  //  Return the number of floats copied.  If no data is available, return 0.
+  //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for sensor event to be signalled.
+  uint8_t (*resume_sensor_func)(float *data, uint8_t size);
+  //  Return true if the processing is complete and new sensor data is available.
+  bool (*is_sensor_ready_func)(void);
 
-  #ifdef __cplusplus
-  SensorInfo( //  Constructor for C++
-    const char name0[], 
-    uint8_t (*poll_sensor_func0)(float *data, uint8_t size));
-  #endif // __cplusplus
+  //  The following fields are private to sensor.cpp.
+  Evt_t *event;            //  Event to be signalled when sensor is ready to return sensor data.
+  uint8_t id;              //  Unique sensor ID.
+  uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
 };
 
 //  Interface for controlling the sensor.
 struct SensorControl {
-  void (*init_sensor_func)(void);  //  Function for initialising the sensor.
+  #ifdef __cplusplus
+  SensorControl(                        //  Constructor for C++
+    void (*init_sensor_func)(void),    //  Function for initialising the sensor.
+    void (*next_channel_func)(void),   //  TODO: Set sensor to measure next channel.
+    void (*prev_channel_func)(void));  //  TODO: Set sensor to measure previous channel.
+  #endif // __cplusplus
+
+  void (*init_sensor_func)(void);   //  Function for initialising the sensor.
   void (*next_channel_func)(void);  //  TODO: Set sensor to measure next channel.
   void (*prev_channel_func)(void);  //  TODO: Set sensor to measure previous channel.
-
-  #ifdef __cplusplus
-  SensorControl(  //  Constructor for C++
-    void (*init_sensor_func0)(void),
-    void (*next_channel_func0)(void),
-    void (*prev_channel_func0)(void));
-  #endif // __cplusplus
 };
 
 //  Interface for accessing the sensor data and controlling a sensor.
 struct Sensor {  
-  SensorInfo info;              //  For accessing sensor data
-  SensorControl control;        //  For controlling the sensor
-  volatile SPI_Control *port;   //  For SPI port used by sensor.
-  Simulator_Control simulator;  //  For simulating the sensor.  Must be in static memory, not stack memory.
-
   #ifdef __cplusplus
-  Sensor(  //  Constructor for C++
+  Sensor(               //  Constructor for C++
     const char name[],  //  Name of sensor.
     //  Function for initialising the sensor.
     void (*init_sensor_func)(void),
     //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
     //  Return the number of floats copied.  If no data is available, return 0.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY.
     uint8_t (*poll_sensor_func)(float *data, uint8_t size),
+    //  Resume the processing of new sensor data.  Copy the received sensor data into the provided data buffer.
+    //  Return the number of floats copied.  If no data is available, return 0.
+    //  If sensor is not ready to return data, return SENSOR_NOT_READY. Caller should wait for event to be signalled.
+    uint8_t (*resume_sensor_func)(float *data, uint8_t size) = NULL,
+    //  Return true if the processing is complete and new sensor data is available.
+    bool (*is_sensor_ready_func)(void) = NULL,
     void (*next_channel_func)(void) = NULL,  //  TODO: Set sensor to measure next channel.
-    void (*prev_channel_func)(void) = NULL  //  TODO: Set sensor to measure previous channel.
+    void (*prev_channel_func)(void) = NULL   //  TODO: Set sensor to measure previous channel.
   );
   #endif // __cplusplus
+
+  SensorInfo info;              //  For accessing sensor data
+  SensorControl control;        //  For controlling the sensor
+  volatile SPI_Control *port;   //  For SPI port used by sensor.
+  Simulator_Control simulator;  //  For simulating the sensor.  Must be in static memory, not stack memory.
 };
 
 //  Each sensor task will have a Task Data in this format to remember the context of the sensor.
