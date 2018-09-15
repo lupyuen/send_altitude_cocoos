@@ -86,7 +86,7 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  Evt_t *replay_event = NULL;
+  Sem_t *replay_sempahore = NULL;
   Evt_t *sensor_event = NULL;
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
@@ -126,13 +126,13 @@ void sensor_task(void) {
 
     } else {  //  Else we are replaying a captured SPI command.
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
-        replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
-        if (replay_event == NULL) { break; }  //  No more packets to replay.
+        replay_sempahore = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
+        if (replay_sempahore == NULL) { break; }  //  No more packets to replay.
 
         if (!simulator_is_request_complete(&context->sensor->simulator)) {  //  If replay has not completed...
           debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
-          event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
-          context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
+          sem_wait(*replay_sempahore);  //  Wait for replay to complete.  TODO: timeout.
+          context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait();
         }
         debug_print(context->sensor->info.name); debug_print(F(" >> ")); simulator_dump_packet(&context->sensor->simulator); debug_flush();
       }

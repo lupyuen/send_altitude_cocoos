@@ -55,6 +55,7 @@ Simulator_Fails simulator_configure(
     sim->capture_enabled = capture_enabled;
     sim->replay_enabled = replay_enabled;
     sim->simulate_enabled = simulate_enabled;
+    sim->semaphore = sem_bin_create(0);
     if (name) {
         strncpy(sim->name, name, MAX_SENSOR_NAME_SIZE);
         sim->name[MAX_SENSOR_NAME_SIZE] = 0;
@@ -93,11 +94,13 @@ bool simulator_should_poll_sensor(Simulator_Control *sim) {
     return true;
 }
 
-Evt_t *simulator_replay(Simulator_Control *sim) {
-    //  Replay the captured SPI commands.  Return an event that the Sensor Task should wait for completion.
+Sem_t *simulator_replay(Simulator_Control *sim) {
+    //  Replay the captured SPI commands.  Return a semaphore that the Sensor Task should wait for completion.
     //  Return NULL if no more packets to replay.
     if (sim->mode != Simulator_Replay || sim->port == NULL) { return NULL; }
-    return spi_transceive_replay(sim->port);
+    SPI_Fails result = spi_transceive_replay(sim->port, &sim->semaphore);
+    if (result != SPI_Ok) { return NULL; }
+    return &sim->semaphore;
 }
 
 static Simulator_Fails simulator_overflow(Simulator_Control *sim) {

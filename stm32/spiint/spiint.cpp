@@ -78,7 +78,7 @@ SPI_Fails spi_transceive(
 	port->tx_buf = tx_buf; port->tx_len = tx_len;
 	port->rx_buf = rx_buf; port->rx_len = rx_len;
 
-	//  Signal this event when receive is completed.
+	//  Signal this semaphore when receive is completed.
 	port->rx_semaphore = completed_semaphore;
 	port->tx_semaphore = NULL;
 
@@ -290,25 +290,27 @@ SPI_Fails spi_close(SPI_Control *port) {
 
 static SPI_Fails spi_simulate_error(SPI_Control *port, SPI_Fails fc, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
 
-Evt_t *spi_transceive_replay(SPI_Control *port) {
-	//  Replay the next transceive request that was captured earlier.  Return the event for Sensor Task to wait until the request has been completed.
-	//  Read the captured SPI packet for send and receive.
+SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
+	//  Replay the next transceive request that was captured earlier.  If completed_semaphore is non-NULL,
+	//  signal the semaphore when the request has been completed.
 	//  if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
-	if (port->simulator == NULL) { showError(port, SPI_Missing_Simulator); return NULL; }  //  No simulator.
+	if (port->simulator == NULL) { return showError(port, SPI_Missing_Simulator); }  //  No simulator.
+
+	//  Read the captured SPI packet for send and receive.
 	int tx_len = simulator_replay_size(port->simulator);
 	uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
 	int rx_len = simulator_replay_size(port->simulator);
 	uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
 	//  Stop if the packet was invalid.
-	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return NULL; }
+	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return showError(port, SPI_Mismatch); }
 	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
 
-	//  Send the transceive request and signal the event when completed.
-	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
-	if (result != SPI_Ok) { return NULL; }
+	//  Send the transceive request and signal the sempahore when completed.
+	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event, completed_semaphore);
+	if (result != SPI_Ok) { return result; }
 
-	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
-	return &port->event;
+	//  Caller (Sensor Task) must wait for the semaphore to be signaled before sending again.
+	return SPI_Ok;
 }
 
 static SPI_Fails spi_simulate(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {
@@ -616,7 +618,10 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				//  Update the transmit complete status.
 				update_transceive_status(port);
 				//  Send event signal that transmit is done.  (Not used)
-				if (port->tx_semaphore) { sem_ISR_signal(*port->tx_semaphore); }
+				if (port->tx_semaphore) { 
+					sem_ISR_signal(*port->tx_semaphore); 
+					port->tx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
+				}
 
 				if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
 
@@ -642,8 +647,14 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the error status.
 			update_transceive_status(port, TRANS_TX_ERROR);
 			//  Send event signals that transmit and receive are done.
-			if (port->tx_semaphore) { sem_ISR_signal(*port->tx_semaphore); }
-			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+			if (port->tx_semaphore) { 
+				sem_ISR_signal(*port->tx_semaphore); 
+				port->tx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
+			}
+			if (port->rx_semaphore) { 
+				sem_ISR_signal(*port->rx_semaphore); 
+				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
+			}
 
 			if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
 			if (port->rx_event != NULL) { event_ISR_signal(*port->rx_event); }
@@ -671,7 +682,10 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the receive complete status.
 			update_transceive_status(port);
 			//  For simulator replay: Signal to Sensor Task when receive is done.
-			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+			if (port->rx_semaphore) { 
+				sem_ISR_signal(*port->rx_semaphore); 
+				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
+			}
 
 			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
@@ -687,7 +701,10 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the error status.
 			update_transceive_status(port, TRANS_RX_ERROR); 
 			//  For simulator replay: Signal to Sensor Task when receive is done.
-			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+			if (port->rx_semaphore) { 
+				sem_ISR_signal(*port->rx_semaphore); 
+				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
+			}
 
 			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
