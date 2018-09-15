@@ -62,9 +62,24 @@ tmp >> replayed >> 00 << dd
 tmp >> replayed >> 00 << 00
 tmp >> replayed >> 00 << 7f
 */
-#define TX_LEN 16
-#define RX_LEN 16
-static uint8_t tx_buf[TX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
+#define TX_LEN 14
+#define RX_LEN 14
+static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory because it will be used for DMA.
+0x72,
+0x01,
+0x74,
+0x25,
+0x75,
+0xa0,
+0xf7,
+0x00,
+0x00,
+0x00,
+0x00,
+0x00,
+0x00,
+0x00,
+};
 static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
@@ -72,9 +87,16 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   //  Event Task will wait for the sensor event to be signalled and call resume_sensor().
   debug(sensor.info.name, F(" >> poll_sensor"));
   
+  //  Open the SPI port.
+  SPI_Fails result = spi_open(sensor.port);
+  if (result != SPI_Ok) { return 0; }  //  An error has occurred.  Stop the processing.
+
   //  Send the SPI transceive command to read sensor data from BME280.  Sensor event will be signalled when done.
   SPI_Fails result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, sensor.info.event);
-  if (result != SPI_Ok) { return 0; }  //  An error has occurred.  Stop the processing.
+  if (result != SPI_Ok) {    //  An error has occurred.  Stop the processing.
+    spi_close(sensor.port);  //  Close the SPI port.
+    return 0; 
+  }  
 
   //  Return SENSOR_NOT_READY so that Event Task will wait for the sensor event to be signalled and call resume_sensor().
   return SENSOR_NOT_READY;
@@ -89,10 +111,14 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
   
   //  If SPI transceive command has not been completed, return SENSOR_NOT_READY so that Event Task will wait for the sensor event to be signalled and call resume_sensor() again.
   if (!is_sensor_ready()) { return SENSOR_NOT_READY; }
+
+  //  Close the SPI port.
+  spi_close(sensor.port);  
   if (!spi_is_transceive_successful(sensor.port)) { return 0; }  //  An error occurred.  Stop the processing.
 
   //  Process the received SPI data into sensor data.
   //  TODO: sensorData[0] = bme.temp(tempUnit);  //  Get temperature in Celsius.
+  spi_dump_packet(sensor.port);
 
   //  Simulated sensor.
   sensorData[0] = 12.3 + rand() % 10;

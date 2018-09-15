@@ -168,19 +168,25 @@ SPI_Fails spi_wait(SPI_Control *port) {
 
 bool spi_is_transceive_complete(SPI_Control *port) {
     //  Return true if last SPI command was completed successfully or with error.
-	Trans_Status status = port->transceive_status;
+	volatile Trans_Status status = port->transceive_status;
 	if (status == TRANS_RX_COMPLETE
 		|| status == TRANS_TIMEOUT
 		|| status == TRANS_TX_ERROR
 		|| status == TRANS_RX_ERROR) {
 		return true;
 	}
+	volatile Trans_Status status2 = port->transceive_status;
+	debug_print("spi complete "); 
+	debug_print((int) status); debug_print(" / ");
+	debug_print((int) status2); debug_print(" / ");
+	debug_print((int) port->transceive_status); debug_print(" "); 
+	dump_history(port);
 	return false;
 }
 
 bool spi_is_transceive_successful(SPI_Control *port) {
     //  Return true if last SPI command was completed successfully.
-	Trans_Status status = port->transceive_status;
+	volatile Trans_Status status = port->transceive_status;
 	if (status == TRANS_RX_COMPLETE) {
 		return true;
 	}
@@ -293,8 +299,7 @@ Evt_t *spi_transceive_replay(SPI_Control *port) {
 	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
 
 	//  Send the transceive request and signal the event when completed.
-	Evt_t event = port->event;
-	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &event);
+	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event);
 	if (result != SPI_Ok) { return NULL; }
 
 	//  Caller (Sensor Task) must wait for the event to be signaled before sending again.
@@ -606,7 +611,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
 
 			} else {  //  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
-				int rx_remainder = port->rx_remainder;
+				volatile int rx_remainder = port->rx_remainder;
 				port->rx_remainder = 0; // Clear the buffer remainder to skip this section later
 				dma_channel_reset(port->tx_dma, port->tx_channel);
 				spi_setup_dma(port, port->tx_dma, port->tx_channel, dummy_tx_buf, rx_remainder, false, false);
@@ -907,7 +912,7 @@ static void dump_history(SPI_Control *port) {
 	//  Dump the history of status transitions.
 	debug_print("hist ");
 	for (int i = 0; i < MAX_TRANS_STATUS; i++) {
-		Trans_Status status = port->transceive_history[i];
+		volatile Trans_Status status = port->transceive_history[i];
 		if (status == (Trans_Status) 0) { break; }
 		debug_print((int) status); debug_print(" ");
 	}

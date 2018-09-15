@@ -16,12 +16,12 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 
 enum Simulator_Fails {  //  Error codes.
-	Simulator_Ok = 0,
-	Simulator_Invalid_Size,
-	Simulator_Trail_Overflow,
-	Simulator_Missing_Port,
-	Simulator_Write_Timeout,
-	Simulator_Read_Timeout,
+    Simulator_Ok = 0,
+    Simulator_Invalid_Size,
+    Simulator_Trail_Overflow,
+    Simulator_Missing_Port,
+    Simulator_Write_Timeout,
+    Simulator_Read_Timeout,
     Simulator_End,  //  Insert new codes above.
 };
 
@@ -29,7 +29,8 @@ enum Simulator_Mode {  //  Simulator modes.
     Simulator_Capture = 0,
     Simulator_Replay = 1,
     Simulator_Simulate = 2,
-    Simulator_Mismatch = 3  //  Simulation failed due to mismatch.
+    Simulator_Mismatch = 3,  //  Simulation failed due to mismatch.
+    Simulator_Disabled = 4,
 };
 
 struct SPI_Control;
@@ -38,15 +39,19 @@ struct Simulator_Control {
 	uint32_t	id;	 // Sensor ID
     char        name[MAX_SENSOR_NAME_SIZE + 1];  //  Sensor name e.g. "tmp".
     uint8_t     trail[MAX_TRAIL_SIZE];  //  Captured trail.  Note: MUST be a buffer in static memory, not on the stack.
-	uint8_t		length;		    //  Trail length.
-    uint8_t     index;          //  Index of trail to be processed next.
-    Simulator_Mode mode;        //  Simulator mode.
-    SPI_Control *port; //  SPI port for the simulator.
-	Simulator_Fails	failCode;   // Last fail code.
+	uint8_t		length;		       //  Trail length.
+    uint8_t     index;             //  Index of trail to be processed next.
+    bool        capture_enabled;   //  True if simulator should capture SPI commands.
+    bool        replay_enabled;    //  True if simulator should replay SPI commands.
+    bool        simulate_enabled;  //  True if simulator should simulate SPI commands.
+    Simulator_Mode mode;           //  Simulator mode.
+    SPI_Control *port;             //  SPI port for the simulator.
+	Simulator_Fails	failCode;      //  Last fail code.
 };
 
 Simulator_Fails simulator_setup(void);  //  Set up the simulator system.
-Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, SPI_Control *port);  //  Set up the simulator for the sensor.
+Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const char *name, SPI_Control *port,
+    bool capture_enabled, bool replay_enabled, bool simulate_enabled);  //  Set up the simulator for the sensor.
 Simulator_Fails simulator_open(Simulator_Control *sim);  //  Begin capture, replay or simulate.
 bool simulator_should_poll_sensor(Simulator_Control *sim);  //  Return true if the Sensor Task should actually poll the sensor.
 Evt_t *simulator_replay(Simulator_Control *sim);  //  Replay the captured SPI commands.

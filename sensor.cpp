@@ -65,8 +65,19 @@ void setup_sensor_context(
   strncpy(context->msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
   context->msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
+  bool capture_enabled = true;
+  bool replay_enabled = true;
+  bool simulate_enabled = true;
+
+  //  For Event Sensors: Don't capture, replay and simulate the SPI commands.
+  if (is_valid_event_sensor(sensor)) {
+    capture_enabled = false;
+    replay_enabled = false;
+    simulate_enabled = false;
+  }
   //  Set up the simulator and SPI port for the sensor.
-  simulator_configure(&sensor->simulator, sensorID, sensor->info.name, sensor->port);
+  simulator_configure(&sensor->simulator, sensorID, sensor->info.name, sensor->port,
+    capture_enabled, replay_enabled, simulate_enabled);
 }
 
 void sensor_task(void) {
@@ -99,7 +110,6 @@ void sensor_task(void) {
       //  If sensor is not ready to return data, this must be an event-based async sensor e.g. SPI temperature sensor.
       if (context->msg.count == SENSOR_NOT_READY) {
         if (!is_valid_event_sensor(context->sensor)) { return; }  //  Stop if this is not an Event Sensor.
-        sensor_event = context->sensor->info.event;
         for (;;) {          
           //  Process any sensor data received. If processing is complete, get the sensor data.
           context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
@@ -107,6 +117,7 @@ void sensor_task(void) {
           // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
 
           if (!context->sensor->info.is_sensor_ready_func()) {  //  If sensor request has not completed...
+            sensor_event = context->sensor->info.event;
             event_wait_timeout(*sensor_event, 10000);  //  Wait for sensor request to complete or for timeout.
             context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
           }          
@@ -117,9 +128,9 @@ void sensor_task(void) {
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
-        // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
 
         if (!simulator_is_request_complete(&context->sensor->simulator)) {  //  If replay has not completed...
+          debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
           event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
           context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
         }
@@ -167,8 +178,8 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
 static bool is_valid_event_sensor(Sensor *sensor) {
   //  Return true if this is a valid Event Sensor.
   if (sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), sensor->info.name); return false; }
-  if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for"), sensor->info.name); return false; }
-  if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for"), sensor->info.name); return false; }
+  if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for "), sensor->info.name); return false; }
+  if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for "), sensor->info.name); return false; }
   return true;
 }
 

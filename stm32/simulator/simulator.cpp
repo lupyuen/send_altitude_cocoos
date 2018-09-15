@@ -45,24 +45,34 @@ Simulator_Fails simulator_configure(
     Simulator_Control *sim, 
     uint32_t id, 
     const char *name, 
-    SPI_Control *port) {
+    SPI_Control *port,
+    bool capture_enabled, bool replay_enabled, bool simulate_enabled) {
     //  Set up the simulator for the sensor.
-    sim->mode = Simulator_Capture;  //  Always capture the first time.
     sim->index = 0;
     sim->length = 0;
     sim->id = id;
     sim->port = port;
-    if (port) { port->simulator = sim; }
+    sim->capture_enabled = capture_enabled;
+    sim->replay_enabled = replay_enabled;
+    sim->simulate_enabled = simulate_enabled;
     if (name) {
         strncpy(sim->name, name, MAX_SENSOR_NAME_SIZE);
         sim->name[MAX_SENSOR_NAME_SIZE] = 0;
+    }
+    if (capture_enabled) {
+        sim->mode = Simulator_Capture;  //  Always capture the first time.
+        if (port) { port->simulator = sim; }
+    } else {
+        sim->mode = Simulator_Disabled;  //  Else disabled.
+        if (port) { port->simulator = NULL; }
     }
     return Simulator_Ok;
 }
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the port.
-    debug_println("sim open");
+    debug_print("sim open mode "); debug_println(sim->mode);
+    if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
     SPI_Control *port = sim->port;
     if (port == NULL) { return showError(sim, Simulator_Missing_Port); }
     sim->index = 0;
@@ -78,7 +88,8 @@ Simulator_Fails simulator_open(Simulator_Control *sim) {
 
 bool simulator_should_poll_sensor(Simulator_Control *sim) {
     //  Return true if the Sensor Task should actually poll the sensor, i.e. when capturing or when simulating.
-    if (sim->mode == Simulator_Replay) { return false; }
+    if (sim->mode == Simulator_Disabled) { return true; }  //  If simulator disabled, always poll the sensor.
+    else if (sim->mode == Simulator_Replay) { return false; }
     return true;
 }
 
@@ -175,11 +186,12 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
     //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
     debug_println("sim close");
+    if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
+    SPI_Control *port = sim->port;
+
     //  For Replay Mode, close the SPI port.
-    if (sim->port != NULL && sim->mode == Simulator_Replay) {
-        spi_close(sim->port);
-    }
-    if (sim->port) { spi_dump_trail(sim->port); }  //  Dump the trail for debug.
+    if (port != NULL && sim->mode == Simulator_Replay) { spi_close(port); }
+    if (port) { spi_dump_trail(port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.
             if (sim->length > 0) { sim->mode = Simulator_Replay; }
@@ -193,7 +205,7 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
             break;
         default: debug_print("***** ERROR: Unknown simulator mode "); debug_println(sim->mode); debug_flush();
     }
-    if (sim->port) { sim->port->simulator = NULL; }
+    if (port) { port->simulator = NULL; }
     return Simulator_Ok;
 }
 
