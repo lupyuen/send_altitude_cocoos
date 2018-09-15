@@ -46,6 +46,22 @@ static void init_sensor(void) {
 }
 
 //  TODO
+/*
+tmp >> replayed >> 72 << ff
+tmp >> replayed >> 01 << ff
+tmp >> replayed >> 74 << ff
+tmp >> replayed >> 25 << ff
+tmp >> replayed >> 75 << ff
+tmp >> replayed >> a0 << ff
+tmp >> replayed >> f7 << ff
+tmp >> replayed >> 00 << 51
+tmp >> replayed >> 00 << 12
+tmp >> replayed >> 00 << 00
+tmp >> replayed >> 00 << 82
+tmp >> replayed >> 00 << dd
+tmp >> replayed >> 00 << 00
+tmp >> replayed >> 00 << 7f
+*/
 #define TX_LEN 16
 #define RX_LEN 16
 static uint8_t tx_buf[TX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
