@@ -19,13 +19,6 @@ static const char *simulator_msg[] = {
 	"Read timeout"
 };
 
-static inline TickType_t diff_ticks(TickType_t early,TickType_t later) {
-    //  Compute the difference in ticks.
-	if ( later >= early )
-		return later - early;
-	return ~(TickType_t)0 - early + 1 + later;
-}
-
 const char *simulator_error(Simulator_Fails fcode) {
     //  Return a character string message for Simulator_Fails code
 	int icode = (int)fcode;
