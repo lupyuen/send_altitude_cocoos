@@ -74,6 +74,7 @@ void sensor_task(void) {
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
   volatile Evt_t *replay_event = NULL;
+  volatile Evt_t *sensor_event = NULL;
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
@@ -93,13 +94,27 @@ void sensor_task(void) {
       //  Poll for the sensor data and copy into the sensor message.  This will also capture or simulate the sensor SPI commands.
       context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
 
+#define SENSOR_NOT_READY 0xff
+      if (context->msg.count == SENSOR_NOT_READY) {
+        for (;;) {
+          sensor_event = context->sensor->info.process_sensor_func();
+          if (sensor_event == NULL) { break; }
+          // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
+
+          if (!context->sensor->info.is_request_complete()) {  //  If sensor request has not completed...
+            event_wait_timeout(*sensor_event, 10000);  //  Wait for replay to complete or for timeout.
+            context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
+          }          
+        }
+      }
+
     } else {  //  Else we are replaying a captured SPI command.
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
         replay_event = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
         if (replay_event == NULL) { break; }  //  No more packets to replay.
         // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
 
-        if (!simulator_is_request_completed(&context->sensor->simulator)) {  //  Replay only if not completed.
+        if (!simulator_is_request_complete(&context->sensor->simulator)) {  //  If replay has not completed...
           event_wait_timeout(*replay_event, 10000);  //  Wait for replay to complete or for timeout.
           context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
         }
@@ -116,7 +131,7 @@ void sensor_task(void) {
     context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
 
     //  Do we have new data?
-    if (context->msg.count > 0) {
+    if (context->msg.count > 0 && context->msg.count != SENSOR_NOT_READY) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
       debug_print(context->msg.name); debug_print(F(" >> Send msg ")); debug_println(context->msg.data[0]); debug_flush();
       //  Note: We use msg_post_async() instead because msg_post() will block if the receiver's queue is full.

@@ -115,7 +115,7 @@ SPI_Fails spi_open(volatile SPI_Control *port);  //  Enable DMA interrupt for SP
 SPI_Fails spi_transceive(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len, volatile Evt_t *completed_event);
 SPI_Fails spi_transceive_wait(volatile SPI_Control *port, volatile SPI_DATA_TYPE *tx_buf, int tx_len, volatile SPI_DATA_TYPE *rx_buf, int rx_len);
 volatile Evt_t *spi_transceive_replay(volatile SPI_Control *port);  //  Replay the next transceive request that was captured earlier.
-bool spi_is_transceive_completed(volatile SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
+bool spi_is_transceive_complete(volatile SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
 bool spi_is_transceive_successful(volatile SPI_Control *port);  //  Return true if last SPI command was successful.
 SPI_Fails spi_wait(volatile SPI_Control *port);  //  Wait until transceive complete.
 SPI_Fails spi_close(volatile SPI_Control *port);  //  Disable DMA interrupt for SPI1.

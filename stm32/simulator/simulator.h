@@ -50,7 +50,7 @@ Simulator_Fails simulator_configure(Simulator_Control *sim, uint32_t id, const c
 Simulator_Fails simulator_open(Simulator_Control *sim);  //  Begin capture, replay or simulate.
 bool simulator_should_poll_sensor(Simulator_Control *sim);  //  Return true if the Sensor Task should actually poll the sensor.
 volatile Evt_t *simulator_replay(Simulator_Control *sim);  //  Replay the captured SPI commands.
-bool simulator_is_request_completed(Simulator_Control *sim);  //  Return true if last SPI command was completed successfully or with error.
+bool simulator_is_request_complete(Simulator_Control *sim);  //  Return true if last SPI command was completed successfully or with error.
 bool simulator_is_request_successful(Simulator_Control *sim);  //  Return true if last SPI command was successful.
 Simulator_Fails simulator_dump_packet(Simulator_Control *sim);  //  Dump the last SPI packet to console.
 

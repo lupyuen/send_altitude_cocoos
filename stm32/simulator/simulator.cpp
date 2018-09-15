@@ -152,10 +152,10 @@ volatile uint8_t *simulator_simulate_packet(Simulator_Control *sim, int size) {
     return simulator_replay_packet(sim, size);
 }
 
-bool simulator_is_request_completed(Simulator_Control *sim) {
+bool simulator_is_request_complete(Simulator_Control *sim) {
     //  Return true if last SPI command was completed successfully or with error.
     if (!sim->port) return true;
-    return spi_is_transceive_completed(sim->port);
+    return spi_is_transceive_complete(sim->port);
 }
 
 bool simulator_is_request_successful(Simulator_Control *sim) {

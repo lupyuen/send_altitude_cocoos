@@ -152,7 +152,7 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	//  This checks the state flag as well as follows the procedure on the Reference Manual (RM0008 rev 14 Section 25.3.9 page 692, the note.)
 	//  debug_println("spi_wait"); // debug_flush();
 	TickType_t startTime = systicks();
-	while (!spi_is_transceive_completed(port)) {
+	while (!spi_is_transceive_complete(port)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
 			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
 	}
@@ -167,7 +167,7 @@ SPI_Fails spi_wait(volatile SPI_Control *port) {
 	return SPI_Ok;
 }
 
-bool spi_is_transceive_completed(volatile SPI_Control *port) {
+bool spi_is_transceive_complete(volatile SPI_Control *port) {
     //  Return true if last SPI command was completed successfully or with error.
 	if (port->transceive_status == TRANS_RX_COMPLETE
 		|| port->transceive_status == TRANS_TIMEOUT
