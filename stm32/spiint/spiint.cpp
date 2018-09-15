@@ -50,7 +50,8 @@ SPI_Fails spi_transceive(
 	int tx_len, 
 	SPI_DATA_TYPE *rx_buf, 
 	int rx_len, 
-	Evt_t *completed_event  //  Event to be signalled upon completing the request.  NULL if no event.
+	Evt_t *completed_event,  //  Event to be signalled upon completing the request.  NULL if no event.
+	Sem_t *completed_semaphore
 	) {	
 	//  Send an SPI command to transmit and receive SPI data.  If the simulator is in...
 	//  Capture Mode: We capture the transmit/receive data into the simulator trail.
@@ -78,6 +79,9 @@ SPI_Fails spi_transceive(
 	port->rx_buf = rx_buf; port->rx_len = rx_len;
 
 	//  Signal this event when receive is completed.
+	port->rx_semaphore = completed_semaphore;
+	port->tx_semaphore = NULL;
+
 	port->rx_event = completed_event;
 	port->tx_event = NULL;
 
@@ -175,12 +179,7 @@ bool spi_is_transceive_complete(SPI_Control *port) {
 		|| status == TRANS_RX_ERROR) {
 		return true;
 	}
-	volatile Trans_Status status2 = port->transceive_status;
-	debug_print("spi complete "); 
-	debug_print((int) status); debug_print(" / ");
-	debug_print((int) status2); debug_print(" / ");
-	debug_print((int) port->transceive_status); debug_print(" "); 
-	dump_history(port);
+	// volatile Trans_Status status2 = port->transceive_status; debug_print("spi complete "); debug_print((int) status); debug_print(" / "); debug_print((int) status2); debug_print(" / "); debug_print((int) port->transceive_status); debug_print(" "); dump_history(port);
 	return false;
 }
 
@@ -216,6 +215,9 @@ SPI_Fails spi_open(SPI_Control *port) {
 	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
 	//  if (port->simulator) 
 	{ debug_print("spi open spi"); debug_println((int) port->id); dump_config(port); debug_flush(); }
+	port->tx_semaphore = NULL;
+	port->rx_semaphore = NULL;
+
 	port->tx_event = NULL;
 	port->rx_event = NULL;
 	port->transceive_status = TRANS_NONE;
@@ -273,6 +275,9 @@ SPI_Fails spi_close(SPI_Control *port) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
 			{ break; }
 	}
+	port->tx_semaphore = NULL;
+	port->rx_semaphore = NULL;
+
 	port->tx_event = NULL;
 	port->rx_event = NULL;
  	nvic_disable_irq(port->rx_irq);
@@ -490,6 +495,9 @@ static SPI_Fails spi_init_port(
 	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
 	SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
+	port->tx_semaphore = NULL;
+	port->rx_semaphore = NULL;
+
 	port->event = event_create();
 	port->tx_event = NULL; port->rx_event = NULL;
 	port->simulator = NULL;
@@ -608,6 +616,8 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				//  Update the transmit complete status.
 				update_transceive_status(port);
 				//  Send event signal that transmit is done.  (Not used)
+				if (port->tx_semaphore) { sem_ISR_signal(*port->tx_semaphore); }
+
 				if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
 
 			} else {  //  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
@@ -632,6 +642,9 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the error status.
 			update_transceive_status(port, TRANS_TX_ERROR);
 			//  Send event signals that transmit and receive are done.
+			if (port->tx_semaphore) { sem_ISR_signal(*port->tx_semaphore); }
+			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+
 			if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
 			if (port->rx_event != NULL) { event_ISR_signal(*port->rx_event); }
 		}
@@ -658,6 +671,8 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the receive complete status.
 			update_transceive_status(port);
 			//  For simulator replay: Signal to Sensor Task when receive is done.
+			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+
 			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
 	}
@@ -672,6 +687,8 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		if (port) {  //  Update the error status.
 			update_transceive_status(port, TRANS_RX_ERROR); 
 			//  For simulator replay: Signal to Sensor Task when receive is done.
+			if (port->rx_semaphore) { sem_ISR_signal(*port->rx_semaphore); }
+
 			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
 	}
