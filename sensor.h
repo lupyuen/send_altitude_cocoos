@@ -69,7 +69,7 @@ struct SensorInfo {
   bool (*is_sensor_ready_func)(void);
 
   //  The following fields are private to sensor.cpp.
-  Evt_t *event;            //  Event to be signalled when sensor is ready to return sensor data.
+  Sem_t semaphore;         //  Semaphore to be signalled when sensor is ready to return sensor data.
   uint8_t id;              //  Unique sensor ID.
   uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
 };
@@ -77,7 +77,7 @@ struct SensorInfo {
 //  Interface for controlling the sensor.
 struct SensorControl {
   #ifdef __cplusplus
-  SensorControl(                        //  Constructor for C++
+  SensorControl(                       //  Constructor for C++
     void (*init_sensor_func)(void),    //  Function for initialising the sensor.
     void (*next_channel_func)(void),   //  TODO: Set sensor to measure next channel.
     void (*prev_channel_func)(void));  //  TODO: Set sensor to measure previous channel.

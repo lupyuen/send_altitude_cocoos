@@ -46,11 +46,10 @@ void setup_sensor_context(
 
   //  Allocate a unique sensor ID and create the event.
   uint8_t sensorID =  nextSensorID++;
-  Evt_t event = event_create();
 
   //  Initialise the sensor values.
   sensor->info.id = sensorID; 
-  sensor->info.event = &event;
+  sensor->info.semaphore = sem_bin_create(0);
   sensor->info.poll_interval = pollInterval;
 
   //  Set the context.
@@ -70,7 +69,7 @@ void setup_sensor_context(
   bool simulate_enabled = true;
 
   //  For Event Sensors: Don't capture, replay and simulate the SPI commands.
-  if (is_valid_event_sensor(sensor)) {
+  if (sensor->info.resume_sensor_func) {
     capture_enabled = false;
     replay_enabled = false;
     simulate_enabled = false;
@@ -86,8 +85,8 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  Sem_t *replay_sempahore = NULL;
-  Evt_t *sensor_event = NULL;
+  Sem_t *replay_semaphore = NULL;
+  Sem_t *sensor_semaphore = NULL;
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
@@ -117,8 +116,8 @@ void sensor_task(void) {
           // debug_print(context->sensor->info.name); debug_println(F(" >> Wait for sensor"));
 
           if (!context->sensor->info.is_sensor_ready_func()) {  //  If sensor request has not completed...
-            sensor_event = context->sensor->info.event;
-            event_wait_timeout(*sensor_event, 10000);  //  Wait for sensor request to complete or for timeout.
+            sensor_semaphore = &context->sensor->info.semaphore;
+            sem_wait(*sensor_semaphore);  //  Wait for sensor processing to complete.  TODO: timeout.
             context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after event_wait_timeout();
           }          
         }
@@ -126,12 +125,12 @@ void sensor_task(void) {
 
     } else {  //  Else we are replaying a captured SPI command.
       for (;;) {  //  Replay every captured SPI packet and wait for the replay to the completed.
-        replay_sempahore = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
-        if (replay_sempahore == NULL) { break; }  //  No more packets to replay.
+        replay_semaphore = simulator_replay(&context->sensor->simulator);  //  Replay the next packet if any.
+        if (replay_semaphore == NULL) { break; }  //  No more packets to replay.
 
         if (!simulator_is_request_complete(&context->sensor->simulator)) {  //  If replay has not completed...
           debug_print(context->sensor->info.name); debug_println(F(" >> Wait for replay"));
-          sem_wait(*replay_sempahore);  //  Wait for replay to complete.  TODO: timeout.
+          sem_wait(*replay_semaphore);  //  Wait for replay to complete.  TODO: timeout.
           context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait();
         }
         debug_print(context->sensor->info.name); debug_print(F(" >> ")); simulator_dump_packet(&context->sensor->simulator); debug_flush();
@@ -177,7 +176,6 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
 
 static bool is_valid_event_sensor(Sensor *sensor) {
   //  Return true if this is a valid Event Sensor.
-  if (sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), sensor->info.name); return false; }
   if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for "), sensor->info.name); return false; }
   if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for "), sensor->info.name); return false; }
   return true;

@@ -137,7 +137,7 @@ SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_l
 		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
 	} else {
 		//  If no simulator, or simulator is in other modes, wait for transceive response.
-		spi_wait(port);  dump_history(port);
+		spi_wait(port);  //  dump_history(port);
 		if (port->simulator) { dump_packets(get_mode_name(port), tx_buf, tx_len, rx_buf, rx_len); }
 	}
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Capture) {
