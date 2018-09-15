@@ -29,6 +29,8 @@
 #define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.
 #endif  //  STM32
 
+static bool is_valid_event_sensor(Sensor *sensor);
+
 uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
 
 void setup_sensor_context(
@@ -96,10 +98,7 @@ void sensor_task(void) {
 
       //  If sensor is not ready to return data, this must be an event-based async sensor e.g. SPI temperature sensor.
       if (context->msg.count == SENSOR_NOT_READY) {
-        //  Validate sensor event and event functions.
-        if (context->sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), context->sensor->info.name); return; }
-        if (context->sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for"), context->sensor->info.name); return; }
-        if (context->sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for"), context->sensor->info.name); return; }
+        if (!is_valid_event_sensor(context->sensor)) { return; }  //  Stop if this is not an Event Sensor.
         sensor_event = context->sensor->info.event;
         for (;;) {          
           //  Process any sensor data received. If processing is complete, get the sensor data.
@@ -163,6 +162,14 @@ uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, floa
     data[i] = sensorDataArray[i];
   }
   return i;  //  Return the number of floats copied.
+}
+
+static bool is_valid_event_sensor(Sensor *sensor) {
+  //  Return true if this is a valid Event Sensor.
+  if (sensor->info.event == NULL) { debug(F("***** ERROR: Missing event for "), sensor->info.name); return false; }
+  if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for"), sensor->info.name); return false; }
+  if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for"), sensor->info.name); return false; }
+  return true;
 }
 
 //  SensorInfo constructor for C++ only.
