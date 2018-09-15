@@ -119,7 +119,7 @@ static void sensor_setup(uint8_t task_id) {
   //  Set up the sensors and get their sensor contexts.
   ////TODO: const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
   const int pollInterval = 10000;  //  Poll the sensor every 10000 milliseconds.
-#ifndef STM32
+#ifdef STM32
   SensorContext *tempContext = setup_temp_event_sensor(pollInterval, task_id);
 #else
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);

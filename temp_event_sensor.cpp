@@ -118,7 +118,7 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
 
   //  Process the received SPI data into sensor data.
   //  TODO: sensorData[0] = bme.temp(tempUnit);  //  Get temperature in Celsius.
-  spi_dump_packet(sensor.port);
+  debug_print(sensor.info.name); spi_dump_packet(sensor.port);
 
   //  Simulated sensor.
   sensorData[0] = 12.3 + rand() % 10;

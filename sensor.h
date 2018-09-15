@@ -121,6 +121,8 @@ struct SensorContext {
   Sensor *sensor;           //  The sensor for the context.
   uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
   SensorMsg msg;            //  Temporary space for composing the sensor data message.
+  Sem_t *read_semaphore;    //  If set, wait for this semaphore before reading sensor data.
+  Sem_t *send_semaphore;    //  If set, wait for this semaphore before sending data.
 };
 
 //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
