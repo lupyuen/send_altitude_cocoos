@@ -56,9 +56,8 @@ SPI_Fails spi_transceive(
 	//  Capture Mode: We capture the transmit/receive data into the simulator trail.
 	//  Replay mode: We replay the transmit/receive SPI command recorded in the simulator trail. Record the received data into the trail.
 	//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
-	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.  //  if (port->simulator != NULL) { dump_packet("spi >>", tx_buf, tx_len); }
 
-	/////if (port->simulator != NULL) { dump_packet("spi >>", tx_buf, tx_len); }
 	//  Check for 0 length in both tx and rx.
 	if ((rx_len < 1) && (tx_len < 1)) { return showError(port, SPI_Invalid_Size); }
 	//  If this is Simulate Mode, return the data received in Replay Mode.
@@ -122,7 +121,7 @@ SPI_Fails spi_transceive(
 
 SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
 	//  This function blocks until the result is received.  Should only be used for legacy Arduino code.
-	//  New code should call spi_transceive() and pass an event to be signalled.
+	//  New code should call spi_transceive() and pass a semaphore to be signalled.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 
 	//  Start a transceive.
@@ -130,7 +129,7 @@ SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_l
 	if (result != SPI_Ok) { return result; }
 	//  Wait for transceive to complete if necessary.
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Replay ) {
-		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion event to be signalled.
+		//  If simulator is in Replay Mode, don't need to wait now.  Caller will wait for completion semaphore to be signalled.
 	} else {
 		//  If no simulator, or simulator is in other modes, wait for transceive response.
 		spi_wait(port);  //  dump_history(port);
@@ -296,7 +295,7 @@ SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 	uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
 	//  Stop if the packet was invalid.
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return showError(port, SPI_Mismatch); }
-	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
+	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_sem "); debug_println((int) completed_semaphore ? *completed_semaphore : -1); debug_flush();
 
 	//  Send the transceive request and signal the semaphore when completed.
 	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, completed_semaphore);
@@ -313,11 +312,12 @@ static SPI_Fails spi_simulate(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_l
 	if (port->simulator == NULL) {
 		return spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, NULL);  //  Don't simulate.
 	}
+	//  Read the next transceive packet from the captured trail.
 	int captured_tx_len = simulator_simulate_size(port->simulator);
 	uint8_t *captured_tx_buf = simulator_simulate_packet(port->simulator, captured_tx_len);
 	int captured_rx_len = simulator_simulate_size(port->simulator);
 	uint8_t *captured_rx_buf = simulator_simulate_packet(port->simulator, captured_rx_len);
-	//  Verify that tx_len and rx_len are same as captured trail.
+	//  Verify that tx_len and rx_len are same as transceive packet from the captured trail.
 	if (tx_len != captured_tx_len || rx_len != captured_rx_len) {
 		return spi_simulate_error(port, SPI_Mismatch, tx_buf, tx_len, rx_buf, rx_len);
 	}
@@ -361,7 +361,7 @@ SPI_Fails spi_configure(
 	port->dataMode = dataMode;
 	port->timeout = 2000;  //  Timeout is 2 seconds.
 
-	//  Configure output pins for SPI: SS, SCK, MOSI.
+	//  Configure output pins for SPI: SS, SCK, MOSI.  Set to the fastest mode (50MHz) so that output changes will be immediate.
 	gpio_set_mode(port->ss_port, GPIO_MODE_OUTPUT_50_MHZ,
         GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, port->ss_pin);
 	gpio_set_mode(port->sck_port, GPIO_MODE_OUTPUT_50_MHZ,
@@ -376,19 +376,20 @@ SPI_Fails spi_configure(
 
 static SPI_Fails spi_setup_dma(SPI_Control *port, uint32_t dma, uint8_t channel, SPI_DATA_TYPE *buf, int len, bool set_read_from_peripheral, bool enable_memory_increment_mode) {
 	//  Set up DMA for SPI receive and transmit.
-	dma_set_peripheral_address(dma, channel, (uint32_t) port->ptr_SPI_DR);
-	dma_set_memory_address(dma, channel, (uint32_t) buf); // Change here
-	dma_set_number_of_data(dma, channel, len); // Change here
+	dma_set_peripheral_address(dma, channel, (uint32_t) port->ptr_SPI_DR);  //  SPI port for the DMA transfer.
+	dma_set_memory_address(dma, channel, (uint32_t) buf);  //  Set the memory buffer.  Must be in static memory, not stack.
+	dma_set_number_of_data(dma, channel, len);  //  Set the number of bytes to transmit/receive.
 
 	if (set_read_from_peripheral) { dma_set_read_from_peripheral(dma, channel); }  //  For rx: Read from SPI port and write into memory.
 	else { dma_set_read_from_memory(dma, channel); }  //  For tx and rx_remainder: Read from memory and write to SPI port.
 
+	//  Increment the memory buffer pointer so that the entire buffer will be transmitted/received.
 	if (enable_memory_increment_mode) { dma_enable_memory_increment_mode(dma, channel); }
 	else { dma_disable_memory_increment_mode(dma, channel); }  //  For rx_remainder: Always read from the same address, don't increment.
 
-	dma_set_peripheral_size(dma, channel, SPI_PSIZE);
-	dma_set_memory_size(dma, channel, SPI_MSIZE);
-	dma_set_priority(dma, channel, DMA_CCR_PL_HIGH);
+	dma_set_peripheral_size(dma, channel, SPI_PSIZE);  //  Select 8 or 16-bit SPI transfer.
+	dma_set_memory_size(dma, channel, SPI_MSIZE);      //  Select 8 or 16-bit memory transfer.
+	dma_set_priority(dma, channel, DMA_CCR_PL_HIGH);   //  Set DMA priority.
 	return SPI_Ok;
 }
 
@@ -612,7 +613,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 			if (port->rx_remainder == 0) {  //  This is a normal transceive with tx_len >= rx_len.
 				//  Update the transmit complete status.
 				update_transceive_status(port);
-				//  Send event signal that transmit is done.  (Not used)
+				//  Signal the transmit semaphore that transmit is done.  (Not used)
 				if (port->tx_semaphore) { 
 					sem_ISR_signal(*port->tx_semaphore); 
 					port->tx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
@@ -639,7 +640,7 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		dma_disable_channel(dma, channel);
 		if (port) {  //  Update the error status.
 			update_transceive_status(port, TRANS_TX_ERROR);
-			//  Send event signals that transmit and receive are done.
+			//  Signal the transmit and receive semaphores that transmit and receive are done.
 			if (port->tx_semaphore) { 
 				sem_ISR_signal(*port->tx_semaphore); 
 				port->tx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
