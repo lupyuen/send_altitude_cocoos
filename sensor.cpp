@@ -51,13 +51,13 @@ void sensor_task(void) {
 
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     context = (SensorContext *) task_get_data();  //  Must refetch the context after task_wait().
-    debug(context->sensor->info.name, F(" >> Wait for semaphore"));
+    debug_print(context->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
 
     //  This code is executed by multiple sensors. We use a semaphore to prevent 
     //  concurrent access to the shared I2C or SPI port on Arduino Uno or Blue Pill.
     sem_wait(*context->read_semaphore);  //  Wait until no other sensor is using the I/O port. Then lock the semaphore.
     context = (SensorContext *) task_get_data();  //  Must fetch the context pointer again after the wait.
-    debug(context->sensor->info.name, F(" >> Got semaphore"));
+    debug_print(context->sensor->info.name); debug_print(F(" >> Got semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
     
     //  Begin to capture, replay or simulate the sensor SPI commands.
     simulator_open(&context->sensor->simulator);
@@ -91,7 +91,7 @@ void sensor_task(void) {
     simulator_close(&context->sensor->simulator);
 
     //  We are done with the I/O port.  Release the semaphore so that another task can fetch the sensor data on the port.
-    debug(context->sensor->info.name, F(" >> Release semaphore"));
+    debug_print(context->sensor->info.name); debug_print(F(" >> Release semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
     sem_signal(*context->read_semaphore);
     context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
 

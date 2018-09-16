@@ -8,36 +8,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
-#include "display.h"
-#include "uart.h"
-#include "wisol.h"
-#include "sensor.h"
-#include "aggregate.h"
-#include "temp_sensor.h"        //  Temperature sensor (BME280 I2C)
-#include "humid_sensor.h"       //  Humidity sensor (BME280 I2C)
-#include "alt_sensor.h"         //  Altitude sensor (BME280 I2C)
+#include "display.h"            //  For Display Task and debug functions
+#include "sensor.h"             //  For common sensor declarations
+#include "aggregate.h"          //  For aggregating sensor data before transmission
+#include "temp_sensor.h"        //  Temperature sensor (BME280 I2C or SPI)
+#include "humid_sensor.h"       //  Humidity sensor (BME280 I2C or SPI)
+#include "alt_sensor.h"         //  Altitude sensor (BME280 I2C or SPI)
 #include "temp_event_sensor.h"  //  Temperature event-based sensor (BME280 SPI)
-#ifdef USE_GYRO_SENSOR  //  Use simulated gyro sensor.
-#include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
+#ifdef USE_GYRO_SENSOR          //  If we are using simulated gyro sensor...
+#include "gyro_sensor.h"        //  Gyroscope sensor (simulated)
 #endif  //  USE_GYRO_SENSOR
 
 //  These are the functions that we will implement in this file.
-static void system_setup(void);  //  Initialise the system.
+static void system_setup(void);                       //  Initialise the system.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
 
-//// TODO
-Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-
-#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data to the IoT network...
+#ifdef TRANSMIT_SENSOR_DATA          //  If we are transmitting sensor data to the IoT network...
+#include "uart.h"   //  For UART Task
+#include "wisol.h"  //  For Network Task
 static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
 static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Buffer for writing UART response.
-static UARTContext uartContext;
-static NetworkContext wisolContext;
+static UARTContext uartContext;      //  For UART Task context.
+static NetworkContext wisolContext;  //  For Network Task context.
 static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART Tasks message queue.
 static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];  //  Pool of sensor data messages for the Network Task message queue.
 #endif  //  TRANSMIT_SENSOR_DATA
 
-#ifdef SENSOR_DISPLAY  //  If we are displaying sensor data instead of sending to network...
+#ifdef SENSOR_DISPLAY                //  If we are displaying sensor data instead of sending to network...
 static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
@@ -51,18 +48,18 @@ int main(void) {
 
   //  Init the platform, cocoOS and create any system objects.
   platform_setup();  //  Arduino or STM32 platform setup.
-  os_init();         //  Init cocoOS before creating Semaphore.
-  system_setup();    //  Create the I2C Semaphore.
+  os_init();         //  Init cocoOS before creating any multitasking objects.
+  system_setup();    //  Setup the system.
 
   //  Erase the aggregated sensor data.
-  setup_aggregate();
-  uint8_t task_id = 0;
+  setup_aggregate();    //  We will aggregate the sensor data in Network Task before transmitting to network.
+  uint8_t task_id = 0;  //  Task ID (for Network Task or Display Task) that will receive sensor data messages.
 
-#ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
+#ifdef SENSOR_DISPLAY         //  If we are displaying the sensor data instead of sending to network...
   task_id = display_setup();  //  Start the display task that displays sensor data.
 #endif  //  SENSOR_DISPLAY
 
-#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data to the IoT network...  
+#ifdef TRANSMIT_SENSOR_DATA   //  If we are transmitting sensor data to the IoT network...  
   task_id = network_setup();  //  Start the Network Task and UART Task to send and receive network messages.
 #endif  //  TRANSMIT_SENSOR_DATA
   
@@ -111,7 +108,7 @@ static void sensor_setup(uint8_t task_id) {
   task_create(sensor_task, altContext, 130, 0, 0, 0);   //  Priority 130
 #endif  //  USE_ALTITUDE_SENSOR
 
-#ifdef USE_GYRO_SENSOR  //  Use simulated gyro sensor.
+#ifdef USE_GYRO_SENSOR      //  Use simulated gyro sensor.
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
   task_create(sensor_task, gyroContext, 140, 0, 0, 0);  //  Priority 140
 #endif  //  USE_GYRO_SENSOR
@@ -156,17 +153,10 @@ static uint8_t network_setup(void) {
 #endif  //  TRANSMIT_SENSOR_DATA
 
 static void system_setup(void) {
-  //  Initialise the system. Create the I2C semaphore.
-
+  //  Initialise the system.
 #ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
   init_display();  //  Setup the display objects.
 #endif  //  SENSOR_DISPLAY
-
-  //  Create the global semaphore for preventing concurrent access to the single shared I2C Bus.
-  debug(F("Create semaphore")); ////
-  const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
-  const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
-  i2cSemaphore = sem_counting_create( maxCount, initValue );
 }
 
 #ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...

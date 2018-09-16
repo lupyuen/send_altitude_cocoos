@@ -126,9 +126,6 @@ struct SensorContext {
   Sem_t *send_semaphore;    //  If set, wait for this semaphore before sending data.
 };
 
-//  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
-extern Sem_t i2cSemaphore;
-
 //  Set up the sensor context. Allocate a new sensor ID and event.
 void setup_sensor_context(
   SensorContext *context,  //  Context to be set up.

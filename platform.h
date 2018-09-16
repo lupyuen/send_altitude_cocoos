@@ -3,8 +3,8 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
-//  #define USE_TEMP_EVENT_SENSOR    //  Uncomment to use the event-based temperature sensor.
-#define USE_TEMP_POLLING_SENSOR  //  Uncomment to use the polling-based temperature sensor.
+#define USE_TEMP_EVENT_SENSOR    //  Uncomment to use the event-based temperature sensor.
+//  #define USE_TEMP_POLLING_SENSOR  //  Uncomment to use the polling-based temperature sensor.
 //  #define USE_HUMIDITY_SENSOR      //  Uncomment to use the polling-based humidity sensor.
 //  #define USE_ALTITUDE_SENSOR      //  Uncomment to use the polling-based altitude sensor.
 //  #define TRANSMIT_SENSOR_DATA     //  Uncomment to transmit sensor data to the IoT network (Sigfox).
