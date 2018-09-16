@@ -1,10 +1,5 @@
-//  Defines the common Sensor base class.  Every Sensor is assumed to have a name comprising
-//  3 lowercase letters and digits, e.g. "tmp".  The Sensor is capable of producing
-//  one, two or three float values as sensor data, in a single sample.  The Sensor instance
-//  for specific sensor (e.g. temp_sensor) will provide the function to poll the actual sensor.
-//  Every Sensor will also post a SensorMsg to the Network Task or Display Task for
-//  aggregation/transmission or for display.
-////#define DISABLE_DEBUG_LOG  //  Disable debug logging.
+//  Defines the common Sensor base class.
+//  #define DISABLE_DEBUG_LOG  //  Disable debug logging.
 #include "platform.h"
 #include <string.h>
 #include <cocoos.h>
@@ -130,6 +125,7 @@ static Sem_t *allocate_port_semaphore(uint32_t port_id) {
     debug(F("*** ERROR: Port semaphore overflow. Increase MAX_PORT_COUNT"));
     return NULL;
   }
+  //  Each I/O port (e.g. SPI1) is controlled by a Counting Semaphore.  Tasks will queue up to get access to the port.
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I/O port.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I/O port.
   portSemaphores[portSemaphoreIndex].port_id = port_id;
@@ -137,25 +133,6 @@ static Sem_t *allocate_port_semaphore(uint32_t port_id) {
   Sem_t *result = &portSemaphores[portSemaphoreIndex].semaphore;
   portSemaphoreIndex++;
   return result;
-}
-
-uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
-  //  Copy the received sensor data array into the provided data buffer.
-  //  Return the number of floats copied.  //  debug(F("receive_sensor_data"));
-  uint8_t i;
-  //  Copy the floats safely: Don't exceed the array size provided by caller.
-  //  Also don't exceed the number of available sensor data items.
-  for (i = 0; i < size && i < sensorDataSize && i < MAX_SENSOR_DATA_SIZE; i++) {
-    data[i] = sensorDataArray[i];
-  }
-  return i;  //  Return the number of floats copied.
-}
-
-static bool is_valid_event_sensor(Sensor *sensor) {
-  //  Return true if this is a valid Event Sensor.
-  if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for "), sensor->info.name); return false; }
-  if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for "), sensor->info.name); return false; }
-  return true;
 }
 
 void setup_sensor_context(
@@ -170,11 +147,11 @@ void setup_sensor_context(
   simulator_setup();
 
   //  Allocate a unique sensor ID.
-  uint8_t sensorID =  nextSensorID++;
+  uint8_t sensorID = nextSensorID++;
 
   //  Initialise the sensor values.
-  sensor->info.id = sensorID; 
-  sensor->info.semaphore = sem_bin_create(0);
+  sensor->info.id = sensorID;
+  sensor->info.semaphore = sem_bin_create(0);  //  Binary Semaphore: Will wait until signalled.
   sensor->info.poll_interval = pollInterval;
   sensor->port = NULL;
   sensor->port_id = 0;
@@ -209,6 +186,25 @@ void setup_sensor_context(
     capture_enabled, replay_enabled, simulate_enabled);
 }
 
+uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
+  //  Copy the received sensor data array into the provided data buffer.
+  //  Return the number of floats copied.  //  debug(F("receive_sensor_data"));
+  uint8_t i;
+  //  Copy the floats safely: Don't exceed the array size provided by caller.
+  //  Also don't exceed the number of available sensor data items.
+  for (i = 0; i < size && i < sensorDataSize && i < MAX_SENSOR_DATA_SIZE; i++) {
+    data[i] = sensorDataArray[i];
+  }
+  return i;  //  Return the number of floats copied.
+}
+
+static bool is_valid_event_sensor(Sensor *sensor) {
+  //  Return true if this is a valid Event Sensor.
+  if (sensor->info.resume_sensor_func == NULL) { debug(F("***** ERROR: Missing resume func for "), sensor->info.name); return false; }
+  if (sensor->info.is_sensor_ready_func == NULL) { debug(F("***** ERROR: Missing sensor ready func for "), sensor->info.name); return false; }
+  return true;
+}
+
 //  SensorInfo constructor for C++ only.
 SensorInfo::SensorInfo(
   const char name0[],
@@ -222,7 +218,7 @@ SensorInfo::SensorInfo(
   is_sensor_ready_func = is_sensor_ready_func0;
 }
 
-//  SensorInfo constructor for C++ only.
+//  SensorControl constructor for C++ only.
 SensorControl::SensorControl(
   void (*init_sensor_func0)(void),
   void (*next_channel_func0)(void),

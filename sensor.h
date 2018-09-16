@@ -1,4 +1,8 @@
-//  Defines the common Sensor base class.  Every Sensor is assumed to have a name comprising
+//  Defines the common Sensor base class.  We support 2 types of sensors:
+//  (1) Polling-Based Sensors: To get sensor data call poll_sensor(), which will block until sensor data is available.
+//  (2) Event-Based Sensors: Calling poll_sensor() will return before the sensor data is available.
+//      We need to wait for the sensor's semaphore to be signalled.  Then call resume_sensor() to get the sensor data.
+//  Event Sensors are better for multitasking than Polling Sensors.  Every Sensor is assumed to have a name comprising
 //  3 lowercase letters and digits, e.g. "tmp".  The Sensor is capable of producing
 //  one, two or three float values as sensor data, in a single sample.  The Sensor instance
 //  for specific sensor (e.g. temp_sensor) will provide the function to poll the actual sensor.
