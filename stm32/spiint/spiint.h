@@ -115,7 +115,10 @@ SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI port.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 SPI_Fails spi_transceive(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len, Sem_t *completed_semaphore);
 SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+
 SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore);  //  Replay the next transceive request that was captured earlier.
+SPI_Fails spi_split_trail(SPI_Control *port);  //  Split the received merged packet into the simulator trail.
+
 bool spi_is_transceive_complete(SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
 bool spi_is_transceive_successful(SPI_Control *port);  //  Return true if last SPI command was successful.
 SPI_Fails spi_wait(SPI_Control *port);  //  Wait until transceive complete.

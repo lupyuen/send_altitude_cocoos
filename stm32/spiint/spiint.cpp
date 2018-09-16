@@ -35,7 +35,7 @@ static void dump_packets(const char *title, SPI_DATA_TYPE *tx_buf, int tx_len, S
 static void dump_packet(const char *title, SPI_DATA_TYPE *buf, int len);
 static void dump_history(SPI_Control *port);
 static inline TickType_t diff_ticks(TickType_t early, TickType_t later);
-static SPI_Fails showError(SPI_Control *port, SPI_Fails fc);
+static SPI_Fails showError(SPI_Control *port, const char *title, SPI_Fails fc);
 static const char *get_mode_name(SPI_Control *port);
 
 static SPI_DATA_TYPE dummy_tx_buf[MAX_TRAIL_SIZE];
@@ -56,10 +56,11 @@ SPI_Fails spi_transceive(
 	//  Capture Mode: We capture the transmit/receive data into the simulator trail.
 	//  Replay mode: We replay the transmit/receive SPI command recorded in the simulator trail. Record the received data into the trail.
 	//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
-	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.  //  if (port->simulator != NULL) { dump_packet("spi >>", tx_buf, tx_len); }
+	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+	//  if (port->simulator != NULL) { dump_packet("spi transceive >>", tx_buf, tx_len); }
 
 	//  Check for 0 length in both tx and rx.
-	if ((rx_len < 1) && (tx_len < 1)) { return showError(port, SPI_Invalid_Size); }
+	if ((rx_len < 1) && (tx_len < 1)) { return showError(port, "spi_transceive", SPI_Invalid_Size); }
 	//  If this is Simulate Mode, return the data received in Replay Mode.
 	if (port->simulator != NULL && port->simulator->mode == Simulator_Simulate) { 
 		return spi_simulate(port, tx_buf, tx_len, rx_buf, rx_len); 
@@ -141,6 +142,7 @@ SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_l
 		simulator_capture_packet(port->simulator, tx_buf, tx_len);
 		simulator_capture_size(port->simulator, rx_len);
 		simulator_capture_packet(port->simulator, rx_buf, rx_len);
+		simulator_merge_packet(port->simulator, tx_buf, tx_len, rx_buf, rx_len);
 	}
 	return SPI_Ok;
 }
@@ -152,15 +154,15 @@ SPI_Fails spi_wait(SPI_Control *port) {
 	TickType_t startTime = systicks();
 	while (!spi_is_transceive_complete(port)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, "spi_wait", SPI_Timeout); }
 	}
 	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, "spi_wait", SPI_Timeout); }
 	}
 	while (SPI_SR(port->SPIx) & SPI_SR_BSY) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
-			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, SPI_Timeout); }
+			{ update_transceive_status(port, TRANS_TIMEOUT); return showError(port, "spi_wait", SPI_Timeout); }
 	}
 	return SPI_Ok;
 }
@@ -285,23 +287,55 @@ static SPI_Fails spi_simulate_error(SPI_Control *port, SPI_Fails fc, SPI_DATA_TY
 SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 	//  Replay the next transceive request that was captured earlier.  If completed_semaphore is non-NULL,
 	//  signal the semaphore when the request has been completed.
-	//  if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
-	if (port->simulator == NULL) { return showError(port, SPI_Missing_Simulator); }  //  No simulator.
+	if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
+	if (port->simulator == NULL) { return showError(port, "spi_transceive_replay", SPI_Missing_Simulator); }  //  No simulator.
+	int tx_len = 0; uint8_t *tx_buf = NULL; int rx_len = 0; uint8_t *rx_buf = NULL;
 
-	//  Read the captured SPI packet for send and receive.
-	int tx_len = simulator_replay_size(port->simulator);
-	uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
-	int rx_len = simulator_replay_size(port->simulator);
-	uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
-	//  Stop if the packet was invalid.
-	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return showError(port, SPI_Mismatch); }
-	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_sem "); debug_println((int) completed_semaphore ? *completed_semaphore : -1); debug_flush();
-
+	//  If packet merging is enabled, transmit the merged trail in a single burst.
+	if (simulator_should_replay_merged_trail(port->simulator)) {
+		tx_len = port->simulator->merged_length;
+		rx_len = port->simulator->merged_length;
+		tx_buf = port->simulator->merged_tx;
+		rx_buf = port->simulator->merged_rx;
+		dump_packet("replay merge >>", tx_buf, tx_len); debug_println(""); debug_flush();
+	} else {
+		//  Read the next captured SPI packet for send and receive.
+		tx_len = simulator_replay_size(port->simulator);
+		tx_buf = simulator_replay_packet(port->simulator, tx_len);
+		rx_len = simulator_replay_size(port->simulator);
+		rx_buf = simulator_replay_packet(port->simulator, rx_len);
+		//  Stop if the packet was invalid.
+		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return showError(port, "spi_transceive_replay", SPI_Mismatch); }
+		// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_sem "); debug_println((int) completed_semaphore ? *completed_semaphore : -1); debug_flush();
+	}
 	//  Send the transceive request and signal the semaphore when completed.
 	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, completed_semaphore);
 	if (result != SPI_Ok) { return result; }
 
 	//  Caller (Sensor Task) must wait for the semaphore to be signaled before sending again.
+	return SPI_Ok;
+}
+
+SPI_Fails spi_split_trail(SPI_Control *port) {
+	//  Split the received merged packet into the simulator trail.
+	debug_print("spi before split: "); spi_dump_trail(port); debug_flush();
+	uint8_t *received_packet = port->simulator->merged_rx;
+	uint8_t received_length = port->simulator->merged_length;
+	uint8_t received_index = 0;
+	for (;;) {
+		//  Read the next captured SPI packet for send and receive.
+		int tx_len = simulator_replay_size(port->simulator);
+		uint8_t *tx_buf = simulator_replay_packet(port->simulator, tx_len);
+		int rx_len = simulator_replay_size(port->simulator);
+		uint8_t *rx_buf = simulator_replay_packet(port->simulator, rx_len);
+		//  Stop if no more packets.
+		if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { break; }
+		//  Copy the received packet into the replay packet.
+		if ((received_index + rx_len) >= (received_length + 1)) { return showError(port, "spi_split_trail", SPI_Mismatch); }
+		memcpy((void *) rx_buf, (const void *) &received_packet[received_index], rx_len);
+		received_index = received_index + rx_len;
+	}
+	debug_print("spi after split: "); spi_dump_trail(port); debug_flush();
 	return SPI_Ok;
 }
 
@@ -338,7 +372,7 @@ static SPI_Fails spi_simulate_error(SPI_Control *port, SPI_Fails fc, SPI_DATA_TY
 	//  Verify that tx_buf is same as captured trail.
 	if (port->simulator != NULL) { debug_println("spi_simulate_error"); debug_flush(); }
 	//  In case of error, don't simulate.
-	showError(NULL, fc);  //  Don't set last fail.
+	showError(NULL, "spi_simulate", fc);  //  Don't set last fail.
 	//  Do an actual transceive, don't simulate.
 	if (port->simulator != NULL) {
 		port->simulator->mode = Simulator_Mismatch;
@@ -488,7 +522,7 @@ static SPI_Fails spi_init_port(
 	uint32_t rx_dma, uint8_t rx_channel, uint8_t rx_irq, rcc_periph_clken rx_rcc   //  Receive DMA e.g. DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ, RCC_DMA1
 	) {
 	//  Define the pins, DMA and interrupts of the SPI port.  id=1 refers to SPI1.
-	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, SPI_Invalid_Port); }
+	if (id < 1 || id > MAX_SPI_PORTS) { return showError(NULL, "spi_init_port", SPI_Invalid_Port); }
 	SPI_Control *port = &allPorts[id - 1];
 	port->id = id;
 	port->tx_semaphore = NULL;
@@ -548,11 +582,11 @@ SPI_Control *spi_setup(uint32_t spi_id) {
 		if (allPorts[i].SPIx == spi_id) { id = i + 1; break; }
 	}
 	debug_print("spi setup spi"); debug_println((int) id); debug_flush();
-	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
+	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, "spi_setup", SPI_Invalid_Port); return NULL; }
 
 	//  Fetch the SPI port control.
 	SPI_Control *port = &allPorts[id - 1];
-	if (port->id != id) { showError(NULL, SPI_Invalid_Port); return NULL; }
+	if (port->id != id) { showError(NULL, "spi_setup", SPI_Invalid_Port); return NULL; }
 
 	//  Moved to platform_setup() in bluepill.cpp:
 	//  rcc_clock_setup_in_hse_8mhz_out_72mhz();  //  Standard clocks for STM32 Blue Pill.
@@ -777,7 +811,7 @@ void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 	uint8_t portID = settings.port;
 	if (portID < 1 || portID > MAX_SPI_PORTS) { portID = currentSPIPort; }
 	//  debug_print("spiint begin port "); debug_println((int) portID);  debug_flush();
-	if (portID < 1 || portID > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }
+	if (portID < 1 || portID > MAX_SPI_PORTS) { showError(NULL, "beginTransaction", SPI_Invalid_Port); return; }
 	currentSPIPort = portID;
 	SPI_Control *port = &allPorts[portID - 1];
 	//  SPI setup should have been called in bme280.cpp.  TODO: Verify SPI port number.
@@ -789,7 +823,7 @@ void SPIInterface::beginTransaction(SPIInterfaceSettings settings) {
 uint8_t SPIInterface::transfer(uint8_t data) {
   	//  Send and receive 1 byte of data.  Wait until data is sent and received.  Return the byte received.  Used by BME280Spi.cpp
 	//  debug_print("spiint transfer port "); debug_println((int) currentSPIPort);  debug_flush();
-	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return 0; }
+	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, "transfer", SPI_Invalid_Port); return 0; }
 	uint8_t portID = currentSPIPort;
 	SPI_Control *port = &allPorts[portID - 1];
 
@@ -803,7 +837,7 @@ uint8_t SPIInterface::transfer(uint8_t data) {
 void SPIInterface::endTransaction(void) {
 	//  Used by BME280Spi.cpp
 	//  debug_print("spiint end port "); debug_println((int) currentSPIPort);  debug_flush();
-	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
+	if (currentSPIPort < 1 || currentSPIPort > MAX_SPI_PORTS) { showError(NULL, "endTransaction", SPI_Invalid_Port); return; }	
 	SPI_Control *port = &allPorts[currentSPIPort - 1];
 	spi_close(port);
 }
@@ -822,7 +856,7 @@ void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
 		if (allPorts[i].SPIx == port_id) { id = i + 1; break; }
 	}
 	//  debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" id ");  debug_print((int) id);  debug_print(" val "); debug_println((int) val); // debug_flush();
-	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
+	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, "digitalWrite", SPI_Invalid_Port); return; }	
 	currentSPIPort = id;
 }
 
@@ -882,7 +916,7 @@ static void dump_config(SPI_Control *port) {
 
 SPI_Fails spi_dump_trail(SPI_Control *port) {
 	//  Dump the simulated commands to console.
-	if (port->simulator == NULL) { return showError(NULL, SPI_Missing_Simulator); }  //  No simulator.
+	if (port->simulator == NULL) { return showError(NULL, "spi_dump_trail", SPI_Missing_Simulator); }  //  No simulator.
 	const char *title = get_mode_name(port);
 	int i = port->simulator->index;
 	port->simulator->index = 0;
@@ -969,11 +1003,11 @@ const char *spi_error(SPI_Fails fcode) {
 	return spi_msg[icode];
 }
 
-static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
+static SPI_Fails showError(SPI_Control *port, const char *title, SPI_Fails fc) {
 	//  Show the message for the error code on console.
 	if (port) { port->failCode = fc; }
 	debug_print("***** Error: SPI Failed ");
-	debug_print(fc); debug_print(" / ");
+	debug_print(title); debug_print(" ");
 	debug_println(spi_error(fc));
 	debug_flush();
 	return fc;

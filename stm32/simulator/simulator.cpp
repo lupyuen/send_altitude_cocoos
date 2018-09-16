@@ -27,10 +27,10 @@ const char *simulator_error(Simulator_Fails fcode) {
 	return simulator_msg[icode];
 }
 
-static Simulator_Fails showError(Simulator_Control *sim, Simulator_Fails fc) {
+static Simulator_Fails showError(Simulator_Control *sim, const char *title, Simulator_Fails fc) {
 	if (sim) { sim->failCode = fc; }
 	debug_print("***** Error: Simulator Failed ");
-	debug_print(fc); debug_print(" / ");
+	debug_print(title); debug_print(" ");
 	debug_println(simulator_error(fc));
 	debug_flush();
 	return fc;
@@ -48,19 +48,23 @@ Simulator_Fails simulator_configure(
     SPI_Control *port,        //  SPI port to intercept.
     bool capture_enabled,     //  True if simulator should capture SPI packets.
     bool replay_enabled,      //  True if simulator should replay SPI packets that were captured.
-    bool simulate_enabled) {  //  True if simulator should simulate SPI packets into the sensor code.
+    bool simulate_enabled,    //  True if simulator should simulate SPI packets into the sensor code.
+    bool merge_enabled) {     //  True if simulator should merge multiple SPI commands into one command.
     //  Set up the simulator for the sensor.
     sim->index = 0;
     sim->length = 0;
+    sim->merged_length = 0;
     sim->id = id;
     sim->port = port;
     sim->capture_enabled = capture_enabled;
     sim->replay_enabled = replay_enabled;
     sim->simulate_enabled = simulate_enabled;
+    sim->merge_enabled = merge_enabled;
+    sim->replayed_merge = false;
     sim->semaphore = sem_bin_create(0);  //  Binary Semaphore: Will wait until signalled.
     if (name) {
-        strncpy(sim->name, name, MAX_SENSOR_NAME_SIZE);
-        sim->name[MAX_SENSOR_NAME_SIZE] = 0;
+        strncpy(sim->name, name, MAX_SIM_NAME_SIZE);
+        sim->name[MAX_SIM_NAME_SIZE] = 0;
     }
     if (capture_enabled) {
         sim->mode = Simulator_Capture;  //  Always capture the first time.
@@ -74,11 +78,12 @@ Simulator_Fails simulator_configure(
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the SPI port.
-    debug_print("sim open mode "); debug_println(sim->mode);
+    debug_print("sim open mode"); debug_println(sim->mode);
     if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
     SPI_Control *port = sim->port;
-    if (port == NULL) { return showError(sim, Simulator_Missing_Port); }
+    if (port == NULL) { return showError(sim, "simulator_open", Simulator_Missing_Port); }
     sim->index = 0;
+    sim->replayed_merge = false;
     //  Simulator depends on sensor ID, so we need to refresh the port.
     port->simulator = sim;
 
@@ -101,18 +106,25 @@ Sem_t *simulator_replay(Simulator_Control *sim) {
     //  Return NULL if no more packets to replay.
     if (sim->mode != Simulator_Replay || sim->port == NULL) { return NULL; }
     if (sim->index >= sim->length) { return NULL; }  //  No more packets.
+    //  For merged trail: Only 1 packet to send and receive.
+    if (simulator_should_replay_merged_trail(sim)) {
+        if (sim->replayed_merge) { return NULL; }  //  Already replayed the merged trail, stop.
+        sim->replayed_merge = true; 
+    }
+    //  Replay the trail or merged trail.
     SPI_Fails result = spi_transceive_replay(sim->port, &sim->semaphore);
     if (result != SPI_Ok) { return NULL; }
     spi_dump_packet(sim->port);
+    //  Caller (Sensor Task) should wait for this completion semaphore before replaying next packet.
     return &sim->semaphore;
 }
 
 static Simulator_Fails simulator_overflow(Simulator_Control *sim) {
     //  Handle an overflow, i.e. no enough space to record new SPI commands.  
-    //  Should increase MAX_TRAIL_SIZE.  Switch to error mode.
-    debug_println("sim overflow");
+    //  Should increase MAX_TRAIL_SIZE and MAX_MERGE_SIZE.  Switch to error mode.
+    debug_println("sim overflow"); debug_flush();
     sim->mode = Simulator_Mismatch;
-    return showError(sim, Simulator_Trail_Overflow);
+    return showError(sim, "simulator_capture", Simulator_Trail_Overflow);
 }
 
 //  Capture, replay or simulate an SPI send/receive packet, which has a packet size.
@@ -122,7 +134,7 @@ static Simulator_Fails simulator_overflow(Simulator_Control *sim) {
 
 Simulator_Fails simulator_capture_size(Simulator_Control *sim, int size) {
     //  Append the packet size to the trail.  Don't append if there was an error.
-    if (size <= 0) { return showError(sim, Simulator_Invalid_Size); }
+    if (size <= 0) { return showError(sim, "simulator_capture_size", Simulator_Invalid_Size); }
     if ((sim->index + 1) >= (MAX_TRAIL_SIZE + 1))  { return simulator_overflow(sim); }
     if (sim->mode == Simulator_Mismatch) { return Simulator_Trail_Overflow; }
 
@@ -134,7 +146,7 @@ Simulator_Fails simulator_capture_size(Simulator_Control *sim, int size) {
 
 Simulator_Fails simulator_capture_packet(Simulator_Control *sim, uint8_t *packet, int size) {
     //  Append the packet content to the trail.  Don't append if there was an error.
-    if (size <= 0 || packet == NULL) { return showError(sim, Simulator_Invalid_Size); }
+    if (size <= 0 || packet == NULL) { return showError(sim, "simulator_capture_packet", Simulator_Invalid_Size); }
     if ((sim->index + size) >= (MAX_TRAIL_SIZE + 1))  { return simulator_overflow(sim); }
     if (sim->mode == Simulator_Mismatch) { return Simulator_Trail_Overflow; }
 
@@ -142,6 +154,28 @@ Simulator_Fails simulator_capture_packet(Simulator_Control *sim, uint8_t *packet
     sim->index = sim->index + size;
     sim->length = sim->index;
     return Simulator_Ok;
+}
+
+Simulator_Fails simulator_merge_packet(Simulator_Control *sim, uint8_t *tx_packet, int tx_size, uint8_t *rx_packet, int rx_size) {
+    //  Append the send/receive packet to the merged trail.
+    //  debug_print("sim merge tx "); debug_print(tx_size); debug_print(" rx "); debug_println(rx_size); debug_flush();
+    if (tx_size <= 0 || tx_packet == NULL) { return showError(sim, "simulator_merge_packet", Simulator_Invalid_Size); }
+    if (rx_size <= 0 || rx_packet == NULL) { return showError(sim, "simulator_merge_packet", Simulator_Invalid_Size); }
+    if (tx_size != rx_size) { return showError(sim, "simulator_merge_packet", Simulator_Invalid_Size); }
+    if ((sim->merged_length + tx_size) >= (MAX_MERGED_SIZE + 1))  { return simulator_overflow(sim); }
+    if (sim->mode == Simulator_Mismatch) { return Simulator_Trail_Overflow; }
+
+    memcpy((void *) &(sim->merged_tx[sim->merged_length]), (const void *) tx_packet, tx_size);  //  Copy the tx packet.
+    memcpy((void *) &(sim->merged_rx[sim->merged_length]), (const void *) rx_packet, rx_size);  //  Copy the rx packet.
+    sim->merged_length = sim->merged_length + tx_size;
+    return Simulator_Ok;
+}
+
+bool simulator_should_replay_merged_trail(Simulator_Control *sim) {
+    //  Return true if simulator should replay the merged trail instead of the unmerged trail.
+    //  Check whether merge is enabled and merged trail is non-empty.
+    if (sim->merge_enabled && sim->merged_length > 0) { return true; }
+    return false;
 }
 
 //  For replay, fetch the next packet size and next packet content from the trail.  Packet content will be overwritten for receive packets.
@@ -199,8 +233,11 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
     if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
     SPI_Control *port = sim->port;
 
-    //  For Replay Mode, close the SPI port.
-    if (port != NULL && sim->mode == Simulator_Replay) { spi_close(port); }
+    //  For Replay Mode, close the SPI port and split the received merged packet into the simulator trail.
+    if (port != NULL && sim->mode == Simulator_Replay) { 
+        spi_close(port);
+        if (simulator_should_replay_merged_trail(sim)) { spi_split_trail(port); }
+    }
     if (port) { spi_dump_trail(port); }  //  Dump the trail for debug.
     switch (sim->mode) {
         case Simulator_Capture:  //  After capture, replay.

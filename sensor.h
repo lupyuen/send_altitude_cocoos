@@ -73,7 +73,7 @@ struct SensorInfo {
   bool (*is_sensor_ready_func)(void);
 
   //  The following fields are private to sensor.cpp.
-  Sem_t semaphore;         //  Semaphore to be signalled when sensor is ready to return sensor data.
+  Sem_t semaphore;         //  Binary Semaphore to be signalled when sensor is ready to return sensor data.
   uint8_t id;              //  Unique sensor ID.
   uint16_t poll_interval;  //  How often the sensor should be polled, in milliseconds.
 };
@@ -126,8 +126,8 @@ struct SensorContext {
   Sensor *sensor;           //  The sensor for the context.
   uint8_t receive_task_id;  //  Task ID for the task that will receive sensor data, i.e. Network Task or Display Task.
   SensorMsg msg;            //  Temporary space for composing the sensor data message.
-  Sem_t *read_semaphore;    //  If set, wait for this semaphore before reading sensor data.
-  Sem_t *send_semaphore;    //  If set, wait for this semaphore before sending data.
+  Sem_t *read_semaphore;    //  If set, wait for this Counting Semaphore before reading sensor data.  Used for controlling access to I/O ports e.g. SPI, I2C.
+  Sem_t *send_semaphore;    //  If set, wait for this Binary Semaphore before sending data.  Used for waiting until sensor data is available, or until the Simulator has replayed an SPI command.
 };
 
 //  Set up the sensor context. Allocate a new sensor ID and event.
