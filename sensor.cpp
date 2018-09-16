@@ -86,8 +86,6 @@ void sensor_task(void) {
   //  Don't declare any static variables inside here because they will conflict
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
-  Sem_t *replay_semaphore = NULL;
-  Sem_t *sensor_semaphore = NULL;
   task_open();  //  Start of the task. Must be matched with task_close().
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     //  This code is executed by multiple sensors. We use a global semaphore to prevent 
@@ -111,18 +109,20 @@ void sensor_task(void) {
       context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
       context->send_semaphore = &context->sensor->info.semaphore;  //  If sensor data not ready, wait for this sensor semaphore.
     }
+
+    //  This loop is only used by Event Sensors to wait for data, or by the Simulator replaying multiple SPI packets.
     for (;;) {  //  Loop until sensor data is ready.
       if (context->msg.count != SENSOR_NOT_READY) { break; }  //  Stop if we already have data.
-      if (context->send_semaphore) {
-        sem_wait(*context->send_semaphore);  //  Wait for sensor processing to complete.  TODO: timeout.
+      if (context->send_semaphore) {  //  If there is a semaphore for us to wait...
+        sem_wait(*context->send_semaphore);  //  Wait for sensor processing or replay to complete.  TODO: Handle timeout.
         context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait().
       }
-      if (simulator_should_poll_sensor(&context->sensor->simulator)) {
+      if (simulator_should_poll_sensor(&context->sensor->simulator)) {  //  If this is a real sensor...
         //  Process any sensor data received. If processing is complete, get the sensor data.
         context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
-      } else {  //  Replay the next packet if any.
+      } else {  //  Else this is the Simulator.  Replay the next packet if any.
         context->send_semaphore = simulator_replay(&context->sensor->simulator);
-        if (context->send_semaphore == NULL) { break; }  //  No more packets to replay.
+        if (context->send_semaphore == NULL) { break; }  //  Stop if no more packets to replay.
       }
     }
 

@@ -4,10 +4,9 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
-//  Uncomment to use data from real or simulated sensors instead of hardcoded data.
-#define SENSOR_DATA
-//  Uncomment to use hardcoded data.
-//  #define SIMULATED_DATA
+//  #define USE_TEMP_EVENT_SENSOR  //  Uncomment to use the event-based temperature sensor instead of the polling-based sensor.
+#define SENSOR_DATA            //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
+//  #define SIMULATED_DATA     //  Uncomment to use hardcoded data.
 
 #define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
 #define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r

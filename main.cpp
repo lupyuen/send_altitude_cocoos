@@ -119,11 +119,11 @@ static void sensor_setup(uint8_t task_id) {
   //  Set up the sensors and get their sensor contexts.
   ////TODO: const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
   const int pollInterval = 10000;  //  Poll the sensor every 10000 milliseconds.
-#ifdef STM32
+#if defined(STM32) && defined(USE_TEMP_EVENT_SENSOR)
   SensorContext *tempContext = setup_temp_event_sensor(pollInterval, task_id);
 #else
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
-#endif  //  STM32
+#endif  //  STM32 && USE_TEMP_EVENT_SENSOR
   ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
   ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
 #ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
