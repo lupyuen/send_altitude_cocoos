@@ -287,7 +287,7 @@ static SPI_Fails spi_simulate_error(SPI_Control *port, SPI_Fails fc, SPI_DATA_TY
 SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 	//  Replay the next transceive request that was captured earlier.  If completed_semaphore is non-NULL,
 	//  signal the semaphore when the request has been completed.
-	if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
+	//  if (port->simulator != NULL) { debug_println("spi replay"); debug_flush(); }
 	if (port->simulator == NULL) { return showError(port, "spi_transceive_replay", SPI_Missing_Simulator); }  //  No simulator.
 	int tx_len = 0; uint8_t *tx_buf = NULL; int rx_len = 0; uint8_t *rx_buf = NULL;
 
