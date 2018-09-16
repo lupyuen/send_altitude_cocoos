@@ -215,6 +215,7 @@ bool BME280::ReadData
    return success;
 }
 
+#include <logger.h> ////
 
 /****************************************************************/
 float BME280::CalculateTemperature
@@ -224,6 +225,12 @@ float BME280::CalculateTemperature
    TempUnit unit
 )
 {
+   debug_print("*** m_dig[0]="); debug_printhex(m_dig[0]); debug_println(""); ////
+   debug_print("*** m_dig[1]="); debug_printhex(m_dig[1]); debug_println(""); ////
+   debug_print("*** m_dig[2]="); debug_printhex(m_dig[2]); debug_println(""); ////
+   debug_print("*** m_dig[3]="); debug_printhex(m_dig[3]); debug_println(""); ////
+   debug_print("*** m_dig[4]="); debug_printhex(m_dig[4]); debug_println(""); ////
+   debug_print("*** m_dig[5]="); debug_printhex(m_dig[5]); debug_println(""); ////
    // Code based on calibration algorthim provided by Bosch.
    int32_t var1, var2, final;
    uint16_t dig_T1 = (m_dig[1] << 8) | m_dig[0];
@@ -338,6 +345,9 @@ float BME280::temp
    int32_t data[8];
    int32_t t_fine;
    if(!ReadData(data)){ return NAN; }
+   debug_print("*** data[3]="); debug_printhex(data[3]); debug_println(""); ////
+   debug_print("*** data[4]="); debug_printhex(data[4]); debug_println(""); ////
+   debug_print("*** data[5]="); debug_printhex(data[5]); debug_println(""); ////
    uint32_t rawTemp   = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4);
    return CalculateTemperature(rawTemp, t_fine, unit);
 }
