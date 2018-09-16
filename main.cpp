@@ -17,9 +17,9 @@
 #include "humid_sensor.h"       //  Humidity sensor (BME280 I2C)
 #include "alt_sensor.h"         //  Altitude sensor (BME280 I2C)
 #include "temp_event_sensor.h"  //  Temperature event-based sensor (BME280 SPI)
-#ifdef GYRO_SENSOR  //  Use simulated gyro sensor.
+#ifdef USE_GYRO_SENSOR  //  Use simulated gyro sensor.
 #include "gyro_sensor.h"   //  Gyroscope sensor (simulated)
-#endif  //  GYRO_SENSOR
+#endif  //  USE_GYRO_SENSOR
 
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
@@ -76,9 +76,8 @@ static uint8_t network_setup(void) {
   //  Start the Network Task to send and receive network messages.
   //  Also starts the UART Task called by the Network Task to send/receive data to the UART port.
   //  UART Task must have the highest task priority because it must respond to UART data immediately.
-
-  return 0; //// TODO
-
+  uint8_t networkTaskID = 0;
+#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data...
   //  Start the UART Task for transmitting UART data to the Wisol module.
   setup_uart(
     &uartContext,  //  Init the context for UART Task.
@@ -98,14 +97,14 @@ static uint8_t network_setup(void) {
     uartTaskID, 
     COUNTRY_SG,  //  Change this to your country code. Affects the Sigfox frequency used.
     false);      //  Must be false because we are not using the Sigfox emulator.
-  uint8_t networkTaskID = task_create(
+  networkTaskID = task_create(
       network_task,   //  Task will run this function.
       &wisolContext,  //  task_get_data() will be set to the display object.
       20,             //  Priority 20 = lower priority than UART task
       (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
       NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
       sizeof(SensorMsg));   //  Size of queue message.
-    
+#endif  //  TRANSMIT_SENSOR_DATA    
   return networkTaskID;
 }
 
@@ -113,38 +112,41 @@ static uint8_t network_setup(void) {
 static void sensor_setup(uint8_t task_id) {
   //  Start the sensor tasks for each sensor to read and process sensor data.
   //  Sensor data will be sent to the message queue at the given task ID,
-  //  which is the Network Task or Display Task.
-  //  Edit this function to add your own sensors.
-
-  //  Set up the sensors and get their sensor contexts.
+  //  which is the Network Task or Display Task.  Edit this function to add your own sensors.
   const int pollInterval = 10000;  //  Poll the sensor every 10 seconds.
+
+  //  Set up the sensors and get their sensor contexts.  For each sensor, we will create sensor tasks 
+  //  using the same task function sensor_task(), but with unique sensor context.
+  //  All task priorities must be unique, from 1 (highest priority) to 254 (lowest).
+  //  task_create(..., 0, 0, 0) means that the task will not receive any message queue data.  //  debug(F("task_create"));
 
 #if defined(STM32) && defined(USE_TEMP_EVENT_SENSOR)
   //  Use the new Event-based Sensor that's better for multitasking.
-  SensorContext *tempContext = setup_temp_event_sensor(pollInterval, task_id);
-#else
-  //  Use the older Polling-based Sensor that's bad for multitasking.
-  SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
+  SensorContext *tempEventContext = setup_temp_event_sensor(pollInterval, task_id);
+  task_create(sensor_task, tempEventContext, 100, 0, 0, 0);  //  Priority 100 = lower priority than network task    
 #endif  //  STM32 && USE_TEMP_EVENT_SENSOR
 
-  ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
-  ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
-#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
-  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
-#endif  //  GYRO_SENSOR
+#ifdef USE_TEMP_POLLING_SENSOR
+  //  Use the older Polling-based Sensor that's not so good for multitasking.
+  SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
+  task_create(sensor_task, tempContext, 110, 0, 0, 0);   //  Priority 110
+#endif  //  USE_TEMP_POLLING_SENSOR
 
-  //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
-  //  "0, 0, 0" means that the tasks may not receive any message queue data.  //  debug(F("task_create"));
-  task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
-    0, 0, 0);  //  Will not receive message queue data.
-  ////TODO: task_create(sensor_task, humidContext, 120,  //  Priority 120
-    ////0, 0, 0);  //  Will not receive message queue data.
-  ////TODO: task_create(sensor_task, altContext, 130,  //  Priority 130
-    ////0, 0, 0);  //  Will not receive message queue data.
-#ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
-  task_create(sensor_task, gyroContext, 140,   //  Priority 140
-    0, 0, 0);  //  Will not receive message queue data.
-#endif  //  GYRO_SENSOR
+#ifdef USE_HUMIDITY_SENSOR  //  Use real or simulated humidity sensor.
+  SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
+  task_create(sensor_task, humidContext, 120, 0, 0, 0);  //  Priority 120
+#endif  //  USE_HUMIDITY_SENSOR
+
+#ifdef USE_ALTITUDE_SENSOR  //  Use real or simulated altitude sensor.
+  SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
+  task_create(sensor_task, altContext, 130, 0, 0, 0);   //  Priority 130
+#endif  //  USE_ALTITUDE_SENSOR
+
+#ifdef USE_GYRO_SENSOR  //  Use simulated gyro sensor.
+  SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
+  task_create(sensor_task, gyroContext, 140, 0, 0, 0);  //  Priority 140
+#endif  //  USE_GYRO_SENSOR
+
 }
 #endif  //  SENSOR_DATA
 
