@@ -45,25 +45,35 @@ static void init_sensor(void) {
     SPI_MODE0);   //  Data mode: SPI_MODE0, 1, 2 or 3.
 }
 
-/*  These are the actual SPI bytes sent and received, captured by the Simulator while running the BME280Spi.cpp code.
-send >> 72, receive << ff
-send >> 01, receive << ff
-send >> 74, receive << ff
-send >> 25, receive << ff
-send >> 75, receive << ff
-send >> a0, receive << ff
-send >> f7, receive << ff
-send >> 00, receive << 51
-send >> 00, receive << 12
-send >> 00, receive << 00
-send >> 00, receive << 82
-send >> 00, receive << dd
-send >> 00, receive << 00
-send >> 00, receive << 7f */
+/*  These are the actual SPI bytes sent and received, captured by the Simulator while running the BME280Spi.cpp code:
+    https://github.com/finitespace/BME280/blob/master/src/BME280Spi.cpp
+    This BME280Spi.cpp capture was used to create the tx_buf data below that we will actually send.  Note the original
+    BME280Spi.cpp capture sends and receives one byte at a time, whereas the code below sends all 14 bytes at once
+    and waits for 14 bytes to be received.  Check the BME280 datasheet for explanation of the registers:
+    https://cdn.sparkfun.com/assets/learn_tutorials/4/1/9/BST-BME280_DS001-10.pdf
+    Note that Write Register commands always clear the highest bit (e.g. "Write Register 0xF2" becomes "0x72").
+    Read Register commands always set the highest bit (e.g. "Read Register 0xF7" becomes "0xF7").
 
-//  Number of bytes to send and receive.
-#define TX_LEN 14
-#define RX_LEN 14
+    send >> 72, receive << ff - Send command to write to BME280 Register 0xF2 “ctrl_hum”
+    send >> 01, receive << ff - Set the humidity data acquisition options to 0x01
+    send >> 74, receive << ff - Send command to write to BME280 Register 0xF4 “ctrl_meas”
+    send >> 25, receive << ff - Set the pressure and temperature data acquisition options to 0x25
+    send >> 75, receive << ff - Send command to write to BME280 Register 0xF5 “config”
+    send >> a0, receive << ff - Set the rate, filter and interface options to 0xA0
+    send >> f7, receive << ff - Send command to read from BME280 Registers 0xF7 to 0xFE (“press”, “temp”, “hum”)
+    send >> 00, receive << 51 - Receive Register 0xF7
+    send >> 00, receive << 96 - Receive Register 0xF8
+    send >> 00, receive << 00 - Receive Register 0xF9
+    send >> 00, receive << 83 - Receive Register 0xFA
+    send >> 00, receive << a1 - Receive Register 0xFB
+    send >> 00, receive << 00 - Receive Register 0xFC
+    send >> 00, receive << 7f - Receive Register 0xFD
+    send >> 00, receive << a6 - Receive Register 0xFE
+*/
+
+//  Number of SPI bytes to send and receive.
+#define TX_LEN 15
+#define RX_LEN 15
 
 //  SPI bytes to be sent.  These bytes will write and update BME280 registers.
 static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory because it will be used for DMA.
@@ -74,13 +84,14 @@ static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory
   0x75,
   0xa0,
   0xf7,  //  Read the registers.
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 //  Buffer for receiving SPI bytes.
 static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
 
-//  BME280 calibration data.  For simplicity, we hardcode here.
+//  TODO: BME280 compensation parameters.  For simplicity, we hardcode here.  We should obtain from sensor instead
+//  from BME280 registers 0x89 to 8x8D (dig_T1, dig_T2, dig_T3).
 static uint8_t m_dig[] = { 0x97, 0x6e, 0xe6, 0x65, 0x32, 0x00 };
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
