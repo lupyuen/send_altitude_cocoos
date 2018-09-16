@@ -101,11 +101,13 @@ Sem_t *simulator_replay(Simulator_Control *sim) {
     if (sim->index >= sim->length) { return NULL; }  //  No more packets.
     SPI_Fails result = spi_transceive_replay(sim->port, &sim->semaphore);
     if (result != SPI_Ok) { return NULL; }
+    spi_dump_packet(sim->port);
     return &sim->semaphore;
 }
 
 static Simulator_Fails simulator_overflow(Simulator_Control *sim) {
-    //  Handle an overflow.  Switch to error mode.
+    //  Handle an overflow, i.e. no enough space to record new SPI commands.  
+    //  Should increase MAX_TRAIL_SIZE.  Switch to error mode.
     debug_println("sim overflow");
     sim->mode = Simulator_Mismatch;
     return showError(sim, Simulator_Trail_Overflow);
