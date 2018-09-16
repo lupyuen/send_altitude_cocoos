@@ -42,11 +42,13 @@ Simulator_Fails simulator_setup(void) {
 }
 
 Simulator_Fails simulator_configure(
-    Simulator_Control *sim, 
-    uint32_t id, 
-    const char *name, 
-    SPI_Control *port,
-    bool capture_enabled, bool replay_enabled, bool simulate_enabled) {
+    Simulator_Control *sim,   //  Simulator to be configured.
+    uint8_t id,               //  Sensor ID.
+    const char *name,         //  Sensor name e.g. "tmp".
+    SPI_Control *port,        //  SPI port to intercept.
+    bool capture_enabled,     //  True if simulator should capture SPI packets.
+    bool replay_enabled,      //  True if simulator should replay SPI packets that were captured.
+    bool simulate_enabled) {  //  True if simulator should simulate SPI packets into the sensor code.
     //  Set up the simulator for the sensor.
     sim->index = 0;
     sim->length = 0;
@@ -55,7 +57,7 @@ Simulator_Fails simulator_configure(
     sim->capture_enabled = capture_enabled;
     sim->replay_enabled = replay_enabled;
     sim->simulate_enabled = simulate_enabled;
-    sim->semaphore = sem_bin_create(0);
+    sim->semaphore = sem_bin_create(0);  //  Binary Semaphore: Will wait until signalled.
     if (name) {
         strncpy(sim->name, name, MAX_SENSOR_NAME_SIZE);
         sim->name[MAX_SENSOR_NAME_SIZE] = 0;
@@ -71,7 +73,7 @@ Simulator_Fails simulator_configure(
 }
 
 Simulator_Fails simulator_open(Simulator_Control *sim) {
-    //  Begin capture, replay or simulate.  Set the simulator in the port.
+    //  Begin capture, replay or simulate.  Set the simulator in the SPI port.
     debug_print("sim open mode "); debug_println(sim->mode);
     if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
     SPI_Control *port = sim->port;
