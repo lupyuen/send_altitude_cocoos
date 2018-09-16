@@ -105,16 +105,18 @@ Sem_t *simulator_replay(Simulator_Control *sim) {
     //  Replay the captured SPI commands.  Return a semaphore that the Sensor Task should wait for completion.
     //  Return NULL if no more packets to replay.
     if (sim->mode != Simulator_Replay || sim->port == NULL) { return NULL; }
-    if (sim->index >= sim->length) { return NULL; }  //  No more packets.
+    //  If we have just replayed a packet or merged trail, dump it.
+    if (sim->index > 0 || sim->replayed_merge) { spi_dump_packet(sim->port); }
+
     //  For merged trail: Only 1 packet to send and receive.
     if (simulator_should_replay_merged_trail(sim)) {
-        if (sim->replayed_merge) { return NULL; }  //  Already replayed the merged trail, stop.
+        if (sim->replayed_merge) { return NULL; }  //  If already replayed the merged trail, stop.
         sim->replayed_merge = true; 
-    }
-    //  Replay the trail or merged trail.
+    } else if (sim->index >= sim->length) { return NULL; }  //  If no more packets, stop.
+
+    //  Replay the next packet in the trail or the entire merged trail.
     SPI_Fails result = spi_transceive_replay(sim->port, &sim->semaphore);
     if (result != SPI_Ok) { return NULL; }
-    spi_dump_packet(sim->port);
     //  Caller (Sensor Task) should wait for this completion semaphore before replaying next packet.
     return &sim->semaphore;
 }

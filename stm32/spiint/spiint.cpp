@@ -297,7 +297,7 @@ SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 		rx_len = port->simulator->merged_length;
 		tx_buf = port->simulator->merged_tx;
 		rx_buf = port->simulator->merged_rx;
-		dump_packet("replay merge >>", tx_buf, tx_len); debug_println(""); debug_flush();
+		// dump_packet("replay merge >>", tx_buf, tx_len); debug_println(""); debug_flush();
 	} else {
 		//  Read the next captured SPI packet for send and receive.
 		tx_len = simulator_replay_size(port->simulator);
@@ -318,7 +318,7 @@ SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 
 SPI_Fails spi_split_trail(SPI_Control *port) {
 	//  Split the received merged packet into the simulator trail.
-	debug_print("spi before split: "); spi_dump_trail(port); debug_flush();
+	//  debug_print("spi before split: "); spi_dump_trail(port); debug_flush();
 	uint8_t *received_packet = port->simulator->merged_rx;
 	uint8_t received_length = port->simulator->merged_length;
 	uint8_t received_index = 0;
@@ -335,7 +335,7 @@ SPI_Fails spi_split_trail(SPI_Control *port) {
 		memcpy((void *) rx_buf, (const void *) &received_packet[received_index], rx_len);
 		received_index = received_index + rx_len;
 	}
-	debug_print("spi after split: "); spi_dump_trail(port); debug_flush();
+	//  debug_print("spi after split: "); spi_dump_trail(port); debug_flush();
 	return SPI_Ok;
 }
 
