@@ -64,9 +64,8 @@ void setup_sensor_context(
   strncpy(context->msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
   context->msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
-  bool capture_enabled = true;
-  bool replay_enabled = true;
-  bool simulate_enabled = true;
+  //  For Simulator: By default we capture, replay and simulate commands sent the SPI port.
+  bool capture_enabled = true; bool replay_enabled = true; bool simulate_enabled = true;
 
   //  For Event Sensors: Don't capture, replay and simulate the SPI commands.
   if (sensor->info.resume_sensor_func) {
@@ -75,6 +74,7 @@ void setup_sensor_context(
     replay_enabled = false;
     simulate_enabled = false;
   }
+  
   //  Set up the simulator and SPI port for the sensor.
   simulator_configure(&sensor->simulator, sensorID, sensor->info.name, sensor->port,
     capture_enabled, replay_enabled, simulate_enabled);

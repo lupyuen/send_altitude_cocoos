@@ -1,6 +1,5 @@
 //  Load the platform-dependent system include files, e.g. Arduino.h
-//  Also define the Serial buffer size.  Use platform.h instead of Arduino.h
-//  for portability.
+//  Use platform.h instead of Arduino.h for portability.
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
@@ -9,8 +8,8 @@
 #define SENSOR_DATA            //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 //  #define SIMULATED_DATA     //  Uncomment to use hardcoded data.
 
-#define MAX_SENSOR_COUNT 3  //  Max number of sensors supported.
-#define MAX_UART_SEND_MSG_SIZE 35  //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
+#define MAX_SENSOR_COUNT 3             //  Max number of sensors supported.
+#define MAX_UART_SEND_MSG_SIZE 35      //  Max message length, e.g. 33 chars for AT$SF=0102030405060708090a0b0c,1\r
 #define MAX_UART_RESPONSE_MSG_SIZE 36  //  Max response length, e.g. 36 chars for ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT\r
 
 //  Wrap function and global variable declarations with BEGIN_EXTERN_C ... END_EXTERN_C so that
@@ -41,22 +40,20 @@ void led_toggle(void);  //  Toggle the onboard LED on or off.
 void led_wait(void);    //  Delay a while before updating the LED state.
 END_EXTERN_C  //  End of extern C scope.
 
-#ifdef ARDUINO  //  If we are running on Arduino...
-#include <Arduino.h>  //  Which already defines millis()
+#ifdef ARDUINO        //  If we are running on Arduino...
+#include <Arduino.h>  //  Use the Arduino definition of millis()
 
 #else  //  If we are running on STM32 or other platforms...
 #include <stdint.h>  //  For uint32_t
-//  No need for flash memory helpers on STM32.
-#define __FlashStringHelper char
+#define __FlashStringHelper char  //  No need for flash memory helpers on STM32.
 #define F(x) x
-BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
+BEGIN_EXTERN_C          //  Allows functions below to be called by C and C++ code.
 uint32_t millis(void);  //  Number of elapsed millisecond ticks. Compatible with Arduino.
-END_EXTERN_C  //  End of extern C scope.
+END_EXTERN_C            //  End of extern C scope.
 #endif  //  ARDUINO
 
 #ifdef STM32  //  If we are running on STM32...
-//  We include the STM32 declarations to ensure they are consistent with above platform declarations.
-#include <bluepill.h>
+#include <bluepill.h>  //  We include the STM32 declarations to ensure they are consistent with above platform declarations.
 #endif  //  STM32
 
 #endif  //  PLATFORM_H_
