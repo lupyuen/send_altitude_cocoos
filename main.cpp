@@ -117,13 +117,16 @@ static void sensor_setup(uint8_t task_id) {
   //  Edit this function to add your own sensors.
 
   //  Set up the sensors and get their sensor contexts.
-  ////TODO: const int pollInterval = 5000;  //  Poll the sensor every 5000 milliseconds.
-  const int pollInterval = 10000;  //  Poll the sensor every 10000 milliseconds.
+  const int pollInterval = 10000;  //  Poll the sensor every 10 seconds.
+
 #if defined(STM32) && defined(USE_TEMP_EVENT_SENSOR)
+  //  Use the new Event-based Sensor that's better for multitasking.
   SensorContext *tempContext = setup_temp_event_sensor(pollInterval, task_id);
 #else
+  //  Use the older Polling-based Sensor that's bad for multitasking.
   SensorContext *tempContext = setup_temp_sensor(pollInterval, task_id);
 #endif  //  STM32 && USE_TEMP_EVENT_SENSOR
+
   ////TODO: SensorContext *humidContext = setup_humid_sensor(pollInterval, task_id);
   ////TODO: SensorContext *altContext = setup_alt_sensor(pollInterval, task_id);
 #ifdef GYRO_SENSOR  //  Use simumated gyro sensor.
@@ -131,8 +134,7 @@ static void sensor_setup(uint8_t task_id) {
 #endif  //  GYRO_SENSOR
 
   //  For each sensor, create sensor tasks using the same task function, but with unique sensor context.
-  //  "0, 0, 0" means that the tasks may not receive any message queue data.
-  //// debug(F("task_create")); ////
+  //  "0, 0, 0" means that the tasks may not receive any message queue data.  //  debug(F("task_create"));
   task_create(sensor_task, tempContext, 100,   //  Priority 100 = lower priority than network task
     0, 0, 0);  //  Will not receive message queue data.
   ////TODO: task_create(sensor_task, humidContext, 120,  //  Priority 120

@@ -7,43 +7,9 @@
 #include "display.h"
 #include "sensor.h"
 
-#if defined(SENSOR_DATA) && defined(STM32)  //  Only for STM32.
+#if defined(SENSOR_DATA) && defined(STM32)  //  Event Sensors are only supported on STM32, because Arduino doesn't allow DMA.
 #include <spiint.h>
 #include "temp_event_sensor.h"
-
-//  These are the sensor functions that we will implement in this file.
-static void init_sensor(void);
-static uint8_t poll_sensor(float *data, uint8_t size);
-static uint8_t resume_sensor(float *data, uint8_t size);
-static bool is_sensor_ready(void);
-
-//  Number of floats that this sensor returns as sensor data.
-#define sensorDataSize 1
-
-//  Construct a sensor object with the sensor functions.
-static Sensor sensor(
-  "tme",                //  Name of sensor. The Structured Message field will use this name.
-  &init_sensor,         //  Function for initialising the sensor.
-  &poll_sensor,         //  Function for polling sensor data.
-  &resume_sensor,       //  For Event Sensors: Function for resuming the processing of received sensor data.
-  &is_sensor_ready      //  For Event Sensors: Function for checking whether the processing is complete and new sensor data is available.
-);
-
-static SensorContext sensorContext;  //  Remembers the sensor context.
-static float sensorData[sensorDataSize];  //  Array of floats for remembering the sensor data.
-
-static void init_sensor(void) {
-  //  Initialise the sensor port. sensor and sensorContext objects have been populated.
-  sensor.port = spi_setup(TEMP_EVENT_SENSOR_PORT);  //  Get the SPI port.
-  if (sensor.port == NULL) { return; }  //  Quit if the setup failed.
-
-  //  Configure the SPI port, specific to the BME280 sensor.  Change this for other sensors.
-  spi_configure(
-    sensor.port,  //  SPI port to be configured.
-    500 * kHz,    //  Maximum speed supported by the sensor.
-    MSBFIRST,     //  Bit order: MSBFIRST or LSBFIRST.
-    SPI_MODE0);   //  Data mode: SPI_MODE0, 1, 2 or 3.
-}
 
 /*  These are the actual SPI bytes sent and received, captured by the Simulator while running the BME280Spi.cpp code:
     https://github.com/finitespace/BME280/blob/master/src/BME280Spi.cpp
@@ -92,6 +58,40 @@ static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory be
 //  TODO: BME280 temperature compensation parameters.  For simplicity, we hardcode here.  Instead, we should read
 //  from BME280 registers 0x89 to 8x8D (dig_T1, dig_T2, dig_T3).
 static uint8_t m_dig[] = { 0x97, 0x6e, 0xe6, 0x65, 0x32, 0x00 };
+
+//  These are the sensor functions that we will implement in this file.
+static void init_sensor(void);
+static uint8_t poll_sensor(float *data, uint8_t size);
+static uint8_t resume_sensor(float *data, uint8_t size);
+static bool is_sensor_ready(void);
+
+//  Number of floats that this sensor returns as sensor data.
+#define sensorDataSize 1
+
+//  Construct a sensor object with the sensor functions.
+static Sensor sensor(
+  "tme",                //  Name of sensor. The Structured Message field will use this name.
+  &init_sensor,         //  Function for initialising the sensor.
+  &poll_sensor,         //  Function for polling sensor data.
+  &resume_sensor,       //  For Event Sensors: Function for resuming the processing of received sensor data.
+  &is_sensor_ready      //  For Event Sensors: Function for checking whether the processing is complete and new sensor data is available.
+);
+
+static SensorContext sensorContext;       //  Remembers the sensor context.
+static float sensorData[sensorDataSize];  //  Array of floats for remembering the sensor data.
+
+static void init_sensor(void) {
+  //  Initialise the sensor port. Assume sensor and sensorContext objects have been populated.
+  sensor.port = spi_setup(TEMP_EVENT_SENSOR_PORT);  //  Get the SPI port.
+  if (sensor.port == NULL) { return; }              //  Quit if the setup failed.
+
+  //  Configure the SPI port, specific to the BME280 sensor.  Change this for other sensors.
+  spi_configure(
+    sensor.port,  //  SPI port to be configured.
+    500 * kHz,    //  Maximum speed supported by the sensor.
+    MSBFIRST,     //  Bit order: MSBFIRST or LSBFIRST.
+    SPI_MODE0);   //  Data mode: SPI_MODE0, 1, 2 or 3.
+}
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  For Event Sensors: Poll the sensor for new data and return SENSOR_NOT_READY.
