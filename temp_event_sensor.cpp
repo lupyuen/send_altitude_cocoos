@@ -48,8 +48,8 @@ static void init_sensor(void) {
 /*  These are the actual SPI bytes sent and received, captured by the Simulator while running the BME280Spi.cpp code:
     https://github.com/finitespace/BME280/blob/master/src/BME280Spi.cpp
     This BME280Spi.cpp capture was used to create the tx_buf data below that we will actually send.  Note the original
-    BME280Spi.cpp capture sends and receives one byte at a time, whereas the code below sends all 14 bytes at once
-    and waits for 14 bytes to be received.  Check the BME280 datasheet for explanation of the registers:
+    BME280Spi.cpp capture sends and receives one byte at a time, whereas the code below sends all 15 bytes in a single burst
+    and waits for 15 bytes to be received.  Check the BME280 datasheet for explanation of the registers:
     https://cdn.sparkfun.com/assets/learn_tutorials/4/1/9/BST-BME280_DS001-10.pdf
     Note that Write Register commands always clear the highest bit (e.g. "Write Register 0xF2" becomes "0x72").
     Read Register commands always set the highest bit (e.g. "Read Register 0xF7" becomes "0xF7").
@@ -60,37 +60,36 @@ static void init_sensor(void) {
     send >> 25, receive << ff - Set the pressure and temperature data acquisition options to 0x25
     send >> 75, receive << ff - Send command to write to BME280 Register 0xF5 “config”
     send >> a0, receive << ff - Set the rate, filter and interface options to 0xA0
-    send >> f7, receive << ff - Send command to read from BME280 Registers 0xF7 to 0xFE (“press”, “temp”, “hum”)
-    send >> 00, receive << 51 - Receive Register 0xF7
-    send >> 00, receive << 96 - Receive Register 0xF8
-    send >> 00, receive << 00 - Receive Register 0xF9
-    send >> 00, receive << 83 - Receive Register 0xFA
-    send >> 00, receive << a1 - Receive Register 0xFB
-    send >> 00, receive << 00 - Receive Register 0xFC
-    send >> 00, receive << 7f - Receive Register 0xFD
-    send >> 00, receive << a6 - Receive Register 0xFE
-*/
+    send >> f7, receive << ff - Send command to burst read from BME280 Registers 0xF7 to 0xFE (“press”, “temp”, “hum”)
+    send >> 00, receive << 51 - Receive Register 0xF7 (raw pressure MSB = 0x51)
+    send >> 00, receive << 96 - Receive Register 0xF8 (raw pressure LSB = 0x96)
+    send >> 00, receive << 00 - Receive Register 0xF9 (raw pressue XLSB = 0x00)
+    send >> 00, receive << 83 - Receive Register 0xFA (raw temperature MSB = 0x83)
+    send >> 00, receive << a1 - Receive Register 0xFB (raw temperature LSB = 0xA1)
+    send >> 00, receive << 00 - Receive Register 0xFC (raw temperature XLSB = 0x00)
+    send >> 00, receive << 7f - Receive Register 0xFD (raw humidity MSB = 0x7F)
+    send >> 00, receive << a6 - Receive Register 0xFE (raw humidity LSB = 0xA6) */
 
 //  Number of SPI bytes to send and receive.
 #define TX_LEN 15
 #define RX_LEN 15
 
-//  SPI bytes to be sent.  These bytes will write and update BME280 registers.
+//  SPI bytes to be sent.  These bytes will update and read BME280 registers.
 static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory because it will be used for DMA.
-  0x72,
-  0x01,
-  0x74,
-  0x25,
-  0x75,
-  0xa0,
-  0xf7,  //  Read the registers.
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  0x72,  //  Send command to write to BME280 Register 0xF2 “ctrl_hum”
+  0x01,  //  Set the humidity data acquisition options to 0x01
+  0x74,  //  Send command to write to BME280 Register 0xF4 “ctrl_meas”
+  0x25,  //  Set the pressure and temperature data acquisition options to 0x25
+  0x75,  //  Send command to write to BME280 Register 0xF5 “config”
+  0xa0,  //  Set the rate, filter and interface options to 0xA0
+  0xf7,  //  Send command to burst read from BME280 Registers 0xF7 to 0xFE (“press”, “temp”, “hum”)
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  //  Receive Registers 0xF7 to 0xFE
 };
 
-//  Buffer for receiving SPI bytes.
+//  Buffer for receiving SPI bytes from BME280.
 static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
 
-//  TODO: BME280 compensation parameters.  For simplicity, we hardcode here.  We should obtain from sensor instead
+//  TODO: BME280 temperature compensation parameters.  For simplicity, we hardcode here.  Instead, we should read
 //  from BME280 registers 0x89 to 8x8D (dig_T1, dig_T2, dig_T3).
 static uint8_t m_dig[] = { 0x97, 0x6e, 0xe6, 0x65, 0x32, 0x00 };
 
