@@ -45,51 +45,43 @@ static void init_sensor(void) {
     SPI_MODE0);   //  Data mode: SPI_MODE0, 1, 2 or 3.
 }
 
-//  TODO
-/*
-tmp >> replayed >> 72 << ff
-tmp >> replayed >> 01 << ff
-tmp >> replayed >> 74 << ff
-tmp >> replayed >> 25 << ff
-tmp >> replayed >> 75 << ff
-tmp >> replayed >> a0 << ff
-tmp >> replayed >> f7 << ff
-tmp >> replayed >> 00 << 51
-tmp >> replayed >> 00 << 12
-tmp >> replayed >> 00 << 00
-tmp >> replayed >> 00 << 82
-tmp >> replayed >> 00 << dd
-tmp >> replayed >> 00 << 00
-tmp >> replayed >> 00 << 7f
-*/
+/*  These are the actual SPI bytes sent and received, captured by the Simulator while running the BME280Spi.cpp code.
+send >> 72, receive << ff
+send >> 01, receive << ff
+send >> 74, receive << ff
+send >> 25, receive << ff
+send >> 75, receive << ff
+send >> a0, receive << ff
+send >> f7, receive << ff
+send >> 00, receive << 51
+send >> 00, receive << 12
+send >> 00, receive << 00
+send >> 00, receive << 82
+send >> 00, receive << dd
+send >> 00, receive << 00
+send >> 00, receive << 7f */
+
+//  Number of bytes to send and receive.
 #define TX_LEN 14
 #define RX_LEN 14
+
+//  SPI bytes to be sent.  These bytes will write and update BME280 registers.
 static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory because it will be used for DMA.
-0x72,
-0x01,
-0x74,
-0x25,
-0x75,
-0xa0,
-0xf7,
-0x00,
-0x00,
-0x00,
-0x00,
-0x00,
-0x00,
-0x00,
+  0x72,
+  0x01,
+  0x74,
+  0x25,
+  0x75,
+  0xa0,
+  0xf7,  //  Read the registers.
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
+
+//  Buffer for receiving SPI bytes.
 static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
 
-static uint8_t m_dig[] = {
-  0x97,
-  0x6e,
-  0xe6,
-  0x65,
-  0x32,
-  0x00,
-};
+//  BME280 calibration data.  For simplicity, we hardcode here.
+static uint8_t m_dig[] = { 0x97, 0x6e, 0xe6, 0x65, 0x32, 0x00 };
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  For Event Sensors: Poll the sensor for new data and return SENSOR_NOT_READY.
@@ -125,18 +117,10 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
   spi_close(sensor.port);  
   if (!spi_is_transceive_successful(sensor.port)) { return 0; }  //  An error occurred.  Stop the processing.
 
-  //  Process the received SPI data in rx_buf to get sensor data.  Based on https://github.com/finitespace/BME280/blob/master/src/BME280.cpp
+  //  Convert the received SPI data in rx_buf to temperature.  Based on https://github.com/finitespace/BME280/blob/master/src/BME280.cpp
   debug_print(sensor.info.name); spi_dump_packet(sensor.port);
   uint8_t *rx_data = &rx_buf[7];  //  Response starts at the 8th byte.
-  debug_print("*** rx_data[3]="); debug_printhex(rx_data[3]); debug_println(""); ////
-  debug_print("*** rx_data[4]="); debug_printhex(rx_data[4]); debug_println(""); ////
-  debug_print("*** rx_data[5]="); debug_printhex(rx_data[5]); debug_println(""); ////
-
-  uint32_t rawTemp = ((uint32_t) rx_data[3] << 12) | ((uint32_t) rx_data[4] << 4) | ((uint32_t) rx_data[5] >> 4);
-  sensorData[0] = rawTemp / 100.0;
-
-#if NOTUSED
-  uint8_t *m_dig = &rx_buf[6];  //  Response starts at the 6th byte.
+  uint32_t raw = ((uint32_t) rx_data[3] << 12) | ((uint32_t) rx_data[4] << 4) | ((uint32_t) rx_data[5] >> 4);
   int32_t var1, var2, final;
   uint16_t  dig_T1 = (m_dig[1] << 8) | m_dig[0];
   int16_t   dig_T2 = (m_dig[3] << 8) | m_dig[2];
@@ -145,10 +129,10 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
   var2 = (((((raw >> 4) - ((int32_t)dig_T1)) * ((raw >> 4) - ((int32_t)dig_T1))) >> 12) * ((int32_t)dig_T3)) >> 14;
   int32_t t_fine = var1 + var2;
   final = (t_fine * 5 + 128) >> 8;
-
   const bool useCelsius = true;
+
+  //  Save the computed temperature as sensor data.
   sensorData[0] = useCelsius ? final/100.0 : final/100.0*9.0/5.0 + 32.0;
-#endif
 
   //  Simulated sensor.
   //  sensorData[0] = 12.3 + rand() % 10;
