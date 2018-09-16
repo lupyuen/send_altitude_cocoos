@@ -70,11 +70,9 @@ void setup_sensor_context(
   //  For Event Sensors: Don't capture, replay and simulate the SPI commands.
   if (sensor->info.resume_sensor_func) {
     if (!is_valid_event_sensor(context->sensor)) { return; }  //  Stop if this is not an Event Sensor.
-    capture_enabled = false;
-    replay_enabled = false;
-    simulate_enabled = false;
+    capture_enabled = false; replay_enabled = false; simulate_enabled = false;
   }
-  
+
   //  Set up the simulator and SPI port for the sensor.
   simulator_configure(&sensor->simulator, sensorID, sensor->info.name, sensor->port,
     capture_enabled, replay_enabled, simulate_enabled);

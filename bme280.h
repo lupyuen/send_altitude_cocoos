@@ -8,11 +8,11 @@
 #ifdef SENSOR_DATA
 
 #ifdef STM32  //  If we are running on STM32 Blue Pill...
-#define SENSOR_PORT 2  //  Sensor is connected at this SPI Port (1=SPI1, 2=SPI2)
+#define BME280_SENSOR_PORT SPI2  //  Sensor is connected at this SPI Port: SPI1 or SPI2.
 #include <spiint.h>
 
 #else  //  In we are running on Arduino...
-#define SENSOR_PORT 10  //  Sensor is connected at this pin for SPI Chip Select
+#define BME280_SENSOR_PORT 10  //  Sensor is connected at this pin for SPI Chip Select
 #define spi_setup(id) NULL
 #endif  //  STM32
 
@@ -25,7 +25,7 @@
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 //  Set up the BME280 module for reading. Connect via that I/O port (I2C or SPI).
-void bme280_setup(uint8_t port);
+void bme280_setup(uint32_t port);
 
 #ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
 extern BME280Spi bme;  //  Declare global instance of BME280 SPI interface.

@@ -30,9 +30,10 @@ static SensorContext sensorContext;  //  Remembers the sensor context.
 static float sensorData[sensorDataSize];  //  Array of floats for remembering the sensor data.
 
 static void init_sensor(void) {
-  //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
-  sensor.port = spi_setup(SENSOR_PORT);  //  Get the SPI port.
-  bme280_setup(SENSOR_PORT);  //  Set up the BME280 API.
+  //  Initialise the sensor if necessary. Assume sensor and sensorContext objects have been populated.
+  sensor.port_id = BME280_SENSOR_PORT;      //  Connect to the sensor at this port.
+  sensor.port = spi_setup(sensor.port_id);  //  Get the SPI port.
+  bme280_setup(sensor.port_id);             //  Set up the BME280 API.
 }
 
 static uint8_t poll_sensor(float *data, uint8_t size) {

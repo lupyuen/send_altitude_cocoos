@@ -71,24 +71,25 @@ enum Trans_Status {  //  Status of the SPI transceive request.
 struct Simulator_Control;
 
 struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
-  uint8_t id;         //  SPI port: 1=SPI1, 2=SPI2.
+  uint8_t id;         //  SPI port ID: 1=SPI1, 2=SPI2.
+  uint8_t pin;        //  For Legacy Arduino support: Map this port to a pin number.
+
+  //  SPI port configuration
   uint32_t speedMaximum; //  Max speed of comms, e.g. 500000 for 500 kHz.
   uint8_t bitOrder;  //  MSBFIRST or LSBFIRST.
   uint8_t dataMode;  //  SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3.
   uint32_t timeout;  //  Timeout in milliseconds.
 
-  //  Last packet transmitted / received.
-  SPI_DATA_TYPE *tx_buf;
-  int tx_len;
-  SPI_DATA_TYPE *rx_buf;
-  int rx_len;
-  volatile int rx_remainder;  //  Excess of bytes to be received after transmission.  Declared volatile because it's updated by the interrupt service routine.
+  //  SPI transceive
+  Sem_t *tx_semaphore;  //  If not NULL, signal this semaphore when transmit has been completed.
+  Sem_t *rx_semaphore;  //  If not NULL, signal this semaphore when receive has been completed.
+  SPI_DATA_TYPE *tx_buf; int tx_len;  //  Last packet transmitted.
+  SPI_DATA_TYPE *rx_buf; int rx_len;  //  Last packet received.
+  volatile int rx_remainder;  //  Excess number bytes to be received after transmission.  Declared volatile because it's updated by the interrupt service routine.
   volatile Trans_Status transceive_status;  //  Status of SPI transmit/receive command.  Declared volatile because it's updated by the interrupt service routine.
   volatile Trans_Status transceive_history[MAX_TRANS_STATUS];  //  History of transceive status.  Declared volatile because it's updated by the interrupt service routine.
 
-  Sem_t *tx_semaphore;
-  Sem_t *rx_semaphore;
-
+  //  TODO: Remove
   Evt_t event;                   //  Event to signal to Sensor Task that replay was completed.
   Evt_t *tx_event;               //  If not NULL, signal this event when transmit has been completed.
   Evt_t *rx_event;               //  If not NULL, signal this event when receive has been completed.
@@ -96,25 +97,25 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
   Simulator_Control *simulator;  //  Simulator for the port that will capture, replay and simulate SPI commands.
 	SPI_Fails	failCode;            //  Last fail code.
 
-  //  STM32 port configuration.
+  //  STM32 SPI port definitions
 	uint32_t SPIx;  					            //  SPI Port e.g. SPI1
 	volatile uint32_t *ptr_SPI_DR;  	    //  SPI DR e.g. &SPI1_DR
 	volatile uint32_t *ptr_SPI_I2SCFGR;   //  SPI I2S Config e.g. &SPI1_I2SCFGR
 	uint32_t RCC_SPIx;			              //  SPI Clock e.g. RCC_SPI1
 
-	//  GPIO config (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
+	//  STM32 GPIO definitions (port, pin, clock) for each SPI pin (SS, SCK, MISO, MOSI)
 	uint32_t ss_port;   uint16_t ss_pin;   uint32_t ss_rcc;    //  SS pin e.g. GPIOA, GPIO4, RCC_GPIOA
 	uint32_t sck_port;  uint16_t sck_pin;  uint32_t sck_rcc;   //  SCK pin e.g. GPIOA, GPIO5, RCC_GPIOA
 	uint32_t miso_port; uint16_t miso_pin; uint32_t miso_rcc;  //  MISO pin e.g. GPIOA, GPIO6, RCC_GPIOA
 	uint32_t mosi_port; uint16_t mosi_pin; uint32_t mosi_rcc;  //  MOSI pin e.g. GPIOA, GPIO7, RCC_GPIOA
 
-	//  DMA config (port, channel, interrupt, clock) for transmit and receive DMA channels.
+	//  STM32 DMA definitions (port, channel, interrupt, clock) for SPI transmit and receive DMA channels.
 	uint32_t tx_dma; uint8_t tx_channel; uint8_t tx_irq; uint32_t tx_rcc;  //  Transmit DMA e.g. DMA1, DMA_CHANNEL3, NVIC_DMA1_CHANNEL3_IRQ, RCC_DMA1
 	uint32_t rx_dma; uint8_t rx_channel; uint8_t rx_irq; uint32_t rx_rcc;  //  Receive DMA e.g. DMA1, DMA_CHANNEL2, NVIC_DMA1_CHANNEL2_IRQ, RCC_DMA1
 };
 
 //  This is the new SPI Interface.  New code should use this.
-SPI_Control *spi_setup(uint8_t id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
+SPI_Control *spi_setup(uint32_t spi_id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
 SPI_Fails spi_configure(SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
 SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.

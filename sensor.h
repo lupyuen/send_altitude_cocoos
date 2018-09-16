@@ -112,7 +112,8 @@ struct Sensor {
 
   SensorInfo info;              //  For accessing sensor data
   SensorControl control;        //  For controlling the sensor
-  SPI_Control *port;            //  For SPI port used by sensor.
+  uint32_t port_id;             //  For the port ID used by sensor e.g. SPI1, I2C1
+  SPI_Control *port;            //  For SPI port used by sensor
   Simulator_Control simulator;  //  For simulating the sensor.  Must be in static memory, not stack memory.
 };
 

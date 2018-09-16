@@ -540,11 +540,8 @@ static SPI_Fails spi_init_port(
 	NVIC_DMA ## port ## _CHANNEL ## channel ## _IRQ, \
 	RCC_DMA ## port
 
-SPI_Control *spi_setup(uint8_t id) {
-	//  Enable SPI peripheral and GPIO clocks.  Should be called once only per SPI port. id=1 refers to SPI1.
-	debug_print("spi setup spi"); debug_println((int) id); debug_flush();
-	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
-
+SPI_Control *spi_setup(uint32_t spi_id) {
+	//  Enable SPI peripheral and GPIO clocks.  Should be called once only per SPI port.  spi_id=SPI1 or SPI2.
 	//  If called the first time, define the pins, DMA and interrupts of each SPI port.
 	static bool firstTime = true;
 	if (firstTime) {
@@ -553,6 +550,14 @@ SPI_Control *spi_setup(uint8_t id) {
 		spi_init_port(1, _SPI(1), _GPIO(A,4),  _GPIO(A,5),  _GPIO(A,6),  _GPIO(A,7),  _DMA(1,3), _DMA(1,2));  //  SPI1
 		spi_init_port(2, _SPI(2), _GPIO(B,12), _GPIO(B,13), _GPIO(B,14), _GPIO(B,15), _DMA(1,5), _DMA(1,4));  //  SPI2
 	}  //  TODO: Support alternate mapping of SPI pins e.g. PA15, PB3, PB4, PB5.
+
+	//  Find the SPI port.
+	uint8_t id = 0;  //  1=SPI1, 2=SPI2.
+	for (uint8_t i = 0; i < MAX_SPI_PORTS; i++) {
+		if (allPorts[i].SPIx == spi_id) { id = i + 1; break; }
+	}
+	debug_print("spi setup spi"); debug_println((int) id); debug_flush();
+	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return NULL; }
 
 	//  Fetch the SPI port control.
 	SPI_Control *port = &allPorts[id - 1];
@@ -827,10 +832,16 @@ void SPIInterface::pinMode(uint8_t pin, uint8_t mode){
 }
 
 void SPIInterface::digitalWrite(uint8_t pin, uint8_t val) {
-	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin.  Used by BME280Spi.h
-	//  debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" val "); debug_println((int) val); debug_flush();
-	if (pin < 1 || pin > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
-	currentSPIPort = pin;
+	//  digitalWrite() is called just before an SPI transfer.  We intercept the pin to determine the SPI port.  Used by BME280Spi.h
+	const uint32_t port_id = convert_pin_to_port(pin);
+	//  Find the SPI port.
+	uint8_t id = 0;  //  1=SPI1, 2=SPI2.
+	for (uint8_t i = 0; i < MAX_SPI_PORTS; i++) {
+		if (allPorts[i].SPIx == port_id) { id = i + 1; break; }
+	}
+	//  debug_print("digitalWrite pin "); debug_print((int) pin);  debug_print(" id ");  debug_print((int) id);  debug_print(" val "); debug_println((int) val); // debug_flush();
+	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, SPI_Invalid_Port); return; }	
+	currentSPIPort = id;
 }
 
 SPIInterfaceSettings::SPIInterfaceSettings(uint32_t speedMaximum0, uint8_t bitOrder0, uint8_t dataMode0) {

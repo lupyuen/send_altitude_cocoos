@@ -82,8 +82,9 @@ static float sensorData[sensorDataSize];  //  Array of floats for remembering th
 
 static void init_sensor(void) {
   //  Initialise the sensor port. Assume sensor and sensorContext objects have been populated.
-  sensor.port = spi_setup(TEMP_EVENT_SENSOR_PORT);  //  Get the SPI port.
-  if (sensor.port == NULL) { return; }              //  Quit if the setup failed.
+  sensor.port_id = BME280_EVENT_SENSOR_PORT;  //  Connect to the sensor at this port.
+  sensor.port = spi_setup(sensor.port_id);    //  Get the SPI port.
+  if (sensor.port == NULL) { return; }        //  Quit if the setup failed.
 
   //  Configure the SPI port, specific to the BME280 sensor.  Change this for other sensors.
   spi_configure(

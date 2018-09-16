@@ -11,8 +11,8 @@
 #ifdef STM32  //  Only for STM32 Blue Pill
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
-//  Define the SPI port to be used for the sensor: 1=SPI1, 2=SPI2
-#define TEMP_EVENT_SENSOR_PORT 2
+//  Define the SPI port to be used for the sensor: SPI1 or SPI2.
+#define BME280_EVENT_SENSOR_PORT SPI2
 
 SensorContext *setup_temp_event_sensor(  //  Set up the sensor parameters.
   uint16_t pollInterval,  //  How often the sensor should be polled, in milliseconds.

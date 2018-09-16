@@ -27,7 +27,7 @@ BME280I2C bme; //  The global instance of the BME280 I2C API.
 // Default Settings: forced mode, standby time = 1000 ms
 // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
 
-void bme280_setup(uint8_t port) {
+void bme280_setup(uint32_t port_id) {
   //  Set up the BME280 module for reading.  Skip if already set up.
   static bool firstTime = true;
   if (!firstTime) return;  //  Already set up, quit.
@@ -42,12 +42,14 @@ void bme280_setup(uint8_t port) {
 
   for (int i = 0; i < numAddresses; i++) {
 
-#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
-    settings.spiCsPin = port;  //  Set the SPI port.
+#ifdef USE_BME280_SPI         //  If we are using SPI version of BME280...
+    uint8_t pin = convert_port_to_pin(port_id);  //  Map the port to a pin.
+    settings.spiCsPin = pin;  //  Set the pin for the SPI port.
     bme = BME280Spi(settings);
-    debug_print("bme port"); debug_println((int) port);
+    debug_print("bme port"); debug_println((int) port_id);
     debug_print("bme2 port"); debug_println((int) settings.spiCsPin);
-#else  //  If we are using I2C version of BME280...
+
+#else                                //  If we are using I2C version of BME280...
     uint8_t addr = i2cAddresses[i];  //  Fetch the next I2C address to be scanned.
     settings.bme280Addr = addr;
     bme = BME280I2C(settings);
