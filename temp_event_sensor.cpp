@@ -82,6 +82,15 @@ static uint8_t tx_buf[TX_LEN] = {  //  Must be in static memory not stack memory
 };
 static uint8_t rx_buf[RX_LEN];  //  Must be in static memory not stack memory because it will be used for DMA.
 
+static uint8_t m_dig[] = {
+  0x97,
+  0x6e,
+  0xe6,
+  0x65,
+  0x32,
+  0x00,
+};
+
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  For Event Sensors: Poll the sensor for new data and return SENSOR_NOT_READY.
   //  Event Task will wait for the sensor event to be signalled and call resume_sensor().
@@ -118,7 +127,7 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
 
   //  Process the received SPI data in rx_buf to get sensor data.  Based on https://github.com/finitespace/BME280/blob/master/src/BME280.cpp
   debug_print(sensor.info.name); spi_dump_packet(sensor.port);
-  uint8_t *rx_data = &rx_buf[6];  //  Response starts at the 6th byte.
+  uint8_t *rx_data = &rx_buf[7];  //  Response starts at the 8th byte.
   uint32_t rawTemp = ((uint32_t) rx_data[3] << 12) | ((uint32_t) rx_data[4] << 4) | ((uint32_t) rx_data[5] >> 4);
   sensorData[0] = rawTemp / 100.0;
 
