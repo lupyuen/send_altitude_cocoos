@@ -29,6 +29,7 @@
 #define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.
 #endif  //  STM32
 
+static Sem_t *allocate_port_semaphore(uint32_t port_id);
 static bool is_valid_event_sensor(Sensor *sensor);
 
 static uint8_t nextSensorID = 1;        //  Next sensor ID to be allocated.  Running sequence number.
@@ -38,8 +39,6 @@ static struct {      //  List of I/O ports and their semaphores to prevent concu
   Sem_t semaphore;   //  Semaphore to lock the port
 } portSemaphores[MAX_PORT_COUNT];
 
-static Sem_t allocate_port_semaphore(uint32_t port_id);
-
 void sensor_task(void) {
   //  Background task to receive and process sensor data.
   //  This task will be reused by all sensors: temperature, humidity, altitude.
@@ -47,21 +46,23 @@ void sensor_task(void) {
   //  with other sensors.
   SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
   task_open();  //  Start of the task. Must be matched with task_close().
+  context = (SensorContext *) task_get_data();
+  if (context->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
+
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
-    //  This code is executed by multiple sensors. We use a global semaphore to prevent 
-    //  concurrent access to the single shared I2C or SPI port on Arduino Uno or Blue Pill.
     context = (SensorContext *) task_get_data();  //  Must refetch the context after task_wait().
     debug(context->sensor->info.name, F(" >> Wait for semaphore"));
-    //  TODO
-    sem_wait(i2cSemaphore);  //  Wait until no other sensor is using the I2C Bus. Then lock the semaphore.
+
+    //  This code is executed by multiple sensors. We use a semaphore to prevent 
+    //  concurrent access to the shared I2C or SPI port on Arduino Uno or Blue Pill.
+    sem_wait(*context->read_semaphore);  //  Wait until no other sensor is using the I/O port. Then lock the semaphore.
     context = (SensorContext *) task_get_data();  //  Must fetch the context pointer again after the wait.
     debug(context->sensor->info.name, F(" >> Got semaphore"));
     
-    context->msg.count = SENSOR_NOT_READY;  //  Assume that sensor has no data available.
-    context->send_semaphore = NULL;         //  Assume no need to wait before sending sensor data.
-
     //  Begin to capture, replay or simulate the sensor SPI commands.
     simulator_open(&context->sensor->simulator);
+    context->msg.count = SENSOR_NOT_READY;  //  Assume that sensor has no data available.
+    context->send_semaphore = NULL;         //  Assume no need to wait before sending sensor data.
 
     //  If this is the first time we are polling the sensor, or if this is a simulated sensor...
     if (simulator_should_poll_sensor(&context->sensor->simulator)) {
@@ -89,9 +90,9 @@ void sensor_task(void) {
     //  End the capture, replay or simulation of the sensor SPI commands.
     simulator_close(&context->sensor->simulator);
 
-    //  We are done with the I2C or SPI port.  Release the semaphore so that another task can fetch the sensor data on the port.
+    //  We are done with the I/O port.  Release the semaphore so that another task can fetch the sensor data on the port.
     debug(context->sensor->info.name, F(" >> Release semaphore"));
-    sem_signal(i2cSemaphore);
+    sem_signal(*context->read_semaphore);
     context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
 
     //  Do we have new data?
@@ -110,27 +111,32 @@ void sensor_task(void) {
   task_close();  //  End of the task. Should never come here.
 }
 
-static Sem_t allocate_port_semaphore(uint32_t port_id) {
+static Sem_t *allocate_port_semaphore(uint32_t port_id) {
   //  Given a port ID (e.g. SPI1), allocate the semaphore to be used for locking the port.  Reuse if already allocated.
   //  This is to prevent concurrent access to the same I/O port.
+  //  Port ID not found.  Allocate a new semaphore.
+  if (port_id == 0) {
+    debug(F("*** ERROR: Invalid port ID"));
+    return NULL;
+  }
   for (int i = 0; i < portSemaphoreIndex; i++) {
     //  Search for the port ID.
     if (port_id == portSemaphores[i].port_id) {
-      return portSemaphores[i].semaphore;
+      return &portSemaphores[i].semaphore;
     }
   }
   //  Port ID not found.  Allocate a new semaphore.
   if (portSemaphoreIndex >= MAX_PORT_COUNT) {
     debug(F("*** ERROR: Port semaphore overflow. Increase MAX_PORT_COUNT"));
-    return 0;
+    return NULL;
   }
   const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I/O port.
   const int initValue = 1;  //  Allow only 1 concurrent access to the I/O port.
-  Sem_t semaphore = sem_counting_create(maxCount, initValue);
   portSemaphores[portSemaphoreIndex].port_id = port_id;
-  portSemaphores[portSemaphoreIndex].semaphore = semaphore;
+  portSemaphores[portSemaphoreIndex].semaphore = sem_counting_create(maxCount, initValue);
+  Sem_t *result = &portSemaphores[portSemaphoreIndex].semaphore;
   portSemaphoreIndex++;
-  return semaphore;
+  return result;
 }
 
 uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
@@ -170,16 +176,22 @@ void setup_sensor_context(
   sensor->info.id = sensorID; 
   sensor->info.semaphore = sem_bin_create(0);
   sensor->info.poll_interval = pollInterval;
+  sensor->port = NULL;
+  sensor->port_id = 0;
 
   //  Set the context.
   context->sensor = sensor;
   context->receive_task_id = taskID;
 
-  //  Call the sensor to do initialisation.
+  //  Call the sensor to do initialisation.  This should set the port and port ID.
   sensor->control.init_sensor_func();
 
+  //  Allocate the semaphore for locking the I/O port (e.g. SPI1) so that multiple tasks won't access the port concurrently.
+  context->read_semaphore = allocate_port_semaphore(sensor->port_id);
+  if (context->read_semaphore == NULL) { return; }
+  
   //  Prepare a sensor data message for sending the sensor data.
-  context->msg.super.signal = context->sensor->info.id;  //  e.g. TEMP_DATA, GYRO_DATA.
+  context->msg.super.signal = context->sensor->info.id;
   strncpy(context->msg.name, context->sensor->info.name, MAX_SENSOR_NAME_SIZE);  //  Set the sensor name e.g. tmp
   context->msg.name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 
