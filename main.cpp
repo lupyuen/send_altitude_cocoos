@@ -24,18 +24,21 @@
 //  These are the functions that we will implement in this file.
 static void system_setup(void);  //  Initialise the system.
 static void sensor_setup(uint8_t display_task_id);    //  Start the sensor tasks for each sensor to read and process sensor data.
-static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
-#ifdef SENSOR_DISPLAY  //  If we are displaying sensor data instead of sending to network...
-static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
-#endif  //  SENSOR_DISPLAY
 
+//// TODO
 Sem_t i2cSemaphore;  //  Global semaphore for preventing concurrent access to the single shared I2C Bus on Arduino Uno.
+
+#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data to the IoT network...
+static uint8_t network_setup(void);  //  Start the network task to send and receive network messages.
 static char uartResponse[MAX_UART_RESPONSE_MSG_SIZE + 1];  //  Buffer for writing UART response.
 static UARTContext uartContext;
 static NetworkContext wisolContext;
 static UARTMsg uartMsgPool[UART_MSG_POOL_SIZE];  //  Pool of UART messages for the UART Tasks message queue.
 static SensorMsg networkMsgPool[NETWORK_MSG_POOL_SIZE];  //  Pool of sensor data messages for the Network Task message queue.
+#endif  //  TRANSMIT_SENSOR_DATA
+
 #ifdef SENSOR_DISPLAY  //  If we are displaying sensor data instead of sending to network...
+static uint8_t display_setup(void);  //  Start the display task that displays sensor data.  Return the task ID.
 static DisplayMsg displayMsgPool[DISPLAY_MSG_POOL_SIZE];  //  Pool of display messages that make up the display message queue.
 #endif  //  SENSOR_DISPLAY
 
@@ -53,13 +56,15 @@ int main(void) {
 
   //  Erase the aggregated sensor data.
   setup_aggregate();
+  uint8_t task_id = 0;
 
 #ifdef SENSOR_DISPLAY  //  If we are displaying the sensor data instead of sending to network...
-  uint8_t task_id = display_setup();  //  Start the display task that displays sensor data.
+  task_id = display_setup();  //  Start the display task that displays sensor data.
 #endif  //  SENSOR_DISPLAY
 
-  //  Start the Network Task and UART Task to send and receive network messages.
-  uint8_t task_id = network_setup();
+#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data to the IoT network...  
+  task_id = network_setup();  //  Start the Network Task and UART Task to send and receive network messages.
+#endif  //  TRANSMIT_SENSOR_DATA
   
   //  Start the Sensor Task for each sensor to read sensor data and send to the Network Task or Display Task.
   sensor_setup(task_id);
@@ -70,42 +75,6 @@ int main(void) {
   //  Start cocoOS task scheduler, which runs the Sensor Tasks, Network Task and UART Task.
   os_start();  //  Never returns.  
 	return EXIT_SUCCESS;
-}
-
-static uint8_t network_setup(void) {
-  //  Start the Network Task to send and receive network messages.
-  //  Also starts the UART Task called by the Network Task to send/receive data to the UART port.
-  //  UART Task must have the highest task priority because it must respond to UART data immediately.
-  uint8_t networkTaskID = 0;
-#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data...
-  //  Start the UART Task for transmitting UART data to the Wisol module.
-  setup_uart(
-    &uartContext,  //  Init the context for UART Task.
-    uartResponse); //  UART Task will save the response data here.
-  uint8_t uartTaskID = task_create(
-    uart_task,     //  Task will run this function.
-    &uartContext,  //  task_get_data() will be set to the display object.
-    10,            //  Priority 10 = highest priority
-    (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
-    UART_MSG_POOL_SIZE,     //  Size of queue pool.
-    sizeof(UARTMsg));       //  Size of queue message.
-
-  //  Start the Network Task for receiving sensor data and transmitting to UART Task.
-  setup_wisol(
-    &wisolContext,  //  Init the context for the Network Task.
-    &uartContext,
-    uartTaskID, 
-    COUNTRY_SG,  //  Change this to your country code. Affects the Sigfox frequency used.
-    false);      //  Must be false because we are not using the Sigfox emulator.
-  networkTaskID = task_create(
-      network_task,   //  Task will run this function.
-      &wisolContext,  //  task_get_data() will be set to the display object.
-      20,             //  Priority 20 = lower priority than UART task
-      (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
-      NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
-      sizeof(SensorMsg));   //  Size of queue message.
-#endif  //  TRANSMIT_SENSOR_DATA    
-  return networkTaskID;
 }
 
 #ifdef SENSOR_DATA  //  If we are getting data from sensors and not using hardcoded data...
@@ -149,6 +118,42 @@ static void sensor_setup(uint8_t task_id) {
 
 }
 #endif  //  SENSOR_DATA
+
+#ifdef TRANSMIT_SENSOR_DATA  //  If we are transmitting sensor data to the IoT network...
+static uint8_t network_setup(void) {
+  //  Start the Network Task to send and receive network messages.
+  //  Also starts the UART Task called by the Network Task to send/receive data to the UART port.
+  //  UART Task must have the highest task priority because it must respond to UART data immediately.
+
+  //  Start the UART Task for transmitting UART data to the Wisol module.
+  setup_uart(
+    &uartContext,  //  Init the context for UART Task.
+    uartResponse); //  UART Task will save the response data here.
+  uint8_t uartTaskID = task_create(
+    uart_task,     //  Task will run this function.
+    &uartContext,  //  task_get_data() will be set to the display object.
+    10,            //  Priority 10 = highest priority
+    (Msg_t *) uartMsgPool,  //  Pool to be used for storing the queue of UART messages.
+    UART_MSG_POOL_SIZE,     //  Size of queue pool.
+    sizeof(UARTMsg));       //  Size of queue message.
+
+  //  Start the Network Task for receiving sensor data and transmitting to UART Task.
+  setup_wisol(
+    &wisolContext,  //  Init the context for the Network Task.
+    &uartContext,
+    uartTaskID, 
+    COUNTRY_SG,  //  Change this to your country code. Affects the Sigfox frequency used.
+    false);      //  Must be false because we are not using the Sigfox emulator.
+  uint8_t networkTaskID = task_create(
+      network_task,   //  Task will run this function.
+      &wisolContext,  //  task_get_data() will be set to the display object.
+      20,             //  Priority 20 = lower priority than UART task
+      (Msg_t *) networkMsgPool,  //  Pool to be used for storing the queue of UART messages.
+      NETWORK_MSG_POOL_SIZE,     //  Size of queue pool.
+      sizeof(SensorMsg));   //  Size of queue message.
+  return networkTaskID;
+}
+#endif  //  TRANSMIT_SENSOR_DATA
 
 static void system_setup(void) {
   //  Initialise the system. Create the I2C semaphore.
