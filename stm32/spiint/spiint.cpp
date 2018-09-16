@@ -45,15 +45,14 @@ static SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the port control
 //  SPI Transceive Operations
 
 SPI_Fails spi_transceive(
-	SPI_Control *port, 
-	SPI_DATA_TYPE *tx_buf, 
-	int tx_len, 
-	SPI_DATA_TYPE *rx_buf, 
-	int rx_len, 
-	Evt_t *completed_event,  //  Event to be signalled upon completing the request.  NULL if no event.
-	Sem_t *completed_semaphore
+	SPI_Control *port, 		    //  SPI port.
+	SPI_DATA_TYPE *tx_buf, 	    //  Bytes to be transmitted to SPI port.	Must be in static memory, not stack.
+	int tx_len, 			    //  Number of bytes to be transmitted.
+	SPI_DATA_TYPE *rx_buf,      //  Buffer for receiving bytes from SPI port.
+	int rx_len, 			    //  Number of bytes to be received. Must be in static memory, not stack.
+	Sem_t *completed_semaphore  //  If not null, semaphore to be signalled upon completing the request.
 	) {	
-	//  Send an SPI command to transmit and receive SPI data.  If the simulator is in...
+	//  Send an SPI command to transmit and receive SPI data via DMA and interrupts.  If the simulator is in...
 	//  Capture Mode: We capture the transmit/receive data into the simulator trail.
 	//  Replay mode: We replay the transmit/receive SPI command recorded in the simulator trail. Record the received data into the trail.
 	//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
@@ -81,9 +80,6 @@ SPI_Fails spi_transceive(
 	//  Signal this semaphore when receive is completed.
 	port->rx_semaphore = completed_semaphore;
 	port->tx_semaphore = NULL;
-
-	port->rx_event = completed_event;
-	port->tx_event = NULL;
 
 	//  Reset status flag appropriately (both 0 case caught above).
 	port->transceive_status = TRANS_NONE;
@@ -217,9 +213,6 @@ SPI_Fails spi_open(SPI_Control *port) {
 	{ debug_print("spi open spi"); debug_println((int) port->id); dump_config(port); debug_flush(); }
 	port->tx_semaphore = NULL;
 	port->rx_semaphore = NULL;
-
-	port->tx_event = NULL;
-	port->rx_event = NULL;
 	port->transceive_status = TRANS_NONE;
 
 	//  Note: Must configure the port every time or replay will fail.
@@ -265,6 +258,9 @@ SPI_Fails spi_open(SPI_Control *port) {
 SPI_Fails spi_close(SPI_Control *port) {
 	//  Close the SPI port.  Disable DMA interrupts for SPI port.
 	if (port->simulator) { debug_print("spi close spi"); debug_println((int) port->id); debug_flush(); }
+	port->tx_semaphore = NULL;
+	port->rx_semaphore = NULL;
+
 	//  Ensure transceive is complete.  This checks the state flag as well as follows the procedure on the Reference Manual (RM0008 rev 14 Section 25.3.9 page 692, the note.)
 	TickType_t startTime = systicks();
 	while (!(SPI_SR(port->SPIx) & SPI_SR_TXE)) {
@@ -275,11 +271,8 @@ SPI_Fails spi_close(SPI_Control *port) {
 		if (diff_ticks(startTime, systicks()) > port->timeout)
 			{ break; }
 	}
-	port->tx_semaphore = NULL;
-	port->rx_semaphore = NULL;
 
-	port->tx_event = NULL;
-	port->rx_event = NULL;
+	//  Disable interrupts.
  	nvic_disable_irq(port->rx_irq);
  	nvic_disable_irq(port->tx_irq);
 	return SPI_Ok;
@@ -305,8 +298,8 @@ SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore) {
 	if (tx_len < 0 || rx_len < 0 || tx_buf == NULL || rx_buf == NULL) { return showError(port, SPI_Mismatch); }
 	// dump_packet("replay >>", tx_buf, tx_len); debug_println(""); debug_flush(); debug_print(" rx_event "); debug_println((int) *event); debug_flush();
 
-	//  Send the transceive request and signal the sempahore when completed.
-	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, &port->event, completed_semaphore);
+	//  Send the transceive request and signal the semaphore when completed.
+	SPI_Fails result = spi_transceive(port, tx_buf, tx_len, rx_buf, rx_len, completed_semaphore);
 	if (result != SPI_Ok) { return result; }
 
 	//  Caller (Sensor Task) must wait for the semaphore to be signaled before sending again.
@@ -499,9 +492,6 @@ static SPI_Fails spi_init_port(
 	port->id = id;
 	port->tx_semaphore = NULL;
 	port->rx_semaphore = NULL;
-
-	port->event = event_create();
-	port->tx_event = NULL; port->rx_event = NULL;
 	port->simulator = NULL;
 
 	//  SPI port config.
@@ -628,8 +618,6 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 					port->tx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
 				}
 
-				if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
-
 			} else {  //  TODO: If tx_len < rx_len, create a dummy transfer to clock in the remaining rx data.
 				volatile int rx_remainder = port->rx_remainder;
 				port->rx_remainder = 0; // Clear the buffer remainder to skip this section later
@@ -660,9 +648,6 @@ static void handle_tx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				sem_ISR_signal(*port->rx_semaphore); 
 				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
 			}
-
-			if (port->tx_event != NULL) { event_ISR_signal(*port->tx_event); }
-			if (port->rx_event != NULL) { event_ISR_signal(*port->rx_event); }
 		}
 	}
 }
@@ -686,13 +671,11 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 		dma_disable_channel(dma, channel);
 		if (port) {  //  Update the receive complete status.
 			update_transceive_status(port);
-			//  For simulator replay: Signal to Sensor Task when receive is done.
+			//  For Event Sensor or Simulator replay: Signal to Sensor Task when receive is done.
 			if (port->rx_semaphore) { 
 				sem_ISR_signal(*port->rx_semaphore); 
 				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
 			}
-
-			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
 	}
 
@@ -710,8 +693,6 @@ static void handle_rx_interrupt(uint32_t spi, uint32_t dma,  uint8_t channel) {
 				sem_ISR_signal(*port->rx_semaphore); 
 				port->rx_semaphore = NULL;  //  Erase the semaphore so it won't be signalled twice.
 			}
-
-			if (port->rx_event) { event_ISR_signal(*port->rx_event); }
 		}
 	}
 }
@@ -988,6 +969,7 @@ const char *spi_error(SPI_Fails fcode) {
 }
 
 static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
+	//  Show the message for the error code on console.
 	if (port) { port->failCode = fc; }
 	debug_print("***** Error: SPI Failed ");
 	debug_print(fc); debug_print(" / ");
@@ -997,6 +979,7 @@ static SPI_Fails showError(SPI_Control *port, SPI_Fails fc) {
 }
 
 static const char *get_mode_name(SPI_Control *port) {
+	//  Return the mode name.
 	const char *title = "";
 	if (!port->simulator) { return title; }
 	switch (port->simulator->mode) {
@@ -1007,135 +990,4 @@ static const char *get_mode_name(SPI_Control *port) {
 		default: title = "unknown";
 	}
 	return title;
-}
-
-//////////////////////////////////////////////////////////////////////////
-//  Test Functions
-
-static const uint8_t ID_ADDR         = 0xD0;
-static const uint8_t BME280_SPI_WRITE   = 0x7F;
-static const uint8_t BME280_SPI_READ    = 0x80;
-
-// #define DISABLE_DMA
-#ifdef DISABLE_DMA
-
-static void
-test_spi_configure(void) {
-	debug_println("test_spi_configure"); // debug_flush();
-	rcc_periph_clock_enable(RCC_SPI1);
-	gpio_set_mode(
-		GPIOA,
-        GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
-        GPIO4|GPIO5|GPIO7		// NSS=PA4,SCK=PA5,MOSI=PA7
-	);
-	gpio_set_mode(
-		GPIOA,
-		GPIO_MODE_INPUT,
-		GPIO_CNF_INPUT_FLOAT,
-		GPIO6				// MISO=PA6
-	);
-	spi_reset(SPI1); 
-	spi_init_master(
-		SPI1,
-        SPI_CR1_BAUDRATE_FPCLK_DIV_256,
-        SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE,
-		SPI_CR1_CPHA_CLK_TRANSITION_1,
-	    SPI_CR1_DFF_8BIT,
-	    SPI_CR1_MSBFIRST
-	);
-#ifdef HARDWARE_NSS
-	//  Set NSS management to hardware.
-	//  Important!  	You must have a pullup resistor on the NSS
- 	//  line in order that the NSS (/CS) SPI output
- 	//  functions correctly as a chip select. The
- 	//  SPI peripheral configures NSS pin as an
- 	//  open drain output.
-	debug_println("test_spi_configure hardware nss"); debug_flush();
-	spi_disable_software_slave_management(SPI1);
-	spi_enable_ss_output(SPI1);
-#else
-	/*
-	 * Set NSS management to software.
-	 *
-	 * Note:
-	 * Setting nss high is very important, even if we are controlling the GPIO
-	 * ourselves this bit needs to be at least set to 1, otherwise the spi
-	 * peripheral will not send any data out.
-	 */
-	spi_enable_software_slave_management(SPI1);
-	spi_set_nss_high(SPI1);
-
-	//  Set SS to high (NSS low) to select SPI interface of BME280 instead of I2C.
-	//  gpio_clear(ss_port, ss_pin);
-	//  gpio_set(ss_port, ss_pin);
-
-#endif  //  NSS_HARDWARE
-}
-
-static uint8_t
-test_read(uint8_t readAddr) {
-	debug_print("test_read addr "); debug_println((int) readAddr); debug_flush();
-	spi_enable(SPI1);
-
-#ifndef HARDWARE_NSS
-	//  Assume SS is high.  Before reading, set SS to low (NSS high).
-	//  gpio_set(ss_port, ss_pin);
-	gpio_clear(ss_port, ss_pin);
-#endif  //  !HARDWARE_NSS	
-
-#define DUMMY 0x00
-	spi_xfer(SPI1, readAddr);
-	uint8_t sr1 = spi_xfer(SPI1, DUMMY);
-
-#ifndef HARDWARE_NSS
-	//  After reading, set SS to high (NSS low).
-	//  gpio_clear(ss_port, ss_pin);
-	gpio_set(ss_port, ss_pin);
-#endif  //  !HARDWARE_NSS	
-
-	spi_disable(SPI1);
-	debug_print("test_read received "); debug_println((int) sr1); debug_flush();
-	return sr1;
-}
-#endif  //  DISABLE_DMA
-
-static uint8_t tx_packet[16];
-static uint8_t rx_packet[16];
-
-void spi_test(void) {
-	debug_println("spi_test"); debug_flush();
-
-	// bme280 uses the msb to select read and write
-	// combine the addr with the read/write bit
-	uint8_t addr = ID_ADDR;
-	uint8_t readAddr = addr | BME280_SPI_READ;
-	
-	////    SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
-	SPI_Control *port = spi_setup(1);
-
-#ifdef DISABLE_DMA
-	test_spi_configure();
-	for (int i = 0; i < 10; i++) { led_wait(); }
-	test_read(readAddr);  //  Should return 96.
-#else
-	spi_configure(port, 500000, MSBFIRST, SPI_MODE0);
-	spi_open(port);
-
-	tx_packet[0] = readAddr;
-	rx_packet[0] = 0;
-	int tx_len = 1;
-	int rx_len = 1;
-	spi_transceive_wait(port, tx_packet, tx_len, rx_packet, rx_len);
-
-	// transfer 0x00 to get the data
-	tx_packet[0] = 0;
-	rx_packet[0] = 0;
-	tx_len = 1;
-	rx_len = 1;
-	spi_transceive_wait(port, tx_packet, tx_len, rx_packet, rx_len);  //  Should return 96.
-
-	spi_close(port);
-#endif  //  DISABLE_DMA
-	debug_println("spi_test OK"); debug_flush();
 }

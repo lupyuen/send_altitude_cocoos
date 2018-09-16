@@ -104,7 +104,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   if (result != SPI_Ok) { return 0; }  //  An error has occurred.  Stop the processing.
 
   //  Send the SPI transceive command to read sensor data from BME280.  Sensor event will be signalled when done.
-  result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, NULL, &sensor.info.semaphore);
+  result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, &sensor.info.semaphore);
   if (result != SPI_Ok) {    //  An error has occurred.  Stop the processing.
     spi_close(sensor.port);  //  Close the SPI port.
     return 0; 

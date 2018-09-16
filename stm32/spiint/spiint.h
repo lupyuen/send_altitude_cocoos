@@ -89,11 +89,6 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
   volatile Trans_Status transceive_status;  //  Status of SPI transmit/receive command.  Declared volatile because it's updated by the interrupt service routine.
   volatile Trans_Status transceive_history[MAX_TRANS_STATUS];  //  History of transceive status.  Declared volatile because it's updated by the interrupt service routine.
 
-  //  TODO: Remove
-  Evt_t event;                   //  Event to signal to Sensor Task that replay was completed.
-  Evt_t *tx_event;               //  If not NULL, signal this event when transmit has been completed.
-  Evt_t *rx_event;               //  If not NULL, signal this event when receive has been completed.
-
   Simulator_Control *simulator;  //  Simulator for the port that will capture, replay and simulate SPI commands.
 	SPI_Fails	failCode;            //  Last fail code.
 
@@ -119,7 +114,7 @@ SPI_Control *spi_setup(uint32_t spi_id);  	//  Enable SPI peripheral and GPIO cl
 SPI_Fails spi_configure(SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
 SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI1.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-SPI_Fails spi_transceive(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len, Evt_t *completed_event, Sem_t *completed_semaphore = NULL);
+SPI_Fails spi_transceive(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len, Sem_t *completed_semaphore);
 SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
 SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore);  //  Replay the next transceive request that was captured earlier.
 bool spi_is_transceive_complete(SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
