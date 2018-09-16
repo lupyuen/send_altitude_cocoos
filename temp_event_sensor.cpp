@@ -96,32 +96,32 @@ static void init_sensor(void) {
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  For Event Sensors: Poll the sensor for new data and return SENSOR_NOT_READY.
-  //  Event Task will wait for the sensor event to be signalled and call resume_sensor().
+  //  Event Task will wait for the sensor semaphore to be signalled and call resume_sensor().
   debug(sensor.info.name, F(" >> poll_sensor"));
   
   //  Open the SPI port.
   SPI_Fails result = spi_open(sensor.port);
   if (result != SPI_Ok) { return 0; }  //  An error has occurred.  Stop the processing.
 
-  //  Send the SPI transceive command to read sensor data from BME280.  Sensor event will be signalled when done.
+  //  Send the SPI transceive command to read sensor data from BME280.  Sensor semaphore will be signalled when done.
   result = spi_transceive(sensor.port, tx_buf, TX_LEN, rx_buf, RX_LEN, &sensor.info.semaphore);
   if (result != SPI_Ok) {    //  An error has occurred.  Stop the processing.
     spi_close(sensor.port);  //  Close the SPI port.
     return 0; 
   }
 
-  //  Return SENSOR_NOT_READY so that Event Task will wait for the sensor event to be signalled and call resume_sensor().
+  //  Return SENSOR_NOT_READY so that Event Task will wait for the sensor semaphore to be signalled and call resume_sensor().
   return SENSOR_NOT_READY;
 }
 
 static uint8_t resume_sensor(float *data, uint8_t size) {
   //  For Event Sensors: Resume the processing of received sensor data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
-  //  If sensor is not ready to return data, return SENSOR_NOT_READY. Event Task will wait for sensor event to be signalled
+  //  If sensor is not ready to return data, return SENSOR_NOT_READY. Event Task will wait for sensor semaphore to be signalled
   //  and call resume_sensor() again.
   debug(sensor.info.name, F(" >> resume_sensor"));
   
-  //  If SPI transceive command has not been completed, return SENSOR_NOT_READY so that Event Task will wait for the sensor event to be signalled and call resume_sensor() again.
+  //  If SPI transceive command has not been completed, return SENSOR_NOT_READY so that Event Task will wait for the sensor semaphore to be signalled and call resume_sensor() again.
   if (!is_sensor_ready()) { return SENSOR_NOT_READY; }
 
   //  Close the SPI port.

@@ -169,7 +169,7 @@ void setup_sensor_context(
   //  Set up the simulator system once.
   simulator_setup();
 
-  //  Allocate a unique sensor ID and create the event.
+  //  Allocate a unique sensor ID.
   uint8_t sensorID =  nextSensorID++;
 
   //  Initialise the sensor values.
