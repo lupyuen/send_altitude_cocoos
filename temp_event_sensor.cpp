@@ -128,6 +128,10 @@ static uint8_t resume_sensor(float *data, uint8_t size) {
   //  Process the received SPI data in rx_buf to get sensor data.  Based on https://github.com/finitespace/BME280/blob/master/src/BME280.cpp
   debug_print(sensor.info.name); spi_dump_packet(sensor.port);
   uint8_t *rx_data = &rx_buf[7];  //  Response starts at the 8th byte.
+  debug_print("*** rx_data[3]="); debug_printhex(rx_data[3]); debug_println(""); ////
+  debug_print("*** rx_data[4]="); debug_printhex(rx_data[4]); debug_println(""); ////
+  debug_print("*** rx_data[5]="); debug_printhex(rx_data[5]); debug_println(""); ////
+
   uint32_t rawTemp = ((uint32_t) rx_data[3] << 12) | ((uint32_t) rx_data[4] << 4) | ((uint32_t) rx_data[5] >> 4);
   sensorData[0] = rawTemp / 100.0;
 
