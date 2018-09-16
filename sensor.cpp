@@ -31,7 +31,14 @@
 
 static bool is_valid_event_sensor(Sensor *sensor);
 
-uint8_t nextSensorID = 1;  //  Next sensor ID to be allocated.  Running sequence number.
+static uint8_t nextSensorID = 1;        //  Next sensor ID to be allocated.  Running sequence number.
+static uint8_t portSemaphoreIndex = 0;  //  Next portSemaphore to be allocated.
+static struct {      //  List of I/O ports and their semaphores to prevent concurrent port access.
+  uint32_t port_id;  //  Port ID e.g. SPI1, I2C1
+  Sem_t semaphore;   //  Semaphore to lock the port
+} portSemaphores[MAX_PORT_COUNT];
+
+static Sem_t allocate_port_semaphore(uint32_t port_id);
 
 void sensor_task(void) {
   //  Background task to receive and process sensor data.
@@ -101,6 +108,29 @@ void sensor_task(void) {
   }
   debug(F("task_close"), NULL);
   task_close();  //  End of the task. Should never come here.
+}
+
+static Sem_t allocate_port_semaphore(uint32_t port_id) {
+  //  Given a port ID (e.g. SPI1), allocate the semaphore to be used for locking the port.  Reuse if already allocated.
+  //  This is to prevent concurrent access to the same I/O port.
+  for (int i = 0; i < portSemaphoreIndex; i++) {
+    //  Search for the port ID.
+    if (port_id == portSemaphores[i].port_id) {
+      return portSemaphores[i].semaphore;
+    }
+  }
+  //  Port ID not found.  Allocate a new semaphore.
+  if (portSemaphoreIndex >= MAX_PORT_COUNT) {
+    debug(F("*** ERROR: Port semaphore overflow. Increase MAX_PORT_COUNT"));
+    return 0;
+  }
+  const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I/O port.
+  const int initValue = 1;  //  Allow only 1 concurrent access to the I/O port.
+  Sem_t semaphore = sem_counting_create(maxCount, initValue);
+  portSemaphores[portSemaphoreIndex].port_id = port_id;
+  portSemaphores[portSemaphoreIndex].semaphore = semaphore;
+  portSemaphoreIndex++;
+  return semaphore;
 }
 
 uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
