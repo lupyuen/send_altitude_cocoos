@@ -8,7 +8,7 @@
 #ifdef SENSOR_DATA
 
 #ifdef STM32  //  If we are running on STM32 Blue Pill...
-#define BME280_SENSOR_PORT SPI2  //  Sensor is connected at this SPI Port: SPI1 or SPI2.
+#define BME280_SENSOR_PORT SPI1  //  Sensor is connected at this SPI Port: SPI1 or SPI2.
 #include <spiint.h>
 
 #else  //  In we are running on Arduino...
