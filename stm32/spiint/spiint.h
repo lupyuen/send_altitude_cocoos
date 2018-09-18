@@ -77,9 +77,9 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
   Simulator_Control *simulator;  //  Simulator for the port that will capture, replay and simulate SPI commands.
 
   //  SPI port configuration
-  uint32_t speedMaximum; //  Max speed of comms, e.g. 500000 for 500 kHz.
-  uint8_t bitOrder;      //  MSBFIRST or LSBFIRST.
-  uint8_t dataMode;      //  SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3.
+  uint32_t speedMaximum; //  Max speed of comms, e.g. 500000 for 500 kHz.  Compatible with Arduino.
+  uint8_t bitOrder;      //  MSBFIRST or LSBFIRST.  Compatible with Arduino.
+  uint8_t dataMode;      //  SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3.  Compatible with Arduino.
   uint32_t timeout;      //  Timeout in milliseconds.
 
   //  SPI transceive
@@ -110,21 +110,49 @@ struct SPI_Control {  //  Represents an STM32 SPI port, e.g. SPI1, SPI2.
 
 //  This is the new SPI Interface.  New code should use this.
 SPI_Control *spi_setup(uint32_t spi_id);  	//  Enable SPI peripheral and GPIO clocks.  Should be called once only.
-SPI_Fails spi_configure(SPI_Control *port, uint32_t speedMaximum, uint8_t bitOrder, uint8_t dataMode);
+SPI_Fails spi_configure(  //  Configure the SPI port comms settings.
+  SPI_Control *port,      //  SPI port.
+  uint32_t speedMaximum,  //  Max speed of comms, e.g. 500000 for 500 kHz.  Compatible with Arduino.
+  uint8_t bitOrder,       //  MSBFIRST or LSBFIRST.  Compatible with Arduino.
+  uint8_t dataMode);      //  SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3.  Compatible with Arduino.
 SPI_Fails spi_open(SPI_Control *port);  //  Enable DMA interrupt for SPI port.
+
+//  Send an SPI command to transmit and receive SPI data via DMA and interrupts.  If the simulator is in...
+//  Capture Mode: We capture the transmit/receive data into the simulator trail.
+//  Replay mode: We replay the transmit/receive SPI command recorded in the simulator trail. Record the received data into the trail.
+//  Simulate mode: We don't execute any SPI commands, just return the data received data from the trail.
 //  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
-SPI_Fails spi_transceive(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len, Sem_t *completed_semaphore);
-SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
+SPI_Fails spi_transceive(
+	SPI_Control *port, 		  //  SPI port.
+	SPI_DATA_TYPE *tx_buf,  //  Bytes to be transmitted to SPI port.	Must be in static memory, not stack.
+	int tx_len, 			      //  Number of bytes to be transmitted.
+	SPI_DATA_TYPE *rx_buf,  //  Buffer for receiving bytes from SPI port.
+	int rx_len, 			      //  Number of bytes to be received. Must be in static memory, not stack.
+	Sem_t *completed_semaphore  //  If not null, semaphore to be signalled upon completing the request.
+	);
 
-SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore);  //  Replay the next transceive request that was captured earlier.
-SPI_Fails spi_split_trail(SPI_Control *port);  //  Split the received merged packet into the simulator trail.
+//  This function is the same as spi_transceive() except that it blocks until the result is received.  
+//  Should only be used for legacy Arduino code.
+//  New code should call spi_transceive() and pass a semaphore to be signalled.
+//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
+SPI_Fails spi_transceive_wait(
+	SPI_Control *port, 		  //  SPI port.
+	SPI_DATA_TYPE *tx_buf,  //  Bytes to be transmitted to SPI port.	Must be in static memory, not stack.
+	int tx_len, 			      //  Number of bytes to be transmitted.
+	SPI_DATA_TYPE *rx_buf,  //  Buffer for receiving bytes from SPI port.
+	int rx_len); 			      //  Number of bytes to be received. Must be in static memory, not stack.
 
-bool spi_is_transceive_complete(SPI_Control *port);  //  Return true if last SPI command was completed successfully or with error.
+//  Replay the next transceive request that was captured earlier.  If completed_semaphore is non-NULL,
+//  signal the semaphore when the request has been completed.
+SPI_Fails spi_transceive_replay(SPI_Control *port, Sem_t *completed_semaphore);
+
+bool spi_is_transceive_complete(SPI_Control *port);    //  Return true if last SPI command was completed successfully or with error.
 bool spi_is_transceive_successful(SPI_Control *port);  //  Return true if last SPI command was successful.
-SPI_Fails spi_wait(SPI_Control *port);  //  Wait until transceive complete.
+SPI_Fails spi_wait(SPI_Control *port);   //  Wait until transceive is complete.  This call blocks, should only be used for legacy Arduino code.
 SPI_Fails spi_close(SPI_Control *port);  //  Disable DMA interrupt for SPI port.
-SPI_Fails spi_test(SPI_Control *port);  //  For testing only.
-SPI_Fails spi_dump_trail(SPI_Control *port);  //  Dump the captured / replayed / simulated SPI packets to console.
+SPI_Fails spi_split_trail(SPI_Control *port);  //  Split the received merged packet into the simulator trail.
+SPI_Fails spi_test(SPI_Control *port);         //  For testing only.
+SPI_Fails spi_dump_trail(SPI_Control *port);   //  Dump the captured / replayed / simulated SPI packets to console.
 SPI_Fails spi_dump_packet(SPI_Control *port);  //  Dump the last SPI packet to console.
 
 #ifdef __cplusplus

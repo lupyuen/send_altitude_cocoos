@@ -123,7 +123,8 @@ SPI_Fails spi_transceive(
 }
 
 SPI_Fails spi_transceive_wait(SPI_Control *port, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len) {	
-	//  This function blocks until the result is received.  Should only be used for legacy Arduino code.
+	//  This function is the same as spi_transceive() except that it blocks until the result is received.  
+	//  Should only be used for legacy Arduino code.
 	//  New code should call spi_transceive() and pass a semaphore to be signalled.
 	//  Note: tx_buf and rx_buf MUST be buffers in static memory, not on the stack.
 
