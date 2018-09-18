@@ -17,8 +17,9 @@
 #else  //  If Arduino or other platform...
 //  No need to simulate on Arduino.
 #define simulator_setup() {}
-#define simulator_configure(sim, id, name) {}
+#define simulator_configure(sim, id, name, port, capture_enabled, replay_enabled, simulate_enabled, merge_enabled) {}
 #define simulator_open(sim) {}
+#define simulator_replay(sim) NULL
 #define simulator_close(sim) {}
 #define simulator_test(sim) {}
 #define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.

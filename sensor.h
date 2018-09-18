@@ -21,8 +21,8 @@
 #include <simulator.h>  //  For Simulator_Control
 #include <spiint.h>     //  For SPI_Control
 #else  //  If Arduino or other platform...
-#define Simulator_Control uint8_t  //  No need to simulate on Arduino.
-#define SPI_Control uint16_t       //  No need for SPI Interface on Arduino.
+struct Simulator_Control {};             //  No need to simulate on Arduino.
+struct SPI_Control { uint8_t id = 0; };  //  No need for SPI Interface on Arduino.
 #endif  //  STM32
 
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
