@@ -22,8 +22,8 @@
 //  Configuration for Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
 #define USE_TEMP_POLLING_SENSOR    //  Uncomment to use the old polling-based temperature sensor.
 //  #define USE_TEMP_EVENT_SENSOR  //  Uncomment to use the new event-based temperature sensor.
-#define USE_SIMULATOR          //  Uncomment to use the Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.
-#define USE_BME280_SPI       //  Uncomment to use SPI port to connect to BME280 instead of I2C.
+//  #define USE_SIMULATOR          //  Uncomment to use the Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.
+#define USE_BME280_SPI             //  Use SPI port to connect to BME280 instead of I2C.
 #endif  //  CONFIG_ARTICLE1 || CONFIG_ARTICLE2 || CONFIG_ARTICLE3
 
 //  Here are all the features that we may enable.  Warning: This will add on to the article configuration above.

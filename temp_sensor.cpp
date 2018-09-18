@@ -33,7 +33,7 @@ static void init_sensor(void) {
   //  Initialise the sensor if necessary. Assume sensor and sensorContext objects have been populated.
   sensor.port_id = BME280_SENSOR_PORT;      //  Connect to the sensor at this port.
   sensor.port = spi_setup(sensor.port_id);  //  Get the SPI port.
-  if (sensor.port) { debug_print(sensor.info.name); debug_print(" >> config spi"); debug_println((int) sensor.port->id);  debug_flush(); }
+  if (sensor.port) { debug_print(sensor.info.name); debug_print(" >> config spi"); debug_print((int) sensor.port->id); debug_println(" arduino library"); debug_flush(); }
   bme280_setup(sensor.port_id);             //  Set up the BME280 API.
 }
 

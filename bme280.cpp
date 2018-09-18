@@ -56,7 +56,7 @@ void bme280_setup(uint32_t port_id) {
     if (!bme.begin()) { continue; }
     switch(bme.chipModel()) {
       case BME280::ChipModel_BME280:
-        debug(F("bme >> bme280 with Arduino library"));
+        debug(F("bme >> bme280 with arduino library"));
         return;
       case BME280::ChipModel_BMP280:
         debug(F("bme >> bmp280 without humidity"));
