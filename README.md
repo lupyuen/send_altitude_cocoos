@@ -25,6 +25,28 @@ The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio C
 Tested with Arduino Uno and STM32 Blue Pill.
 
 -----
+## Select Features By Article
+
+Each tutorial article in the series is configured with a different set of features.
+To allow new articles to be published without breaking the features of the older articles,
+we configure the article that we wish to use in `platform.h`
+
+Edit `platform.h` and uncomment only ONE of these lines:
+
+```c++
+//  Configure the features according to the article.  Only one of these CONFIG_ARTICLEx should be defined.
+//  #define CONFIG_ARTICLE1  //  Uncomment to support Article #1: 
+                             //  "Juggling Arduino Sensors With cocoOS" 
+//  #define CONFIG_ARTICLE2  //  Uncomment to support Article #2: 
+                             //  "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" 
+//  #define CONFIG_ARTICLE3  //  Uncomment to support Article #3: 
+                             //  "Juggling STM32 Blue Pill For Arduino Jugglers"
+//  #define CONFIG_ARTICLE4  //  Uncomment to support Article #4: 
+                             //  "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
+//  (...plus future articles)
+```
+
+-----
 ## Create Source File Links For PlatformIO
 
 To compile the project under PlatformIO in Visual Studio Code, the source files

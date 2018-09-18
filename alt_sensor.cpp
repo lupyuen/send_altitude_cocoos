@@ -31,14 +31,17 @@ static SensorContext sensorContext;  //  Remembers the sensor context.
 static float sensorData[sensorDataSize];  //  Array of floats for remembering the sensor data.
 
 static void init_sensor(void) {
-  //  Initialise the sensor if necessary. sensor and sensorContext objects have been populated.
-  bme280_setup();  //  Set up the BME280 API.
+  //  Initialise the sensor if necessary. Assume sensor and sensorContext objects have been populated.
+  sensor.port_id = BME280_SENSOR_PORT;      //  Connect to the sensor at this port.
+  sensor.port = spi_setup(sensor.port_id);  //  Get the SPI port.
+  if (sensor.port) { debug_print(sensor.info.name); debug_print(" >> config spi"); debug_print((int) sensor.port->id); debug_println(" arduino library"); debug_flush(); }
+  bme280_setup(sensor.port_id);             //  Set up the BME280 API.
 }
 
 static uint8_t poll_sensor(float *data, uint8_t size) {
   //  Poll the sensor for new data.  Copy the received sensor data into the provided data buffer.
   //  Return the number of floats copied.  If no data is available, return 0.
-  debug(sensor.info.name, F(" >> poll_sensor")); ////
+  debug(sensor.info.name, F(" >> poll_sensor"));
   
   //  Read sensor data from BME280.
   static BME280::PresUnit presUnit(BME280::PresUnit_Pa);

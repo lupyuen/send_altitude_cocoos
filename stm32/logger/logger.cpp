@@ -186,3 +186,27 @@ void debug_println(float f) {
     debug_print(f);
     debug_append("\n", 1);
 }
+
+void debug_printhex(uint8_t v) {
+    //  Write a char in hexadecimal to the buffered debug log.
+    #define MAX_BYTE_LENGTH 2
+    char buffer[MAX_BYTE_LENGTH + 1];
+    int size = MAX_BYTE_LENGTH + 1;
+    bool prefixByZero = true;
+    int length = 0;
+    for(uint8_t divisor = 16; divisor >= 1; divisor = divisor / 16) {
+        char digit = '0' + (char)(v / divisor);
+        if (digit > '9') { digit = digit - 10 - '0' + 'a'; }
+        if (digit > '0' || length > 0 || prefixByZero) {
+            if (length < size) {
+                buffer[length++] = digit;
+            }
+        }
+        v = v % divisor;
+    }
+    if (length == 0) { buffer[length++] = '0'; };
+    if (length < size) buffer[length] = 0;
+    buffer[size - 1] = 0;  //  Terminate in case of overflow.
+
+    debug_append(buffer, strlen(buffer));
+}
