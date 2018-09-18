@@ -11,6 +11,9 @@ Read the tutorials:
 - Part 3: _Juggling STM32 Blue Pill For Arduino Jugglers_<br>
     https://medium.com/@ly.lee/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
 
+- Part 4: _Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA_<br>
+    https://medium.com/@ly.lee/watch-stm32-blue-pill-juggle-two-spi-sensors-with-dma-20cd1aa89869
+
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
 - `cocoOS_5.0.3`: Download from http://www.cocoos.net/download.html. <br>
