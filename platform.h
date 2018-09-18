@@ -17,15 +17,13 @@
 #define USE_HUMIDITY_SENSOR  //  Uncomment to use the polling-based humidity sensor.
 #define USE_ALTITUDE_SENSOR  //  Uncomment to use the polling-based altitude sensor.
 #define TRANSMIT_SENSOR_DATA //  Uncomment to transmit sensor data to the IoT network (Sigfox).
-#define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 
 #else   //  Else if the article configuration is not the above, assume we are configuring for the latest article.
 //  Configuration for Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
 #define USE_TEMP_POLLING_SENSOR    //  Uncomment to use the old polling-based temperature sensor.
 //  #define USE_TEMP_EVENT_SENSOR  //  Uncomment to use the new event-based temperature sensor.
-//  #define USE_SIMULATOR          //  Uncomment to use the Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.
+#define USE_SIMULATOR          //  Uncomment to use the Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.
 #define USE_BME280_SPI       //  Uncomment to use SPI port to connect to BME280 instead of I2C.
-#define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 #endif  //  CONFIG_ARTICLE1 || CONFIG_ARTICLE2 || CONFIG_ARTICLE3
 
 //  Here are all the features that we may enable.  Warning: This will add on to the article configuration above.
@@ -36,8 +34,8 @@
 //  #define USE_ALTITUDE_SENSOR  //  Uncomment to use the polling-based altitude sensor.
 //  #define TRANSMIT_SENSOR_DATA //  Uncomment to transmit sensor data to the IoT network (Sigfox).
 //  #define USE_BME280_SPI       //  Uncomment to use SPI port to connect to BME280 instead of I2C.
-//  #define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 //  #define SIMULATED_DATA       //  Uncomment to use hardcoded data. (May not work)
+#define SENSOR_DATA              //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 
 #define MAX_SENSOR_COUNT 3             //  Max number of sensors supported.
 #define MAX_PORT_COUNT 4               //  Max number of I/O ports that will be used, e.g. SPI1, I2C1.

@@ -79,9 +79,10 @@ Simulator_Fails simulator_configure(
 Simulator_Fails simulator_open(Simulator_Control *sim) {
     //  Begin capture, replay or simulate.  Set the simulator in the SPI port.
     if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
-    debug_print("sim open mode"); debug_println(sim->mode);
+    
     SPI_Control *port = sim->port;
     if (port == NULL) { return showError(sim, "simulator_open", Simulator_Missing_Port); }
+    if (port) { debug_print("sim >> open spi"); debug_print((int) port->id); debug_print(" mode"); debug_println(sim->mode); }
     sim->index = 0;
     sim->replayed_merge = false;
     //  Simulator depends on sensor ID, so we need to refresh the port.
@@ -232,8 +233,8 @@ Simulator_Fails simulator_close(Simulator_Control *sim) {
     //  End capture, replay or simulate.  Remove the simulator from the port.
     //  Set the next mode: Capture -> Replay -> Simulate.
     if (sim->mode == Simulator_Disabled) { return Simulator_Ok; }  //  If simulator disabled, quit.
-    debug_println("sim close");
     SPI_Control *port = sim->port;
+    if (port) { debug_print("sim >> close spi"); debug_println((int) port->id);  }
 
     //  For Replay Mode, close the SPI port and split the received merged packet into the simulator trail.
     if (port != NULL && sim->mode == Simulator_Replay) { 

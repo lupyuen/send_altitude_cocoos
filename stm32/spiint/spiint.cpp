@@ -937,8 +937,8 @@ SPI_Fails spi_dump_trail(SPI_Control *port) {
 		dump_packet(">>", tx_buf, tx_len);
 		dump_packet("<<", rx_buf, rx_len);
 	}
-	debug_print("trail index / length: "); debug_print((int) (port->simulator->index));
-	debug_print(" / "); debug_println((int) (port->simulator->length)); debug_flush();
+	//  debug_print("trail index / length: "); debug_print((int) (port->simulator->index)); debug_print(" / "); debug_println((int) (port->simulator->length)); 
+	debug_println("");
 	port->simulator->index = i;
 	return SPI_Ok;
 }
