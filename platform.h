@@ -6,8 +6,8 @@
 //  Configure the features according to the article.  Only one of these CONFIG_ARTICLEx should be defined.
 //  #define CONFIG_ARTICLE1  //  Uncomment to support Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
 //  #define CONFIG_ARTICLE2  //  Uncomment to support Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
-//  #define CONFIG_ARTICLE3  //  Uncomment to support Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
-#define CONFIG_ARTICLE4  //  Uncomment to support Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
+#define CONFIG_ARTICLE3  //  Uncomment to support Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
+//  #define CONFIG_ARTICLE4  //  Uncomment to support Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
 
 //  Here are all the features that we may enable.  Warning: The features enabled here will add on to the article configuration below.
 //  #define USE_TEMP_EVENT_SENSOR    //  Uncomment to use the new event-based temperature sensor.
