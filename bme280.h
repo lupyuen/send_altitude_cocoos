@@ -7,12 +7,12 @@
 #include "platform.h"
 #ifdef SENSOR_DATA
 
-#ifdef STM32  //  If we are running on STM32 Blue Pill...
-#define BME280_SENSOR_PORT SPI1  //  Sensor is connected at this SPI Port: SPI1 or SPI2.
+#ifdef STM32                     //  If we are running on STM32 Blue Pill...
+#define BME280_SENSOR_PORT SPI1  //  Polling-based BME280 Sensor is connected at this SPI Port: SPI1 or SPI2.
 #include <spiint.h>
 
-#else  //  In we are running on Arduino...
-#define BME280_SENSOR_PORT 10  //  Sensor is connected at this pin for SPI Chip Select
+#else                          //  In we are running on Arduino...
+#define BME280_SENSOR_PORT 10  //  BME280 Sensor is connected at this pin for SPI Chip Select
 #define spi_setup(id) NULL
 #endif  //  STM32
 

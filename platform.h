@@ -3,14 +3,40 @@
 #ifndef PLATFORM_H_
 #define PLATFORM_H_
 
-//  #define USE_TEMP_EVENT_SENSOR    //  Uncomment to use the event-based temperature sensor.
-#define USE_TEMP_POLLING_SENSOR  //  Uncomment to use the polling-based temperature sensor.
+//  Configure the features according to the article.  Only one of these CONFIG_ARTICLEx should be defined.
+//  #define CONFIG_ARTICLE1  //  Uncomment to support Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
+//  #define CONFIG_ARTICLE2  //  Uncomment to support Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
+//  #define CONFIG_ARTICLE3  //  Uncomment to support Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
+#define CONFIG_ARTICLE4  //  Uncomment to support Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
+
+#if defined(CONFIG_ARTICLE1) || defined(CONFIG_ARTICLE2) || defined(CONFIG_ARTICLE3)
+//  Configuration for Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
+//  and Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
+//  and Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
+#define USE_TEMP_POLLING_SENSOR  //  Uncomment to use the old polling-based temperature sensor.
+#define USE_HUMIDITY_SENSOR  //  Uncomment to use the polling-based humidity sensor.
+#define USE_ALTITUDE_SENSOR  //  Uncomment to use the polling-based altitude sensor.
+#define TRANSMIT_SENSOR_DATA //  Uncomment to transmit sensor data to the IoT network (Sigfox).
+#define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
+#endif  //  CONFIG_ARTICLE1 || CONFIG_ARTICLE2 || CONFIG_ARTICLE3
+
+#if defined(CONFIG_ARTICLE4)
+//  Configuration for Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
+#define USE_TEMP_POLLING_SENSOR    //  Uncomment to use the old polling-based temperature sensor.
+//  #define USE_TEMP_EVENT_SENSOR  //  Uncomment to use the new event-based temperature sensor.
+#define USE_BME280_SPI       //  Uncomment to use SPI port to connect to BME280 instead of I2C.
+#define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
+#endif  //  CONFIG_ARTICLE4
+
+//  Here are all the features that we may enable.  Warning: This will add on to the article configuration above.
+//  #define USE_TEMP_EVENT_SENSOR    //  Uncomment to use the new event-based temperature sensor.
+//  #define USE_TEMP_POLLING_SENSOR  //  Uncomment to use the old polling-based temperature sensor.
 //  #define USE_HUMIDITY_SENSOR  //  Uncomment to use the polling-based humidity sensor.
 //  #define USE_ALTITUDE_SENSOR  //  Uncomment to use the polling-based altitude sensor.
 //  #define TRANSMIT_SENSOR_DATA //  Uncomment to transmit sensor data to the IoT network (Sigfox).
-#define USE_BME280_SPI         //  Uncomment to use SPI port to connect to BME280 instead of I2C.
-#define SENSOR_DATA            //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
-//  #define SIMULATED_DATA     //  Uncomment to use hardcoded data.
+//  #define USE_BME280_SPI       //  Uncomment to use SPI port to connect to BME280 instead of I2C.
+//  #define SENSOR_DATA          //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
+//  #define SIMULATED_DATA       //  Uncomment to use hardcoded data. (May not work)
 
 #define MAX_SENSOR_COUNT 3             //  Max number of sensors supported.
 #define MAX_PORT_COUNT 4               //  Max number of I/O ports that will be used, e.g. SPI1, I2C1.
