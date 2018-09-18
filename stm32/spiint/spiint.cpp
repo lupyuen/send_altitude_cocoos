@@ -26,20 +26,22 @@ static void enable_interrupts(uint32_t dma, uint8_t channel);
 static void disable_interrupts(uint32_t dma, uint8_t channel);
 static void update_transceive_status(SPI_Control *port, Trans_Status new_status = (Trans_Status) -1);
 static uint32_t get_baudrate(SPI_Control *port);
-static uint32_t get_frequency(SPI_Control *port);
 static uint32_t get_clock_polarity(SPI_Control *port);
 static uint32_t get_clock_phase(SPI_Control *port);
 static uint32_t get_bit_order(SPI_Control *port);
-static void dump_config(SPI_Control *port);
 static void dump_packets(const char *title, SPI_DATA_TYPE *tx_buf, int tx_len, SPI_DATA_TYPE *rx_buf, int rx_len);
 static void dump_packet(const char *title, SPI_DATA_TYPE *buf, int len);
-static void dump_history(SPI_Control *port);
 static inline TickType_t diff_ticks(TickType_t early, TickType_t later);
 static SPI_Fails showError(SPI_Control *port, const char *title, SPI_Fails fc);
 static const char *get_mode_name(SPI_Control *port);
+#ifdef NOTUSED
+static uint32_t get_frequency(SPI_Control *port);
+static void dump_config(SPI_Control *port);
+static void dump_history(SPI_Control *port);
+#endif  //  NOTUSED
 
-static SPI_DATA_TYPE dummy_tx_buf[MAX_TRAIL_SIZE];
-static SPI_Control allPorts[MAX_SPI_PORTS];  //  Map port ID to the port control.  Volatile because the DMA ISR will lookup this array.
+static SPI_Control allPorts[MAX_SPI_PORTS];         //  Allocate SPI ports and buffers in static memory for DMA.  Maps port ID to the port control.
+static SPI_DATA_TYPE dummy_tx_buf[MAX_TRAIL_SIZE];  //  Dummy transmit buffer used when tx_len < rx_len.
 
 //////////////////////////////////////////////////////////////////////////
 //  SPI Transceive Operations
@@ -210,8 +212,7 @@ SPI_Fails spi_open(SPI_Control *port) {
 	//  Enable DMA interrupt for SPI port.
 	//  port->simulator is set in simulator_open().  If not set, that means we shouldn't capture yet e.g. BME280 get module ID at startup.
 	//  if (port->simulator == NULL) { debug_println("spi_open no simulator"); debug_flush(); }
-	//  if (port->simulator) 
-	{ debug_print("spi open spi"); debug_println((int) port->id); dump_config(port); debug_flush(); }
+	//  if (port->simulator) { debug_print("spi open spi"); debug_println((int) port->id); dump_config(port); debug_flush(); }
 	port->tx_semaphore = NULL;
 	port->rx_semaphore = NULL;
 	port->transceive_status = TRANS_NONE;
@@ -258,7 +259,7 @@ SPI_Fails spi_open(SPI_Control *port) {
 
 SPI_Fails spi_close(SPI_Control *port) {
 	//  Close the SPI port.  Disable DMA interrupts for SPI port.
-	if (port->simulator) { debug_print("spi close spi"); debug_println((int) port->id); debug_flush(); }
+	//  if (port->simulator) { debug_print("spi close spi"); debug_println((int) port->id); debug_flush(); }
 	port->tx_semaphore = NULL;
 	port->rx_semaphore = NULL;
 
@@ -388,8 +389,7 @@ SPI_Fails spi_configure(
 	uint32_t speedMaximum, 
 	uint8_t bitOrder, 
 	uint8_t dataMode) {
-	//  if (port->simulator) 
-	{ debug_print("spi config spi"); debug_println((int) port->id); debug_flush(); }
+	//  if (port->simulator) { debug_print("spi config spi"); debug_println((int) port->id); debug_flush(); }
 	port->speedMaximum = speedMaximum;
 	port->bitOrder = bitOrder;
 	port->dataMode = dataMode;
@@ -463,12 +463,14 @@ static uint32_t get_baudrate(SPI_Control *port) {
 	return baudrate;
 }
 
+#ifdef NOTUSED
 static uint32_t get_frequency(SPI_Control *port) {
 	//  Return the SPI frequency given the max speed in the port settings.
 	const uint32_t *row = match_baudrate(port);
 	const uint32_t freq = row[port->id];  //  SPI1=Col 1, SPI2=Col 2
 	return freq;
 }
+#endif  //  NOTUSED
 
 static uint32_t get_clock_polarity(SPI_Control *port) {
 	//  Return the SPI Clock Polarity (CPOL) given the SPI mode in the port settings.
@@ -581,7 +583,7 @@ SPI_Control *spi_setup(uint32_t spi_id) {
 	for (uint8_t i = 0; i < MAX_SPI_PORTS; i++) {
 		if (allPorts[i].SPIx == spi_id) { id = i + 1; break; }
 	}
-	debug_print("spi setup spi"); debug_println((int) id); debug_flush();
+	debug_print("spi >> setup spi"); debug_println((int) id); debug_flush();
 	if (id < 1 || id > MAX_SPI_PORTS) { showError(NULL, "spi_setup", SPI_Invalid_Port); return NULL; }
 
 	//  Fetch the SPI port control.
@@ -871,6 +873,7 @@ SPIInterfaceSettings::SPIInterfaceSettings(uint32_t speedMaximum0, uint8_t bitOr
 //////////////////////////////////////////////////////////////////////////
 //  Logging and Error Handling Functions
 
+#ifdef NOTUSED
 static void dump_frequency(uint32_t freq);
 
 static void dump_config(SPI_Control *port) {
@@ -913,6 +916,7 @@ static void dump_config(SPI_Control *port) {
 		: bit_order == SPI_CR1_LSBFIRST ? "lsb"
 		: "*** UNKNOWN");
 }
+#endif  //  NOTUSED
 
 SPI_Fails spi_dump_trail(SPI_Control *port) {
 	//  Dump the simulated commands to console.
@@ -961,6 +965,7 @@ static void dump_packet(const char *title, SPI_DATA_TYPE *buf, int len) {
 	for (int i = 0; i < len; i++) { debug_printhex(buf[i]); debug_print(" "); } 
 }
 
+#ifdef NOTUSED
 static void dump_frequency(uint32_t freq) {
 	//  Dump the frequency to console e.g. 1.12M, 562.5k.
 	if (freq >= 1000000) { debug_print((float) (freq / 1000000.0)); debug_print("M"); }
@@ -978,6 +983,7 @@ static void dump_history(SPI_Control *port) {
 	}
 	debug_println("");
 }
+#endif  //  NOTUSED
 
 //  Messages for each fail code.
 static const char *spi_msg[] = {

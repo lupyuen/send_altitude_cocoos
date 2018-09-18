@@ -46,9 +46,6 @@ void bme280_setup(uint32_t port_id) {
     uint8_t pin = convert_port_to_pin(port_id);  //  Map the port to a pin.
     settings.spiCsPin = pin;  //  Set the pin for the SPI port.
     bme = BME280Spi(settings);
-    debug_print("bme port"); debug_println((int) port_id);
-    debug_print("bme2 port"); debug_println((int) settings.spiCsPin);
-
 #else                                //  If we are using I2C version of BME280...
     uint8_t addr = i2cAddresses[i];  //  Fetch the next I2C address to be scanned.
     settings.bme280Addr = addr;
@@ -59,18 +56,18 @@ void bme280_setup(uint32_t port_id) {
     if (!bme.begin()) { continue; }
     switch(bme.chipModel()) {
       case BME280::ChipModel_BME280:
-        debug(F("BME280 OK"));
+        debug(F("bme >> bme280 with Arduino library"));
         return;
       case BME280::ChipModel_BMP280:
-        debug(F("BMP280 without humidity"));
+        debug(F("bme >> bmp280 without humidity"));
         return;
       default:
-        debug(F("***** BME280 Error"));
+        debug(F("***** bme280 Error"));
         continue;  //  Try next address
     }
   }
-  debug(F("BME280 not found"));
-  delay(1000);  //  TODO: This loops forever on STM32.
+  debug(F("bme >> bme280 not found"));
+  delay(1000);
 }
 
 #endif  //  SENSOR_DATA

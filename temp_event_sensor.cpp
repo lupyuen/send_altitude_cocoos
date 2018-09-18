@@ -85,6 +85,7 @@ static void init_sensor(void) {
   sensor.port_id = BME280_EVENT_SENSOR_PORT;  //  Connect to the sensor at this port.
   sensor.port = spi_setup(sensor.port_id);    //  Get the SPI port.
   if (sensor.port == NULL) { return; }        //  Quit if the setup failed.
+  debug_print(sensor.info.name); debug_print(" >> config spi"); debug_println((int) sensor.port->id);  debug_flush();
 
   //  Configure the SPI port, specific to the BME280 sensor.  Change this for other sensors.
   spi_configure(
