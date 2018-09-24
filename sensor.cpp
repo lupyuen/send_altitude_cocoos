@@ -78,11 +78,12 @@ void sensor_task(void) {
     for (;;) {  //  Loop until sensor data is ready.
       if (ctx()->msg.count != SENSOR_NOT_READY) { break; }  //  Stop if we already have data.
       if (ctx()->send_semaphore) {         //  If there is a semaphore for us to wait before sending...
-        sem_wait(*ctx()->send_semaphore);  //  Wait for sensor processing or replay to complete.  TODO: Handle timeout.
+        sem_wait(*ctx()->send_semaphore);  //  Wait for sensor I/O (e.g. SPI port) or simulator replay to complete.  TODO: Handle timeout.
       }
       if (simulator_should_poll_sensor(&ctx()->sensor->simulator)) {  //  If this is a real sensor...
-        //  Process any sensor data received. If processing is complete, get the sensor data.
-        ctx()->msg.count = ctx()->sensor->info.resume_sensor_func(ctx()->msg.data, MAX_SENSOR_DATA_SIZE);
+        //  Resume processing any sensor data received from the I/O port. If processing is complete, get the sensor data.
+        ctx()->msg.count = ctx()->sensor->info.resume_sensor_func(
+          ctx()->msg.data, MAX_SENSOR_DATA_SIZE);  //  We will copy at most MAX_SENSOR_DATA_SIZE floats into the msg.data array.
       } else {  //  Else this is the Simulator.  Replay the next packet if any.
         ctx()->send_semaphore = simulator_replay(&ctx()->sensor->simulator);
         if (ctx()->send_semaphore == NULL) { break; }  //  Stop if no more packets to replay.
@@ -111,8 +112,8 @@ void sensor_task(void) {
 }
 
 static Sem_t *allocate_port_semaphore(uint32_t port_id) {
-  //  Given a port ID (e.g. SPI1), allocate the semaphore to be used for locking the port.  Reuse if already allocated.
-  //  This is to prevent concurrent access to the same I/O port.
+  //  Given a port ID (e.g. I2C1, SPI1, SPI2), allocate the Counting Semaphore to be used for locking the port.  
+  //  Reuse if already allocated.  This semaphore prevents concurrent access to the same I/O port by 2 or more sensors.
   //  Port ID not found.  Allocate a new semaphore.
   if (port_id == 0) {
     debug(F("*** ERROR: Invalid port ID"));
