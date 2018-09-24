@@ -1,14 +1,14 @@
 //  Defines the common Sensor base class.
-//  #define DISABLE_DEBUG_LOG  //  Disable debug logging.
+//  #define DISABLE_DEBUG_LOG  //  Uncomment to disable debug logging for the Sensor Task.
 #include "platform.h"
 #include <string.h>
 #include <cocoos.h>
 #include "sensor.h"
 #include "display.h"
 
-#ifdef SENSOR_DATA
+#ifdef SENSOR_DATA  //  If we are using real or simulated sensors instead of hardcoded sensor data...
 
-#ifdef STM32  //  If STM32 Blue Pill...
+#ifdef STM32        //  If we are running on STM32 Blue Pill...
 //  We call Simulator Module to capture, replay and simulate SPI commands for SPI sensors.
 //  We do this so that we can capture the SPI send/receive commands of Arduino sensor drivers and replay
 //  them efficiently on STM32, with multitasking.
@@ -28,6 +28,12 @@
 static Sem_t *allocate_port_semaphore(uint32_t port_id);
 static bool is_valid_event_sensor(Sensor *sensor);
 
+//  A Port Semaphore is a cocoOS Counting Semaphore that we use to prevent concurrent
+//  access to an I/O port like I2C1, SPI1 or SPI2.  We store a global list of Port Semaphores
+//  so that two sensors using the same port will be allocated the same Port Semaphore.
+//  The Sensor Task will automatically wait for the Port Semaphore to be available
+//  before polling the sensor.  The Sensor Task will also release the Port Semaphore
+//  after polling/resuming the sensor.
 static uint8_t nextSensorID = 1;        //  Next sensor ID to be allocated.  Running sequence number.
 static uint8_t portSemaphoreIndex = 0;  //  Next portSemaphore to be allocated.
 static struct {      //  List of I/O ports and their semaphores to prevent concurrent port access.
@@ -35,14 +41,16 @@ static struct {      //  List of I/O ports and their semaphores to prevent concu
   Sem_t semaphore;   //  Semaphore to lock the port
 } portSemaphores[MAX_PORT_COUNT];
 
+//  We define ctx() as a shortcut for fetching the SensorContext for the Sensor Task.
+//  We use a macro instead of declaring a variable because the context needs to be refreshed
+//  after calling cocoOS functions that may switch the task context, e.g. sem_wait().
+#define ctx() ((SensorContext *) task_get_data())
+
 void sensor_task(void) {
-  //  Background task to receive and process sensor data.
-  //  This task will be reused by all sensors: temperature, humidity, altitude.
-  //  Don't declare any static variables inside here because they will conflict
-  //  with other sensors.
-  SensorContext *context = NULL;  //  Declared outside the task to prevent cross-initialisation error in C++.
+  //  Background task to receive and process sensor data.  This task will be reused by 
+  //  all sensors: temperature, humidity, altitude.  Don't declare any static variables inside here 
+  //  because they will conflict with other sensors.
   task_open();  //  Start of the task. Must be matched with task_close().
-  context = (SensorContext *) task_get_data();
   if (context->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
 
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
