@@ -130,12 +130,12 @@ struct SensorContext {
   Sem_t *send_semaphore;    //  If set, wait for this Binary Semaphore before sending data.  Used for waiting until sensor data is available, or until the Simulator has replayed an SPI command.
 };
 
-//  Set up the sensor context. Allocate a new sensor ID and event.
+//  Set up the sensor context. Allocate a new sensor ID and sensor semaphore.
 void setup_sensor_context(
   SensorContext *context,  //  Context to be set up.
   Sensor *sensor,          //  Sensor to be set up.
   uint16_t pollInterval,   //  Polling interval in milliseconds.
-  uint8_t displayTaskID    //  Task ID for the Network or Display Task.  Used for sending sensor data messages.
+  uint8_t displayTaskID    //  Task ID for the Network or Display Task.  This task will receive sensor data messages.
 );
 
 //  Copy the received sensor data into the provided data buffer. Return the number of floats copied.

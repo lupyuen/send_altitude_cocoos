@@ -42,7 +42,7 @@ static struct {      //  List of I/O ports and their semaphores to prevent concu
 } portSemaphores[MAX_PORT_COUNT];
 
 //  We define ctx() as a shortcut for fetching the SensorContext for the Sensor Task.
-//  We use a macro instead of declaring a variable because the context needs to be refreshed
+//  We use a macro instead of declaring a variable because the context needs to be refetched
 //  after calling cocoOS functions that may switch the task context, e.g. sem_wait().
 #define ctx() ((SensorContext *) task_get_data())
 
@@ -51,65 +51,60 @@ void sensor_task(void) {
   //  all sensors: temperature, humidity, altitude.  Don't declare any static variables inside here 
   //  because they will conflict with other sensors.
   task_open();  //  Start of the task. Must be matched with task_close().
-  if (context->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
+  if (ctx()->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
 
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
-    context = (SensorContext *) task_get_data();  //  Must refetch the context after task_wait().
-    debug_print(context->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
 
     //  This code is executed by multiple sensors. We use a semaphore to prevent 
     //  concurrent access to the shared I2C or SPI port on Arduino Uno or Blue Pill.
-    sem_wait(*context->read_semaphore);  //  Wait until no other sensor is using the I/O port. Then lock the semaphore.
-    context = (SensorContext *) task_get_data();  //  Must fetch the context pointer again after the wait.
-    debug_print(context->sensor->info.name); debug_print(F(" >> Got semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
+    sem_wait(*ctx()->read_semaphore);  //  Wait until no other sensor is using the I/O port. Then lock the semaphore.
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Got semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
     
     //  Begin to capture, replay or simulate the sensor SPI commands.
-    simulator_open(&context->sensor->simulator);
-    context->msg.count = SENSOR_NOT_READY;  //  Assume that sensor has no data available.
-    context->send_semaphore = NULL;         //  Assume no need to wait before sending sensor data.
+    simulator_open(&ctx()->sensor->simulator);
+    ctx()->msg.count = SENSOR_NOT_READY;  //  Assume that sensor has no data available.
+    ctx()->send_semaphore = NULL;         //  Assume no need to wait before sending sensor data.
 
     //  If this is the first time we are polling the sensor, or if this is a simulated sensor...
-    if (simulator_should_poll_sensor(&context->sensor->simulator)) {
+    if (simulator_should_poll_sensor(&ctx()->sensor->simulator)) {
       //  Poll for the sensor data and copy into the sensor message.  For Simulator: This will also capture or simulate the sensor SPI commands.
-      context->msg.count = context->sensor->info.poll_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
-      context->send_semaphore = &context->sensor->info.semaphore;  //  If sensor data not ready, wait for this sensor semaphore.
+      ctx()->msg.count = ctx()->sensor->info.poll_sensor_func(
+        ctx()->msg.data, MAX_SENSOR_DATA_SIZE);  //  We will copy at most MAX_SENSOR_DATA_SIZE floats into the msg.data array.
+      ctx()->send_semaphore = &ctx()->sensor->info.semaphore;  //  If sensor data not ready, wait for this sensor semaphore.
     }
 
     //  This loop is only used by Event Sensors to wait for data, or by the Simulator replaying multiple SPI packets.
     for (;;) {  //  Loop until sensor data is ready.
-      if (context->msg.count != SENSOR_NOT_READY) { break; }  //  Stop if we already have data.
-      if (context->send_semaphore) {         //  If there is a semaphore for us to wait before sending...
-        sem_wait(*context->send_semaphore);  //  Wait for sensor processing or replay to complete.  TODO: Handle timeout.
-        context = (SensorContext *) task_get_data();  //  Must refetch the context pointer after sem_wait().
+      if (ctx()->msg.count != SENSOR_NOT_READY) { break; }  //  Stop if we already have data.
+      if (ctx()->send_semaphore) {         //  If there is a semaphore for us to wait before sending...
+        sem_wait(*ctx()->send_semaphore);  //  Wait for sensor processing or replay to complete.  TODO: Handle timeout.
       }
-      if (simulator_should_poll_sensor(&context->sensor->simulator)) {  //  If this is a real sensor...
+      if (simulator_should_poll_sensor(&ctx()->sensor->simulator)) {  //  If this is a real sensor...
         //  Process any sensor data received. If processing is complete, get the sensor data.
-        context->msg.count = context->sensor->info.resume_sensor_func(context->msg.data, MAX_SENSOR_DATA_SIZE);
+        ctx()->msg.count = ctx()->sensor->info.resume_sensor_func(ctx()->msg.data, MAX_SENSOR_DATA_SIZE);
       } else {  //  Else this is the Simulator.  Replay the next packet if any.
-        context->send_semaphore = simulator_replay(&context->sensor->simulator);
-        if (context->send_semaphore == NULL) { break; }  //  Stop if no more packets to replay.
+        ctx()->send_semaphore = simulator_replay(&ctx()->sensor->simulator);
+        if (ctx()->send_semaphore == NULL) { break; }  //  Stop if no more packets to replay.
       }
     }
 
     //  End the capture, replay or simulation of the sensor SPI commands.
-    simulator_close(&context->sensor->simulator);
+    simulator_close(&ctx()->sensor->simulator);
 
     //  We are done with the I/O port.  Release the semaphore so that another task can fetch the sensor data on the port.
-    debug_print(context->sensor->info.name); debug_print(F(" >> Release semaphore #")); debug_println((int) *context->read_semaphore); debug_flush();
-    sem_signal(*context->read_semaphore);
-    context = (SensorContext *) task_get_data();  //  Fetch the context pointer again after releasing the semaphore.
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Release semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
+    sem_signal(*ctx()->read_semaphore);
 
     //  Do we have new data?
-    if (context->msg.count > 0 && context->msg.count != SENSOR_NOT_READY) {
+    if (ctx()->msg.count > 0 && ctx()->msg.count != SENSOR_NOT_READY) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
-      debug_print(context->msg.name); debug_print(F(" >> Send msg ")); debug_println(context->msg.data[0]); debug_flush();
-      //  Note: We use msg_post_async() instead because msg_post() will block if the receiver's queue is full.
-      msg_post_async(context->receive_task_id, context->msg);
-      context = (SensorContext *) task_get_data();  //  Must refetch the context pointer.
+      debug_print(ctx()->msg.name); debug_print(F(" >> Send msg ")); debug_println(ctx()->msg.data[0]); debug_flush();      
+      msg_post_async(ctx()->receive_task_id, ctx()->msg);  //  Note: We use msg_post_async() instead because msg_post() will block if the receiver's queue is full.
     }
     //  Wait a short while before polling the sensor again.
-    debug(context->sensor->info.name, F(" >> Wait interval"));
-    task_wait(context->sensor->info.poll_interval);
+    debug(ctx()->sensor->info.name, F(" >> Wait interval"));
+    task_wait(ctx()->sensor->info.poll_interval);
   }
   debug(F("task_close"), NULL);
   task_close();  //  End of the task. Should never come here.
@@ -145,12 +140,11 @@ static Sem_t *allocate_port_semaphore(uint32_t port_id) {
 }
 
 void setup_sensor_context(
-  SensorContext *context,
-  Sensor *sensor,
-  uint16_t pollInterval,
-  uint8_t taskID
-  ) {
-  //  Set up the sensor context and call the sensor to initialise itself.
+  SensorContext *context,  //  Context to be set up.
+  Sensor *sensor,          //  Sensor to be set up.
+  uint16_t pollInterval,   //  Polling interval in milliseconds.
+  uint8_t taskID) {        //  Task ID for the Network or Display Task.  This task will receive sensor data messages.  
+  //  Set up the sensor context. Allocate a new sensor ID and sensor semaphore.
 
   //  Set up the simulator system once.
   simulator_setup();
@@ -199,7 +193,11 @@ void setup_sensor_context(
     capture_enabled, replay_enabled, simulate_enabled, merge_enabled);
 }
 
-uint8_t receive_sensor_data(float *sensorDataArray, uint8_t sensorDataSize, float *data, uint8_t size) {
+uint8_t receive_sensor_data(
+  float *sensorDataArray,  //  Array of floats containing the received sensor data.
+  uint8_t sensorDataSize,  //  Number of floats in the received sensor data.
+  float *data,             //  Array of floats that sensor data should be copied to.
+  uint8_t size) {          //  Number of floats in the array that sensor data should be copied to.
   //  Copy the received sensor data array into the provided data buffer.
   //  Return the number of floats copied.  //  debug(F("receive_sensor_data"));
   uint8_t i;
