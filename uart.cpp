@@ -1,19 +1,19 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
-//#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
-#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
-//#endif  //  STM32
-
 #include "platform.h"
 #include <string.h>
-#ifdef ARDUINO
-#include <SoftwareSerial.h>
-#else
-#include <uartint.h>  //  For UARTInterface
-#endif  //  ARDUINO
 #include <cocoos.h>
 #include "display.h"
 #include "sensor.h"
 #include "uart.h"
+
+#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
+#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+#include <uartint.h>            //  For UARTInterface
+#endif  //  STM32
+
+#ifdef ARDUINO               //  If we are compiling for Arduino...
+#include <SoftwareSerial.h>  //  Use the software implementation of the serial port.
+#endif  //  ARDUINO
 
 static void rememberMarker(UARTContext *context);
 static void logChar(char ch);
