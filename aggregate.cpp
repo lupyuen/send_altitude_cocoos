@@ -38,7 +38,7 @@ bool aggregate_sensor_data(
         context->stepBeginFunc(context, cmdList, cmdListSize);  //  Fetch list of startup commands for the transceiver.
         return true;  //  Send the startup commands.
     }
-    debug_print(msg->name); debug_print(F(" << Recv sensor data ")); 
+    debug_print(msg->name); debug_print(F(" << Recv data ")); 
     if (msg->count > 0) { debug_println(msg->data[0]); }
     else { debug_println("(empty)"); }
     debug_flush();

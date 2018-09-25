@@ -44,7 +44,7 @@ void bme280_setup(uint32_t port_id) {
 
 #if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
     uint8_t pin = convert_port_to_pin(port_id);  //  Map the port to a pin.
-    settings.spiCsPin = pin;  //  Set the pin for the SPI port.
+    settings.spiCsPin = pin;                     //  Set the pin for the SPI port.
     bme = BME280Spi(settings);
 #else                                //  If we are using I2C version of BME280...
     uint8_t addr = i2cAddresses[i];  //  Fetch the next I2C address to be scanned.
@@ -56,7 +56,11 @@ void bme280_setup(uint32_t port_id) {
     if (!bme.begin()) { continue; }
     switch(bme.chipModel()) {
       case BME280::ChipModel_BME280:
-        debug(F("bme >> bme280 with arduino library"));
+#ifdef SIMULATE_BME280  //  If we are using a simulated BME280...
+        debug(F("bme >> simulated bme280"));  //  Show that we are simulated.
+#else   //  Else we are using a real BME280...
+        debug(F("bme >> real bme280 with arduino library"));
+#endif  //  SIMULATE_BME280
         return;
       case BME280::ChipModel_BMP280:
         debug(F("bme >> bmp280 without humidity"));
