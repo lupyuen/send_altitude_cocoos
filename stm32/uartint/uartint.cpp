@@ -91,13 +91,13 @@ void UARTInterface::listen() {
 
 void UARTInterface::end() {
     //  Close the UART port.  Disable interrupts.
-    debug_println("]] uart end"); debug_flush();
     //  Disable USART2 Transmit (TXE) interrupt.
 	USART_CR1(USART2) &= ~USART_CR1_TXEIE;
     //  Disable USART2 Receive (RXNE) interrupt.
 	USART_CR1(USART2) &= ~USART_CR1_RXNEIE;
     //  Disable the USART.
 	usart_disable(USART2);
+    debug_println("]] uart end"); debug_flush();
 }
 
 int UARTInterface::available() { 

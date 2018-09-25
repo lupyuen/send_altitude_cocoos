@@ -12,7 +12,7 @@
 //  COMMAND_TIMEOUT < UPLINK_TIMEOUT < DOWNLINK_TIMEOUT
 #define COMMAND_TIMEOUT  ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
 #define UPLINK_TIMEOUT   ((unsigned long) 20 * 1000)  //  Wait up to 20 seconds for uplink command response from Sigfox module.
-#define DOWNLINK_TIMEOUT ((unsigned long) 70 * 1000)  //  Wait up to 70 seconds for downlink command response from Sigfox module.
+#define DOWNLINK_TIMEOUT ((unsigned long) 60 * 1000)  //  Wait up to 60 seconds for downlink command response from Sigfox module.
 #define MAX_TIMEOUT      DOWNLINK_TIMEOUT             //  Maximum possible timeout.
 
 //  Define the countries (ISO ALPHA-2 country code) and frequencies that are supported.

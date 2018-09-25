@@ -43,9 +43,9 @@ static void logBuffer(const __FlashStringHelper *prefix, const char *sendData, c
     context->testTimer = millis();
 
 //  Delays in milliseconds.
-static const uint16_t delayAfterStart = 200;  //  Delay after UART port init.
-static const uint16_t delayAfterSend = 10;  //  Delay after sending data.
-static const uint16_t delayReceive = 1000;  //  Delay while receiving data.
+static const uint16_t delayAfterStart =  200;  //  Delay after UART port init.
+static const uint16_t delayAfterSend  =   10;  //  Delay after sending data.
+static const uint16_t delayReceive    = 1000;  //  Delay while receiving data.
 
 //  Remember where in response the '\r' markers were seen.
 const uint8_t markerPosMax = 5;
@@ -117,17 +117,16 @@ void uart_task(void) {
         //  No data is available in the serial port sendData to receive now.  We retry later.
         if (elapsedTime > ctx()->msg->timeout) {
           //  If we have waited too long to receive, quit.
-          debug_print(F("<< (Timeout) elapsed ")); debug_print((size_t) elapsedTime);
-          debug_print(F(" timeout ")); debug_print((size_t) ctx()->msg->timeout);
+          debug_print(F("<< uart timeout: elapsed ")); debug_print((size_t) elapsedTime); debug_print(F(" timeout ")); debug_print((size_t) ctx()->msg->timeout);
           logBuffer(F(" "), "", ctx()->msg->markerChar, 0, 0);
           break;
         }
         //  Wait a while before checking receive.
         remainingTime = ctx()->msg->timeout - elapsedTime;
         if (remainingTime > delayReceive) {  //  Wait only if there is sufficient time remaining.
-          task_wait(delayReceive); 
+          ////task_wait(delayReceive); 
         }
-        continue;  //  Check again.
+        continue;  //  Check again to receive next char.
       }
       //  Note: If there is data to be read even though the timeout has been reached, we still continue to read.
       //  Attempt to read the data.
@@ -217,8 +216,12 @@ static void logSendReceive(UARTContext *context) {
 //  Convert nibble to hex digit.
 static const char nibbleToHex[] = "0123456789abcdef";
 
-static void logBuffer(const __FlashStringHelper *prefix, const char *data, char markerChar,
-                            uint8_t *markerPos, uint8_t markerCount) {
+static void logBuffer(
+  const __FlashStringHelper *prefix, 
+  const char *data, 
+  char markerChar,
+  uint8_t *markerPos, 
+  uint8_t markerCount) {
   //  Log the send/receive data for debugging.  markerPos is an array of positions in data
   //  where the '\r' marker was seen and removed.  If markerCount=0, don't show markers.
   debug_print(prefix);
