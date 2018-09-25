@@ -43,6 +43,11 @@ static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg responseMsg;  //  Pending response message from UART to Wisol.
 static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
+//  We define ctx() as a shortcut for fetching the NetworkContext for the Network Task.
+//  We use a macro instead of declaring a variable because the context needs to be refetched
+//  after calling cocoOS functions that may switch the task context, e.g. sem_wait().
+#define ctx() ((NetworkContext *) task_get_data())
+
 void network_task(void) {
   //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
   //  Note: Declare task variables here before the task but don't populate them here

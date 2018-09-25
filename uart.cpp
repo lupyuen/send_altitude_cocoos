@@ -57,124 +57,127 @@ SoftwareSerial serialPort(UART_RX_PORT, UART_TX_PORT);  //  Serial port for send
 UARTInterface serialPort(UART_RX_PORT, UART_TX_PORT);  //  UART port for send/receive.
 #endif  //  ARDUINO
 
+//  We define ctx() as a shortcut for fetching the UARTContext for the UART Task.
+//  We use a macro instead of declaring a variable because the context needs to be refetched
+//  after calling cocoOS functions that may switch the task context, e.g. sem_wait().
+#define ctx() ((UARTContext *) task_get_data())
+
 void uart_task(void) {
   //  This task loops and waits for an incoming message containing UART data to be sent.
   //  sendData contains a string of ASCII chars to be sent to the UART port.
   //  We send the sendData to the port.  expectedMarkerCount is the number of 
-  //  end-of-command markers '\r' we expect to see.  actualMarkerCount 
-  //  contains the actual number seen. We trigger to the caller the events successEvent or failureEvent
-  //  depending on success/failure sending the data.  Response is recorded in the
-  //  "response" variable of the context, for the caller to retrieve.
-  UARTContext *context;  //  The context for the task.
+  //  end-of-command markers '\r' we expect to see.  actualMarkerCount contains the 
+  //  actual number of end-of-command seen. We trigger to the caller the events 
+  //  successEvent or failureEvent depending on success/failure sending the data.  
+  //  Response is recorded in the "response" variable of the context, for the caller to retrieve.
+  //  UART Task is designed to be reusable for various types of UART processing.
   static UARTMsg msg;  //  The received message.
-  uint8_t sendChar;  //  Character to be sent.
+  uint8_t sendChar;    //  Character to be sent.
 
   task_open();  //  Start of the task. Must be matched with task_close().
-  for (;;) { //  Run the UART sending code forever. So the task never ends.
-    msg_receive(os_get_running_tid(), &msg);
-    context = (UARTContext *) task_get_data();  //  Must fetch again after msg_receive().
-    context->msg = &msg;  //  Remember the message until it's sent via UART.
-    logBuffer(F(">> "), context->msg->sendData, context->msg->markerChar, 0, 0); debug_flush();
-    //  log2(F(" - uart.sendData: "), context->msg->sendData);  //// log2(F("expectedMarkerCount / timeout: "), String(context->msg->expectedMarkerCount) + String(F(" / ")) + String(context->msg->timeout));
+  for (;;) {    //  Run the UART sending code forever. So the task never ends.
+    msg_receive(os_get_running_tid(), &msg);  //  Wait until we receive a UART message.
+    ctx()->msg = &msg;  //  Remember the message until it's transmitted to the UART port.
+    logBuffer(F(">> "), ctx()->msg->sendData, ctx()->msg->markerChar, 0, 0); debug_flush();
+    //  log2(F(" - uart.sendData: "), ctx()->msg->sendData); log2(F("expectedMarkerCount / timeout: "), String(ctx()->msg->expectedMarkerCount) + String(F(" / ")) + String(ctx()->msg->timeout));
 
     //  Initialise the context for the task. These variables will change while sending.
-    context->status = true;  //  Assume the return status will be successful.
-    context->sendIndex = 0;  //  Index of next char to be sent.
-    context->sentTime = 0;  //  Timestamp at which we completed sending.
-    context->response[0] = 0;  //  Empty the response buffer.
-    context->actualMarkerCount = 0;  //  How many markers we actually received.
+    ctx()->status = true;    //  Assume the return status will be successful.
+    ctx()->sendIndex = 0;    //  Index of next char to be sent.
+    ctx()->sentTime = 0;     //  Timestamp at which we completed sending.
+    ctx()->response[0] = 0;  //  Empty the response buffer.
+    ctx()->actualMarkerCount = 0;  //  How many markers we actually received.
 
     //  Initialise the UART port.
     serialPort.begin(UART_BITS_PER_SECOND);  //  Start the UART interface.
     task_wait(delayAfterStart);  //  Wait for the UART port to be ready.
-    context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
-    serialPort.listen();  //  Start listening for responses from the UART port.
+    serialPort.listen();        //  Start listening for responses from the UART port.
     
-    //  Send Loop
-    for (;;) {  //  Send the sendData char by char.
+    ///////////////////////////////////////////////////////////////////////////
+    //  UART Transmit Loop
+    for (;;) {  //  Transmit sendData char by char to the UART port.
       //  If there is no data left to send, continue to the receive step.
-      if (context->sendIndex >= strlen(context->msg->sendData)
-        || context->sendIndex >= MAX_UART_SEND_MSG_SIZE) { break; }
+      if (ctx()->sendIndex >= strlen(ctx()->msg->sendData)
+        || ctx()->sendIndex >= MAX_UART_SEND_MSG_SIZE) { break; }
       //  Send the next char.
-      sendChar = (uint8_t) context->msg->sendData[context->sendIndex];
+      sendChar = (uint8_t) ctx()->msg->sendData[ctx()->sendIndex];
       serialPort.write(sendChar);
-      context->sendIndex++;  ////  debug_println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
+      ctx()->sendIndex++;  //  debug_println(String(F("send: ")) + String((char) sendChar) + String(F(" / ")) + String(toHex((char)sendChar))); ////
       task_wait(delayAfterSend);  //  Need to wait a while because SoftwareSerial has no FIFO and may overflow.
-      context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().
     }
-    context->sentTime = millis();  //  Start the timer for detecting receive timeout.
+    ctx()->sentTime = millis();   //  Start the timer for detecting receive timeout.
 
-    //  Receive Loop
-    for (;;) {  //  Read the response.  Loop until timeout or we see the end of response marker.
-      context = (UARTContext *) task_get_data();  //  Must fetch again after task_wait().    
+    ///////////////////////////////////////////////////////////////////////////
+    //  UART Receive Loop
+    for (;;) {  //  Read the response from the UART port.  Loop until timeout or we see the end-of-command marker "\r".
       unsigned long currentTime, elapsedTime, remainingTime;
       currentTime = millis();
-      elapsedTime = currentTime - context->sentTime;
-      if (elapsedTime > context->msg->timeout) {
+      elapsedTime = currentTime - ctx()->sentTime;
+      if (elapsedTime > ctx()->msg->timeout) {
         //  If receive step has timed out, quit.
-        logBuffer(F("<< (Timeout)"), "", context->msg->markerChar, 0, 0);
+        logBuffer(F("<< (Timeout)"), "", ctx()->msg->markerChar, 0, 0);
         break;
       }
       if (serialPort.available() <= 0) { 
         //  No data is available in the serial port sendData to receive now.  We retry later.
         //  Wait a while before checking receive.
-        remainingTime = context->msg->timeout - elapsedTime;
+        remainingTime = ctx()->msg->timeout - elapsedTime;
         if (remainingTime > delayReceive) {  //  Wait only if there is sufficient time remaining.
           task_wait(delayReceive); 
         }
         continue;  //  Check again.
       }
       //  Attempt to read the data.
-      int receiveChar = serialPort.read();  ////  debug_println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
+      int receiveChar = serialPort.read();  //  debug_println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 
       //  No data is available now.  We retry.
-      if (receiveChar == -1) { continue; }  //  Should not come here.
+      if (receiveChar == -1) { continue; }  //  Actually should not come here, since the above conditions covered the no-data case.
 
-      if (receiveChar == context->msg->markerChar) {
-        //  We see the "\r" marker.
-        rememberMarker(context);  //  Remember the marker location so we can format the debug output.
-        context->actualMarkerCount++;  //  Count the number of end markers.
+      if (receiveChar == ctx()->msg->markerChar) {
+        //  We see the end-of-command marker "\r".
+        rememberMarker(ctx());       //  Remember the marker location so we can format the debug output.
+        ctx()->actualMarkerCount++;  //  Count the number of end-of-command markers seen.
         //  If we have encountered all the markers we need, stop receiving.
-        if (context->actualMarkerCount >= context->msg->expectedMarkerCount) { break; }
+        if (ctx()->actualMarkerCount >= ctx()->msg->expectedMarkerCount) { break; }
         continue;  //  Else continue to receive next char.
       }
-      //  If not "\r" marker, append the received char to the response.
-      int len = strlen(context->response);
+      //  If not end-of-command marker "\r", append the received char to the response.
+      int len = strlen(ctx()->response);
       if (len >= MAX_UART_RESPONSE_MSG_SIZE) {
         debug_print(F("***** Error: UART response overflow - ")); debug_println(len);
       } else {
-        context->response[len] = (char) receiveChar;
-        context->response[len + 1] = 0;
-      }  ////   debug_println(String(F("response: ")) + context->response); log2(F("receiveChar "), receiveChar);
-    }  //  Loop until receive is complete or timeout.
-    serialPort.end();  //  Finished the send/receive.  We close the UART port.
-    context = (UARTContext *) task_get_data();  //  Must fetch again to be safe.
+        ctx()->response[len] = (char) receiveChar;
+        ctx()->response[len + 1] = 0;
+      }  //  debug_println(String(F("response: ")) + ctx()->response); log2(F("receiveChar "), receiveChar);
+    }    //  Loop until receive is complete or timeout.
+
+    ///////////////////////////////////////////////////////////////////////////
+    //  UART Send/Receive Finished
+    serialPort.end();  //  We are finished with the UART send/receive.  Close the UART port.
 
     //  If we did not see the expected number of '\r' markers, record the error.
-    if (context->actualMarkerCount < context->msg->expectedMarkerCount) { context->status = false; }
-    logSendReceive(context);  //  Log the status and actual bytes sent and received.
+    if (ctx()->actualMarkerCount < ctx()->msg->expectedMarkerCount) { ctx()->status = false; }
+    logSendReceive(ctx());  //  Log the status and actual bytes sent and received.
 
-    if (context->msg->responseMsg != NULL) {
+    if (ctx()->msg->responseMsg != NULL) {
       //  If caller has requested for response message, then send it instead of event.
-      msg_post(context->msg->responseTaskID, *(context->msg->responseMsg));
-      context = (UARTContext *) task_get_data();  //  Must fetch again in case msg_post() blocks.
-    } else if (context->status == true) {
+      msg_post(ctx()->msg->responseTaskID, *(ctx()->msg->responseMsg));
+    } else if (ctx()->status == true) {
       //  If no error, trigger the success event to caller.
       //  The caller can read the response from the context.response.
-      event_signal(context->msg->successEvent);      
+      event_signal(ctx()->msg->successEvent);      
     } else {
       //  If we hit an error, trigger the failure event to the caller.
-      event_signal(context->msg->failureEvent);  //  Trigger the failure event.
+      event_signal(ctx()->msg->failureEvent);  //  Trigger the failure event.
     }
-    #ifdef NOTUSED    
-    //  Test whether the timer is accurate while multitasking.
-    context->testTimer = millis();
+    #ifdef NOTUSED  //  Test whether the timer is accurate while multitasking.
+    ctx()->testTimer = millis();
     task_wait(10); TEST_TIMER(10);  //  10 milliseconds. First time may not be accurate.
     task_wait(10); TEST_TIMER(10);  //  10 milliseconds
     task_wait(100); TEST_TIMER(100);  //  100 milliseconds
     task_wait(200); TEST_TIMER(200);  //  200 milliseconds
-    #endif  //  NOTUSED
-  }  //  Loop back and wait for next queued message.
+    #endif       //  NOTUSED
+  }              //  Loop back and wait for next queued message.
   task_close();  //  End of the task. Should not come here.
 }
 
