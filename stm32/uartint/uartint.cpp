@@ -2,6 +2,7 @@
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
 #include "../../platform.h"
 #include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+// #include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
@@ -17,7 +18,7 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
-#include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
+// #include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
 
 //  Allocate the response queue, a fixed size lockfree circular ringbuffer for receiving data.
 //  UART interrupts may happen anytime, so we need a lockfree way to access the buffer safely.
