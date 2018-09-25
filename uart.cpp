@@ -7,7 +7,7 @@
 #include "uart.h"
 
 #ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
-//// TODO: #include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.  Mandatory.
 #include <uartint.h>            //  For UARTInterface
 #endif  //  STM32
 

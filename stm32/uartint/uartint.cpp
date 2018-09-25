@@ -1,5 +1,6 @@
 //  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
+#include <boost/lockfree/spsc_queue.hpp>  //  Somehow must appear before platform.h.
 #include "../../platform.h"  //  For SIMULATE_WISOL, MAX_UART_SEND_MSG_SIZE
 #include <string.h>
 #include <bluepill.h>
@@ -12,13 +13,13 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
-//// TODO
-#include <boost_lockfree.hpp>             //  Force boost_lockfree library to be included.
-#include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
 
 //  Allocate the response queue, a fixed size lockfree circular ringbuffer for receiving data.
 //  UART interrupts may happen anytime, so we need a lockfree way to access the buffer safely.
-static boost::lockfree::spsc_queue<uint8_t, boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1> > responseQueue;
+static boost::lockfree::spsc_queue<
+    uint8_t,  //  Response queue stores an array of bytes.
+    boost::lockfree::capacity<MAX_UART_RESPONSE_MSG_SIZE + 1>  //  Max response size.
+> responseQueue;
 
 static void clock_setup(void) {
     //  Enable the USART2 clock.
