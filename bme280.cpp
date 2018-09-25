@@ -1,6 +1,5 @@
 //  BME280 I2C interface for temperature, humidity and altitude sensors.
-//  Requires the BME280 library to be installed through Arduino Library Manager:
-//  https://github.com/finitespace/BME280
+//  Reuses the Arduino library for BME280, even on Blue Pill: https://github.com/finitespace/BME280
 #include "platform.h"
 #include "display.h"
 
@@ -14,15 +13,16 @@ static const uint8_t i2cAddresses[] = {
   0x77,  //  Default address for SparkFun BME280 Breakout Board.
 };
 
-#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
+//  If we are simulating the BME280, ignore the SPI port because the simulator runs on I2C.
 
+#if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
 static BME280Spi::Settings settings(0);  //  BME280 SPI settings.
 BME280Spi bme(settings); //  The global instance of the BME280 SPI API.
 
-#else  //  Else we are using I2C version of BME280...
+#else  //  Else we are using I2C or simulated version of BME280...
 static BME280I2C::Settings settings;  //  BME280 I2C settings, including I2C address.
-BME280I2C bme; //  The global instance of the BME280 I2C API.
-#endif
+BME280I2C bme;                        //  The global instance of the BME280 I2C API.
+#endif  //  USE_BME280_SPI && !SIMULATE_BME280
 
 // Default Settings: forced mode, standby time = 1000 ms
 // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off,
@@ -34,15 +34,15 @@ void bme280_setup(uint32_t port_id) {
   firstTime = false;
   Wire.begin();  //  Init the Wire library for BME280 library.
 
-#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
+#if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
     const int numAddresses = 1;  //  Check once only for SPI, which has no address.
 #else  //  If we are using I2C version of BME280...
     const int numAddresses = sizeof(i2cAddresses) / sizeof(uint8_t);  //  Scan each I2C address for the BME280 module.
-#endif  //  USE_BME280_SPI
+#endif  //  USE_BME280_SPI && !SIMULATE_BME280
 
   for (int i = 0; i < numAddresses; i++) {
 
-#ifdef USE_BME280_SPI         //  If we are using SPI version of BME280...
+#if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
     uint8_t pin = convert_port_to_pin(port_id);  //  Map the port to a pin.
     settings.spiCsPin = pin;  //  Set the pin for the SPI port.
     bme = BME280Spi(settings);
@@ -50,7 +50,7 @@ void bme280_setup(uint32_t port_id) {
     uint8_t addr = i2cAddresses[i];  //  Fetch the next I2C address to be scanned.
     settings.bme280Addr = addr;
     bme = BME280I2C(settings);
-#endif  //  USE_BME280_SPI
+#endif  //  USE_BME280_SPI && !SIMULATE_BME280
 
     //  Fetch the BME280 model number via I2C or SPI.  If not found at this I2C address, try next I2C address.
     if (!bme.begin()) { continue; }

@@ -16,22 +16,22 @@
 #define spi_setup(id) NULL
 #endif  //  STM32
 
-#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
+#if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
 #include <BME280Spi.h> //  Include the BME280 SPI declarations.
-#else                  //  Else we are using I2C version of BME280...
+#else                  //  Else we are using I2C or simulated version of BME280...
 #include <BME280I2C.h> //  Include the BME280 I2C declarations.
-#endif
+#endif  //  USE_BME280_SPI && !SIMULATE_BME280
 
 BEGIN_EXTERN_C  //  Allows functions below to be called by C and C++ code.
 
 //  Set up the BME280 module for reading. Connect via that I/O port (I2C or SPI).
 void bme280_setup(uint32_t port);
 
-#ifdef USE_BME280_SPI  //  If we are using SPI version of BME280...
+#if defined(USE_BME280_SPI) && !defined(SIMULATE_BME280)  //  If we are using real SPI version of BME280...
 extern BME280Spi bme;  //  Declare global instance of BME280 SPI interface.
-#else                  //  Else we are using I2C version of BME280...
+#else                  //  Else we are using I2C or simulated version of BME280...
 extern BME280I2C bme;  //  Declare global instance of BME280 I2C interface.
-#endif
+#endif  //  USE_BME280_SPI && !SIMULATE_BME280
 
 END_EXTERN_C
 #endif  //  SENSOR_DATA

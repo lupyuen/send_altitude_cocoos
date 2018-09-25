@@ -5,7 +5,7 @@
 #include <logger.h>
 #include "i2cint.h"
 
-#ifndef SIMULATE_BME280  //  Implement a real I2C interface.
+#ifndef SIMULATE_BME280  //  If we are connecting to the real I2C port on Blue Pill...
 #include <stdbool.h>
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
@@ -400,7 +400,11 @@ int I2CInterface::read(void) {  //  Used by BME280I2C.cpp
 }
 #endif  //  !SIMULATE_BME280
 
-#ifdef SIMULATE_BME280  //  Simulate a BME280 sensor connected to I2C Bus.
+#ifdef SIMULATE_BME280  //  If we are simulating a BME280 sensor connected to the I2C port...
+//  Below are the I2C responses from the BME280 that have been recorded earlier.  We replay
+//  the I2C responses to the BME280 library in order to simulate the BME280 returning sensor
+//  data: temperature, humidity, altitude.
+
 //  BME280 Registers from https://github.com/finitespace/BME280/blob/master/src/BME280.h
 static const uint8_t CTRL_HUM_ADDR   = 0xF2;
 static const uint8_t CTRL_MEAS_ADDR  = 0xF4;
