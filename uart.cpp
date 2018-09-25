@@ -1,4 +1,8 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
+//#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
+#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+//#endif  //  STM32
+
 #include "platform.h"
 #include <string.h>
 #ifdef ARDUINO

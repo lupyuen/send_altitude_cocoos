@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
-#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
-#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
-#endif  //  STM32
+//#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
+//#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+//#endif  //  STM32
 #include "display.h"            //  For Display Task and debug functions
 #include "sensor.h"             //  For common sensor declarations
 #include "aggregate.h"          //  For aggregating sensor data before transmission
