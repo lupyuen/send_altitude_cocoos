@@ -123,8 +123,8 @@ void uart_task(void) {
         }
         //  Wait a while before checking receive.
         remainingTime = ctx()->msg->timeout - elapsedTime;
-        if (remainingTime > delayReceive) {  //  Wait only if there is sufficient time remaining.
-          ////task_wait(delayReceive); 
+        if (remainingTime > 2 * delayReceive) {  //  Wait only if there is twice the time remaining.
+          task_wait(delayReceive); 
         }
         continue;  //  Check again to receive next char.
       }
