@@ -1,7 +1,7 @@
 ::  Download the Boost libraries into the lib folder and create the "src" links.
 
 ::  This is the version of Boost we will download.  Must sync with install_boost.sh.
-set boost_version=boost-1.67.0
+set boost_version=boost-1.68.0
 
 call :download_boost assert
 call :download_boost config

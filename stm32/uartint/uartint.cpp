@@ -1,8 +1,9 @@
 //  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
-#include "../../platform.h"
 #include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
-// #include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
+#include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
+
+#include "../../platform.h"
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
