@@ -112,14 +112,16 @@ void uart_task(void) {
     for (;;) {  //  Read the response from the UART port.  Loop until timeout or we see the end-of-command marker "\r".
       unsigned long currentTime, elapsedTime, remainingTime;
       currentTime = millis();
-      elapsedTime = currentTime - ctx()->sentTime;
-      if (elapsedTime > ctx()->msg->timeout) {
-        //  If receive step has timed out, quit.
-        logBuffer(F("<< (Timeout)"), "", ctx()->msg->markerChar, 0, 0);
-        break;
-      }
+      elapsedTime = currentTime - ctx()->sentTime;  //  Compute the elapsed time since the start of the receive.
       if (serialPort.available() <= 0) { 
         //  No data is available in the serial port sendData to receive now.  We retry later.
+        if (elapsedTime > ctx()->msg->timeout) {
+          //  If we have waited too long to receive, quit.
+          debug_print(F("<< (Timeout) elapsed ")); debug_print((size_t) elapsedTime);
+          debug_print(F(" timeout ")); debug_print((size_t) ctx()->msg->timeout);
+          logBuffer(F(" "), "", ctx()->msg->markerChar, 0, 0);
+          break;
+        }
         //  Wait a while before checking receive.
         remainingTime = ctx()->msg->timeout - elapsedTime;
         if (remainingTime > delayReceive) {  //  Wait only if there is sufficient time remaining.
@@ -127,6 +129,7 @@ void uart_task(void) {
         }
         continue;  //  Check again.
       }
+      //  Note: If there is data to be read even though the timeout has been reached, we still continue to read.
       //  Attempt to read the data.
       int receiveChar = serialPort.read();  //  debug_println(String("receive: ") + String((char) receiveChar) + " / " + String(toHex((char)receiveChar))); ////
 

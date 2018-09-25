@@ -70,7 +70,7 @@ UARTInterface::UARTInterface(unsigned rx, unsigned tx) {
 
 void UARTInterface::begin(uint16_t bps) {
     //  Init the buffer.
-    debug_println("uart_begin"); debug_flush();
+    debug_println("[[ uart begin"); debug_flush();
     responseQueue.reset();
     //  Open the UART port.
     clock_setup();
@@ -91,7 +91,7 @@ void UARTInterface::listen() {
 
 void UARTInterface::end() {
     //  Close the UART port.  Disable interrupts.
-    debug_println("uart_end"); debug_flush();
+    debug_println("]] uart end"); debug_flush();
     //  Disable USART2 Transmit (TXE) interrupt.
 	USART_CR1(USART2) &= ~USART_CR1_TXEIE;
     //  Disable USART2 Receive (RXNE) interrupt.
