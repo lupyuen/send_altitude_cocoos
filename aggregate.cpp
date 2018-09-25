@@ -41,7 +41,7 @@ bool aggregate_sensor_data(
     debug_print(msg->name); debug_print(F(" << Recv data ")); 
     if (msg->count > 0) { debug_println(msg->data[0]); }
     else { debug_println("(empty)"); }
-    debug_flush();
+    //  debug_flush();
 
     //  Aggregate the sensor data.  Here we just save the last value for each sensor.
     SensorMsg *savedSensor = recallSensor(msg->name);
@@ -75,7 +75,7 @@ bool aggregate_sensor_data(
         payload[length] = '0';
         payload[length + 1] = 0;
     }
-    debug(F("agg >> Send "), payload); ////
+    debug_print(F("agg >> Send ")); debug_println(payload);
 
     //  Compose the list of Wisol AT Commands for sending the message payload.
     context->stepSendFunc(context, cmdList, cmdListSize, payload, ENABLE_DOWNLINK);
@@ -98,7 +98,7 @@ static void addPayloadInt(
     if (data < 0 || data >= pow(10, numDigits)) {  //  Show a warning if out of range.
         debug_print(F("***** Warning: Only last ")); debug_print(numDigits); 
         debug_print(F(" digits of ")); debug_print(name); debug_print(F(" value ")); debug_print(data);
-        debug_println(" will be sent"); debug_flush();
+        debug_println(" will be sent"); // debug_flush();
     }
     for (int i = numDigits - 1; i >= 0; i--) {  //  Add the digits in reverse order (right to left).
         int d = data % 10;  //  Take the last digit.

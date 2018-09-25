@@ -54,12 +54,12 @@ void sensor_task(void) {
   if (ctx()->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
 
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
-    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *ctx()->read_semaphore); // debug_flush();
 
     //  This code is executed by multiple sensors. We use a semaphore to prevent 
     //  concurrent access to the shared I2C or SPI port on Arduino Uno or Blue Pill.
     sem_wait(*ctx()->read_semaphore);  //  Wait until no other sensor is using the I/O port. Then lock the semaphore.
-    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Got semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Got semaphore #")); debug_println((int) *ctx()->read_semaphore); // debug_flush();
     
     //  Begin to capture, replay or simulate the sensor SPI commands.
     simulator_open(&ctx()->sensor->simulator);
@@ -94,17 +94,17 @@ void sensor_task(void) {
     simulator_close(&ctx()->sensor->simulator);
 
     //  We are done with the I/O port.  Release the semaphore so that another task can fetch the sensor data on the port.
-    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Release semaphore #")); debug_println((int) *ctx()->read_semaphore); debug_flush();
+    debug_print(ctx()->sensor->info.name); debug_print(F(" >> Release semaphore #")); debug_println((int) *ctx()->read_semaphore); // debug_flush();
     sem_signal(*ctx()->read_semaphore);
 
     //  Do we have new data?
     if (ctx()->msg.count > 0 && ctx()->msg.count != SENSOR_NOT_READY) {
       //  If we have new data, send to Network Task or Display Task. Note: When posting a message, its contents are cloned into the message queue.
-      debug_print(ctx()->msg.name); debug_print(F(" >> Send msg ")); debug_println(ctx()->msg.data[0]); debug_flush();      
+      debug_print(ctx()->msg.name); debug_print(F(" >> Send msg ")); debug_println(ctx()->msg.data[0]); // debug_flush();      
       msg_post_async(ctx()->receive_task_id, ctx()->msg);  //  Note: We use msg_post_async() instead because msg_post() will block if the receiver's queue is full.
     }
     //  Wait a short while before polling the sensor again.
-    debug(ctx()->sensor->info.name, F(" >> Wait interval"));
+    debug_print(ctx()->sensor->info.name); debug_println(F(" >> Wait interval"));
     task_wait(ctx()->sensor->info.poll_interval);
   }
   debug(F("task_close"), NULL);
