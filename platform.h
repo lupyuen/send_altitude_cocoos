@@ -51,6 +51,7 @@
 //  We will fetch real BME280 data for temperature, humidity, altitude via polling.  And send to Sigfox via the Wisol module.
 //  Assume already defined above: USE_TEMP_POLLING_SENSOR, USE_HUMIDITY_SENSOR, USE_ALTITUDE_SENSOR, USE_BME280_SPI, TRANSMIT_SENSOR_DATA
 //  Assume already undefined above: SIMULATE_BME280, SIMULATE_WISOL
+//  Developer may define SIMULATE_BME280 or SIMULATE_WISOL to simulate BME280 or Wisol Sigfox module.
 
 #endif  //  CONFIG_ARTICLE1, CONFIG_ARTICLE2, CONFIG_ARTICLE3, CONFIG_ARTICLE4
 
