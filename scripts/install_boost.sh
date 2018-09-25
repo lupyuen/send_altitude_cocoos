@@ -2,7 +2,7 @@
 ##  Download the Boost libraries into the lib folder and create the "src" links.
 
 ##  This is the version of Boost we will download.  Must sync with install_boost.cmd.
-boost_version=boost-1.68.0
+boost_version=boost-1.67.0
 
 download_boost() {
     ##  Download the Boost library named by $1.
@@ -14,7 +14,7 @@ download_boost() {
     fi
     cd lib/boost_$1
 
-    ##  Erase the existing Boost library just in case.
+    ##  Erase the existing Boost library and the "boost" link just in case.
     if [ -d $1 ]; then
         echo Erasing $PWD/$1...
         rm -rf $1

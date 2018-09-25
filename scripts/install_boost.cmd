@@ -1,7 +1,7 @@
 ::  Download the Boost libraries into the lib folder and create the "src" links.
 
 ::  This is the version of Boost we will download.  Must sync with install_boost.sh.
-set boost_version=boost-1.68.0
+set boost_version=boost-1.67.0
 
 call :download_boost assert
 call :download_boost config
@@ -24,7 +24,7 @@ if not exist lib mkdir lib
 if not exist lib\boost_%1 mkdir lib\boost_%1
 cd lib\boost_%1
 
-:: Erase the existing Boost library just in case.
+:: Erase the existing Boost library and the "boost" link just in case.
 if exist %1 rd /s /q %1
 if exist src\boost del src\boost
 
