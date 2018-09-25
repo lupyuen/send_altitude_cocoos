@@ -4,7 +4,6 @@
 #ifdef ARDUINO
 #include <SoftwareSerial.h>
 #else
-#include <boost_lockfree.hpp>  //  Force boost_lockfree library to be included.
 #include <uartint.h>  //  For UARTInterface
 #endif  //  ARDUINO
 #include <cocoos.h>

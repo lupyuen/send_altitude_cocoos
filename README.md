@@ -46,6 +46,8 @@ Edit `platform.h` and uncomment only ONE of these lines:
                              //  "Juggling STM32 Blue Pill For Arduino Jugglers"
 //  #define CONFIG_ARTICLE4  //  Uncomment to support Article #4: 
                              //  "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
+//  #define CONFIG_ARTICLE5  //  Uncomment to support Article #5: 
+                             //  "Connect STM32 Blue Pill To Sigfox"
 //  (...plus future articles)
 ```
 
@@ -142,8 +144,7 @@ And comment the `uno` line (by inserting `;` in front):
 -----
 ## Enabling I2C Interface on STM32 Blue Pill
 
-To enable the actual STM32 Blue Pill I2C interface to read a real BME280 sensor module (instead of using the BME280 I2C simulator), edit `stm32/i2cint/i2cint.cpp`
-and comment the following line:
+To enable the actual STM32 Blue Pill I2C interface to read a real BME280 sensor module (instead of using the BME280 I2C simulator), edit `platform.h` and comment out the following line:
 
 ```C++
 //  #define SIMULATE_BME280  //  Uncomment to simulate a BME280 sensor connected to I2C Bus.
@@ -156,8 +157,7 @@ Rebuild the project. We support only Blue Pill I2C Port 1: <br>
 -----
 ## Enabling UART Interface on STM32 Blue Pill
 
-To enable the actual STM32 Blue Pill UART interface to transmit via a real Wisol Sigfox transceiver (instead of using the Wisol Sigfox simulator), edit `stm32/uartint/uartint.cpp`
-and comment the following line:
+To enable the actual STM32 Blue Pill UART interface to transmit via a real Wisol Sigfox transceiver (instead of using the Wisol Sigfox simulator), edit `platform.h` and comment out the following line:
 
 ```C++
 //  #define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.

@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>
+#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
+#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+#endif  //  STM32
 #include "display.h"            //  For Display Task and debug functions
 #include "sensor.h"             //  For common sensor declarations
 #include "aggregate.h"          //  For aggregating sensor data before transmission
@@ -43,8 +46,8 @@ int main(void) {
   //  The application starts here. We create the tasks to read and send sensor data 
   //  and start the task scheduler. Note: Arduino's setup() and loop() will not be called since main() is defined.
 
-  enable_debug();  //  Allow display of debug messages. NOTE: This will hang if no debugger is attached.
-  //  disable_debug();  //  Disable display of debug messages.  For use in production.
+  enable_debug();       //  Uncomment to allow display of debug messages in development devices. NOTE: This will hang if no debugger is attached.
+  //  disable_debug();  //  Uncomment to disable display of debug messages.  For use in production devices.
 
   //  Init the platform, cocoOS and create any system objects.
   platform_setup();  //  Arduino or STM32 platform setup.

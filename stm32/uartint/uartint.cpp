@@ -1,10 +1,12 @@
 //  UART Interface for STM32 Blue Pill UART port, with interrupts. Compatible with Arduino's SoftwareSerial.
 //  Based on https://github.com/libopencm3/libopencm3-examples/blob/master/examples/stm32/f1/stm32-maple/usart_irq/usart_irq.c
-
-#define SIMULATE_WISOL //  Uncomment to simulate a Wisol Sigfox module connected to UART.
+#include "../../platform.h"
 #include <string.h>
 #include <bluepill.h>
 #include <logger.h>
+//#ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
+#include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.
+//#endif  //  STM32
 #include "uartint.h"
 
 //  Message limits from https://github.com/lupyuen/send_altitude_cocoos/blob/master/platform.h
@@ -17,7 +19,7 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
-#include <boost/lockfree/spsc_queue.hpp>
+#include <boost/lockfree/spsc_queue.hpp>  //  Located at lib/boost_lockfree/src/boost/lockfree/spsc_queue.hpp
 
 //  Allocate the response queue, a fixed size lockfree circular ringbuffer for receiving data.
 //  UART interrupts may happen anytime, so we need a lockfree way to access the buffer safely.
