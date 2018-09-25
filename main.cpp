@@ -1,4 +1,4 @@
-//  Sample application demonstrating multitasking of multiple IoT sensors and network transmission on Arduino with cocoOS.
+//  Sample application demonstrating multitasking of multiple IoT sensors and network transmission on Arduino Uno and STM32 Blue Pill with cocoOS.
 //  Based on https://github.com/lupyuen/cocoOSExample-arduino
 //  Note: Never use the "new" operator like:
 //    serialPort = new SoftwareSerial(rx, tx);
