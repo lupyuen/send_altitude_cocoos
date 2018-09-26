@@ -7,16 +7,19 @@
 //  #define CONFIG_ARTICLE1  //  Uncomment to support Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
 //  #define CONFIG_ARTICLE2  //  Uncomment to support Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
 //  #define CONFIG_ARTICLE3  //  Uncomment to support Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
-#define CONFIG_ARTICLE4      //  Uncomment to support Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA" https://medium.com/@ly.lee/watch-stm32-blue-pill-juggle-two-spi-sensors-with-dma-20cd1aa89869
+//  #define CONFIG_ARTICLE4  //  Uncomment to support Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA" https://medium.com/@ly.lee/watch-stm32-blue-pill-juggle-two-spi-sensors-with-dma-20cd1aa89869
+#define CONFIG_ARTICLE5      //  Uncomment to support Article #5: "Connect STM32 Blue Pill to Sigfox"
 
-//  Here are all the features that we may enable.  Warning: The features enabled here will add on to the article configuration below.
+//  Here are all the features that we may enable.  Warning: The features enabled in this section may be overridden according to the article configuration below.
 //  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
 #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
-#define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C.
-//  #define USE_SIMULATOR         //  Uncomment to use the Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.
-//  #define USE_HUMIDITY_SENSOR   //  Uncomment to use the polling-based humidity sensor.
-//  #define USE_ALTITUDE_SENSOR   //  Uncomment to use the polling-based altitude sensor.
-//  #define TRANSMIT_SENSOR_DATA  //  Uncomment to transmit sensor data to the IoT network (Sigfox).
+#define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
+#define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
+#define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C. If SIMULATE_BME280 is defined, then USE_BME280_SPI has no effect because the BME280 simulator only works on I2C.
+#define TRANSMIT_SENSOR_DATA      //  Uncomment to transmit sensor data to the IoT network (Sigfox).
+//  #define USE_SIMULATOR         //  Uncomment to use the new Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.  See Article #4.
+//  #define SIMULATE_BME280       //  Uncomment to simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).  See Articles #3, #5.
+//  #define SIMULATE_WISOL        //  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
 //  #define SIMULATED_DATA        //  Uncomment to use hardcoded data. (May not work)
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 
@@ -24,17 +27,31 @@
 //  Configuration for Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
 //  and Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b
 //  and Article #3: "Juggling STM32 Blue Pill For Arduino Jugglers" https://medium.com/coinmonks/juggling-stm32-blue-pill-for-arduino-jugglers-edf6820dc808
-#define USE_TEMP_POLLING_SENSOR  //  Use the old polling-based temperature sensor.
+//  Assume already defined above: TRANSMIT_SENSOR_DATA
 #define USE_HUMIDITY_SENSOR  //  Use the polling-based humidity sensor.
 #define USE_ALTITUDE_SENSOR  //  Use the polling-based altitude sensor.
-#define TRANSMIT_SENSOR_DATA //  Transmit sensor data to the IoT network (Sigfox).
+#define SIMULATE_BME280      //  Simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).
+#define SIMULATE_WISOL       //  Simulate a Wisol Sigfox module connected to UART.
 #undef USE_TEMP_EVENT_SENSOR //  Disable the new event-based temperature sensor.
 #undef USE_BME280_SPI        //  Use I2C instead of SPI port for BME280.
 
-#else   //  Else if the article configuration is not the above, assume we are configuring for the latest article.
-//  Configuration for Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA"
-//  The defaults above are already set for Article #4: USE_TEMP_POLLING_SENSOR, USE_BME280_SPI
-#endif  //  CONFIG_ARTICLE1 || CONFIG_ARTICLE2 || CONFIG_ARTICLE3
+#elif defined(CONFIG_ARTICLE4)
+//  Configuration for Article #4: "Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA" https://medium.com/@ly.lee/watch-stm32-blue-pill-juggle-two-spi-sensors-with-dma-20cd1aa89869
+//  Assume already defined above: USE_TEMP_POLLING_SENSOR, USE_BME280_SPI            
+#undef USE_HUMIDITY_SENSOR        //  Don't use any real or simulated humidity sensor.
+#undef USE_ALTITUDE_SENSOR        //  Don't use any real or simulated altitude sensor.
+#undef TRANSMIT_SENSOR_DATA       //  Don't transmit any real or simulated sensor data to the IoT network (Sigfox).
+
+#else
+//  Else if the article configuration is not the above, assume we are configuring for the latest article.
+//  Configuration for Article #5: "Connect STM32 Blue Pill to Sigfox"
+//  We will connect to a real BME280 at port SPI1 or SPI2, and to a real Wisol Sigfox module at port UART2.
+//  We will fetch real BME280 data for temperature, humidity, altitude via polling.  And send to Sigfox via the Wisol module.
+//  Assume already defined above: USE_TEMP_POLLING_SENSOR, USE_HUMIDITY_SENSOR, USE_ALTITUDE_SENSOR, USE_BME280_SPI, TRANSMIT_SENSOR_DATA
+//  Assume already undefined above: SIMULATE_BME280, SIMULATE_WISOL
+//  Developer may define SIMULATE_BME280 or SIMULATE_WISOL to simulate BME280 or Wisol Sigfox module.
+
+#endif  //  CONFIG_ARTICLE1, CONFIG_ARTICLE2, CONFIG_ARTICLE3, CONFIG_ARTICLE4
 
 #define MAX_SENSOR_COUNT 3             //  Max number of sensors supported.
 #define MAX_PORT_COUNT 4               //  Max number of I/O ports that will be used, e.g. SPI1, I2C1.

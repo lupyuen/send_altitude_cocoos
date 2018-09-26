@@ -43,18 +43,20 @@ static SensorMsg msg;  //  Incoming sensor data message.
 static SensorMsg responseMsg;  //  Pending response message from UART to Wisol.
 static UARTMsg uartMsg;  //  Outgoing UART message containing Wisol command.
 
+//  We define ctx() as a shortcut for fetching the NetworkContext for the Network Task.
+//  We use a macro instead of declaring a variable because the context needs to be refetched
+//  after calling cocoOS functions that may switch the task context, e.g. sem_wait().
+#define ctx() ((NetworkContext *) task_get_data())
+
 void network_task(void) {
   //  Loop forever, receiving sensor data messages and sending to UART Task to transmit to the network.
-  //  Note: Declare task variables here before the task but don't populate them here
-  //  unless they are not supposed to change. 
-  //  Because the coroutine will execute this code repeatedly and repopulate the values.
-  NetworkContext *context;
+  //  Note: Declare task variables here before task_open() but don't populate them here
+  //  unless they are not supposed to change. Because the coroutine will execute this code 
+  //  repeatedly and repopulate the values.
   NetworkCmd *cmd;
   bool shouldSend;
 
-  //  Task Starts Here  ///////////////////////////////////
   task_open();  //  Start of the task. Must be matched with task_close().  
-  context = (NetworkContext *) task_get_data();
   successEvent = event_create();  //  Create event for UART Task to indicate success.
   failureEvent = event_create();  //  Another event to indicate failure.
   createSensorMsg(&msg, BEGIN_SENSOR_NAME);  //  We create a "begin" message and process only upon startup.
@@ -65,89 +67,86 @@ void network_task(void) {
     if (strncmp(msg.name, BEGIN_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) != 0) {
       msg_receive(os_get_running_tid(), &msg);
     }
-    context = (NetworkContext *) task_get_data();  //  Must fetch again after msg_receive().
     //  If this is a UART response message, process the pending response.
     if (strncmp(msg.name, RESPONSE_SENSOR_NAME, MAX_SENSOR_NAME_SIZE) == 0) {
-      processPendingResponse(context);
+      processPendingResponse(ctx());
       continue;
     }
     //  Aggregate the sensor data.  Determine whether we should send to network now.
     cmdList[0] = endOfList;  //  Empty the command list.
-    shouldSend = aggregate_sensor_data(context, &msg, cmdList, MAX_NETWORK_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
-    if (!shouldSend) continue;  //  Should not send now. Loop and wait for next message.
+    shouldSend = aggregate_sensor_data(ctx(), &msg, cmdList, MAX_NETWORK_CMD_LIST_SIZE);  //  Fetch the command list into cmdList.
+    if (!shouldSend) { continue; }  //  If we should not send now: Loop and wait for next message.
 
     //  Use a semaphore to limit sending to only 1 message at a time, because our buffers are shared.
-    debug(F("net >> Wait for net")); ////
+    debug(F("net >> Wait for net"));
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
-    context = (NetworkContext *) task_get_data();  //  Must get context after sem_wait();
-    debug(F("net >> Got net")); ////
+    debug(F("net >> Got net"));
 
     //  Init the context.
-    context->status = true;  //  Assume no error.
-    context->pendingResponse = false;  //  Assume no need to wait for response.
-    context->msg = &msg;  //  Remember the message until it's sent via UART.  
-    context->downlinkData = NULL;  //  No downlink received yet.  
-    context->cmdList = cmdList;  //  Run the command list.
-    context->cmdIndex = 0;  //  Start at first command in command list.
-    context->lastSend = millis() + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
+    ctx()->status = true;            //  Assume no error.
+    ctx()->pendingResponse = false;  //  Assume no need to wait for response.
+    ctx()->msg = &msg;               //  Remember the message until it's sent via UART.  
+    ctx()->downlinkData = NULL;      //  No downlink received yet.  
+    ctx()->cmdList = cmdList;        //  Run the command list.
+    ctx()->cmdIndex = 0;             //  Start at first command in command list.
+    ctx()->lastSend = millis() + MAX_TIMEOUT;  //  Set to a high timeout to prevent other requests from attempting to send.
 
+    ///////////////////////////////////////////////////////////////////////////
+    //  Wisol AT Command List Processing Loop
     for (;;) {  //  Send each Wisol AT command in the list.
-      context = (NetworkContext *) task_get_data();  //  Must get context to be safe.
-      context->lastSend = millis();  //  Update the last send time.
+      ctx()->lastSend = millis();  //  Update the last send time.
 
-      if (context->cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) { break; }  //  Check bounds.
-      cmd = &(context->cmdList[context->cmdIndex]);  //  Fetch the current command.        
-      if (cmd->sendData == NULL) { break; }  //  No more commands to send.
+      if (ctx()->cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) { break; }  //  Check that we don't exceed the array bounds.
+      cmd = &(ctx()->cmdList[ctx()->cmdIndex]);  //  Fetch the current command.        
+      if (cmd->sendData == NULL) { break; }      //  If no more commands to send, stop.
 
       //  Convert Wisol command to UART command.
-      convertCmdToUART(cmd, context, &uartMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
-      context->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
-      context->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
+      convertCmdToUART(cmd, ctx(), &uartMsg, successEvent, failureEvent, &responseMsg, os_get_running_tid());
+      ctx()->lastSend = millis() + uartMsg.timeout;  //  Estimate last send time for the next command.
+      ctx()->pendingProcessFunc = cmd->processFunc;  //  Call this function to process response later.
 
-      //  Send the UART command thru the UART Task.
+      //  Transmit the UART command to the UART port by sending to the UART Task.
       //  msg_post() is a synchronised send - it waits for the queue to be available before sending.
-      msg_post(context->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
-      context = (NetworkContext *) task_get_data();  //  Must get context in case msg_post(blocks)
+      msg_post(ctx()->uartTaskID, uartMsg);  //  Send the message to the UART task for transmission.
 
-      //  For sending payload: Break out of the loop and release the semaphore lock. 
-      //  This allows other tasks to run.
-      if (uartMsg.responseMsg != NULL) {
-        context->pendingResponse = true;
-        break;
-       }
-      //  Wait for success or failure then process the response.
+      //  When sending the last step of Sigfox message payload: Break out of the loop and release the semaphore lock. 
+      if (uartMsg.responseMsg != NULL) { //  This is the last command in the list and it will take some time.  Instead of waiting for
+        ctx()->pendingResponse = true;   //  UART Task to signal us via an Event, we let UART Task signal us via a Message instead.
+        break;                           //  By releasing the semaphore we allow other tasks to run and improve the multitasking.
+      }
+      //  Wait for success or failure event then process the response.
       event_wait_multiple(0, successEvent, failureEvent);  //  0 means wait for any event.
-      context = (NetworkContext *) task_get_data();  //  Must get context after event_wait_multiple().
-      processResponse(context);  //  Process the response by calling the response function.
-      if (context->status == false) break;  //  Quit if the processing failed.
+      processResponse(ctx());  //  Process the response by calling the response function.
+      if (ctx()->status == false) { break; }  //  Quit if the processing failed.
 
-      //  Command was successful. Move to next command.
-      context->cmdIndex++;  //  Next Wisol command.
+      //  Command was transmitted successfully. Move to next command.
+      ctx()->cmdIndex++;  //  Next Wisol command.
     }  //  Loop to next Wisol command.
     //  All Wisol AT commands sent for the step.
 
+    ///////////////////////////////////////////////////////////////////////////
+    //  Wisol AT Command List Completed Processing
     //  Clean up the context and release the semaphore.
-    msg.name[0] = 0;  //  Erase the "begin" sensor name.
-    context->msg = NULL;  //  Erase the message.
-    context->cmdList = NULL;  //  Erase the command list.
+    msg.name[0] = 0;        //  Erase the "begin" sensor name.
+    ctx()->msg = NULL;      //  Erase the message.
+    ctx()->cmdList = NULL;  //  Erase the command list.
 
     //  Release the semaphore and allow another payload to be sent after SEND_INTERVAL.
-    debug(F("net >> Release net")); ////
+    debug(F("net >> Release net"));
     sem_signal(sendSemaphore);
-    context = (NetworkContext *) task_get_data();  //  Must get context after sem_signal();
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
 }
 
 static void processPendingResponse(NetworkContext *context) {
   //  If there is a pending response, e.g. from send payload...
-  debug(F("net >> Pending response")); ////
+  debug(F("net >> Pending response"));
   if (!context->pendingResponse) {
     debug(F("***** Error: No pending response"));
     return;
   }
   context->pendingResponse = false;
-  processResponse(context);  //  Process the response by calling the response function.
+  processResponse(context);      //  Process the response by calling the response function.
   context->lastSend = millis();  //  Update the last send time.
   //  Process the downlink message, if any. This is located outside the semaphore lock for performance.
   if (context->downlinkData) {
@@ -195,30 +194,30 @@ void sendTestSensorMsg() {
 ///////////////////////////////////////////////////////////////////////////////
 //  Define the Wisol AT Commands based on WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf
 
-#define CMD_NONE "AT"  //  Empty placeholder command.
+#define CMD_NONE "AT"                     //  Empty placeholder command.
 #define CMD_OUTPUT_POWER_MAX "ATS302=15"  //  For RCZ1: Set output power to maximum power level.
-#define CMD_GET_CHANNEL "AT$GI?"  //  For RCZ2, 4: Get current and next TX macro channel usage.  Returns X,Y.
-#define CMD_RESET_CHANNEL "AT$RC"  //  For RCZ2, 4: Reset default channel. Send this command if CMD_GET_CHANNEL returns X=0 or Y<3.
-#define CMD_SEND_MESSAGE "AT$SF="  //  Prefix to send a message to Sigfox.
-#define CMD_SEND_MESSAGE_RESPONSE ",1"  //  Append to payload if downlink response from Sigfox is needed.
-#define CMD_GET_ID "AT$I=10"  //  Get Sigfox device ID.
-#define CMD_GET_PAC "AT$I=11"  //  Get Sigfox device PAC, used for registering the device.
-#define CMD_EMULATOR_DISABLE "ATS410=0"  //  Device will only talk to Sigfox network.
-#define CMD_EMULATOR_ENABLE "ATS410=1"  //  Device will only talk to SNEK emulator.
+#define CMD_GET_CHANNEL "AT$GI?"          //  For RCZ2, 4: Get current and next TX macro channel usage.  Returns X,Y.
+#define CMD_RESET_CHANNEL "AT$RC"         //  For RCZ2, 4: Reset default channel. Send this command if CMD_GET_CHANNEL returns X=0 or Y<3.
+#define CMD_SEND_MESSAGE "AT$SF="         //  Prefix to send a message to Sigfox.
+#define CMD_SEND_MESSAGE_RESPONSE ",1"    //  Append to payload if downlink response from Sigfox is needed.
+#define CMD_GET_ID "AT$I=10"              //  Get Sigfox device ID.
+#define CMD_GET_PAC "AT$I=11"             //  Get Sigfox device PAC, used for registering the device.
+#define CMD_EMULATOR_DISABLE "ATS410=0"   //  Device will only talk to Sigfox network.
+#define CMD_EMULATOR_ENABLE "ATS410=1"    //  Device will only talk to SNEK emulator.
 
 #ifdef NOTUSED  //  For future use.
 #define CMD_GET_TEMPERATURE "AT$T?"  //  Get the module temperature.
-#define CMD_GET_VOLTAGE "AT$V?"  //  Get the module voltage.
+#define CMD_GET_VOLTAGE "AT$V?"      //  Get the module voltage.
 
-#define CMD_RESET "AT$P=0"  //  Software reset.
-#define CMD_SLEEP "AT$P=1"  //  Switch to sleep mode : consumption is < 1.5uA
+#define CMD_RESET "AT$P=0"   //  Software reset.
+#define CMD_SLEEP "AT$P=1"   //  Switch to sleep mode : consumption is < 1.5uA
 #define CMD_WAKEUP "AT$P=0"  //  Switch back to normal mode : consumption is 0.5 mA
 
 #define CMD_RCZ1 "AT$IF=868130000"  //  Set EU / RCZ1 Frequency.
 #define CMD_RCZ2 "AT$IF=902200000"  //  Set US / RCZ2 Frequency.
 #define CMD_RCZ3 "AT$IF=902080000"  //  Set JP / RCZ3 Frequency.
 #define CMD_RCZ4 "AT$IF=920800000"  //  Set RCZ4 Frequency.
-#define CMD_MODULATION_ON "AT$CB=-1,1"  //  Modulation wave on.
+#define CMD_MODULATION_ON "AT$CB=-1,1"   //  Modulation wave on.
 #define CMD_MODULATION_OFF "AT$CB=-1,0"  //  Modulation wave off.
 #endif
 
@@ -237,13 +236,12 @@ void getStepBegin(
   NetworkContext *context,
   NetworkCmd list[],
   int listSize) {
-  //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.
-  //  debug(F(" - wisol.getStepBegin")); ////
+  //  Return the list of Wisol AT commands for the Begin Step, to start up the Wisol module.  //  debug(F(" - wisol.getStepBegin"));
   addCmd(list, listSize, {
     //  Set emulation mode.
-    context->useEmulator  //  If emulator mode,
+    context->useEmulator        //  If emulator mode,
       ? F(CMD_EMULATOR_ENABLE)  //  Device will only talk to SNEK emulator.
-      : F(CMD_EMULATOR_DISABLE),  //  Else device will only talk to Sigfox network.
+      : F(CMD_EMULATOR_DISABLE),//  Else device will only talk to Sigfox network.
     1, NULL, NULL, NULL });
   //  Get Sigfox device ID and PAC.
   addCmd(list, listSize, { F(CMD_GET_ID), 1, getID, NULL, NULL });
@@ -261,8 +259,7 @@ void getStepSend(
   //  We prefix with AT$SF= and send to the transceiver.  If enableDownlink is true, we append the
   //  CMD_SEND_MESSAGE_RESPONSE command to indicate that we expect a downlink repsonse.
   //  The downlink response message from Sigfox will be returned in the response parameter.
-  //  Warning: This may take up to 1 min to run.
-  //  debug(F(" - wisol.getStepSend")); ////
+  //  Warning: This may take up to 1 min to run.  //  debug(F(" - wisol.getStepSend"));
   //  Set the output power for the zone.
   getStepPowerChannel(context, list, listSize);
 
@@ -283,8 +280,7 @@ void getStepSend(
 
 static void getStepPowerChannel(NetworkContext *context, NetworkCmd list[], int listSize) {
   //  Return the Wisol AT commands to set the transceiver output power and channel for the zone.
-  //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html
-  //  debug(F(" - wisol.getStepPowerChannel")); ////
+  //  See WISOLUserManual_EVBSFM10RxAT_Rev.9_180115.pdf, http://kochingchang.blogspot.com/2018/06/minisigfox.html  //  debug(F(" - wisol.getStepPowerChannel"));
   switch(context->zone) {
     case RCZ1:
     case RCZ3:
@@ -341,8 +337,7 @@ bool checkChannel(NetworkContext *context, const char *response) {
   //  Y: number of micro channel available for next TX request in current macro channel.
 
   //  If X=0 or Y<3, send CMD_RESET_CHANNEL to reset the device on the default Sigfox macro channel.
-  //  Note: Don't use with a duty cycle less than 20 seconds.
-  //  debug(F("checkChannel: "), response);
+  //  Note: Don't use with a duty cycle less than 20 seconds.  //  debug(F("checkChannel: "), response);
   if (strlen(response) < 3) {  //  If too short, return error.
     debug(F("***** wisol.checkChannel Error: Unknown response "), response);
     return false;  //  Failure
@@ -351,8 +346,7 @@ bool checkChannel(NetworkContext *context, const char *response) {
   int x = response[0] - '0';
   int y = response[2] - '0';
   if (x != 0 && y >= 3) {
-    //  No need to reset channel. We change CMD_RESET_CHANNEL to CMD_NONE.
-    //  debug(F(" - wisol.checkChannel: Continue channel"));
+    //  No need to reset channel. We change CMD_RESET_CHANNEL to CMD_NONE.  //  debug(F(" - wisol.checkChannel: Continue channel"));
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) {
@@ -365,20 +359,19 @@ bool checkChannel(NetworkContext *context, const char *response) {
     }
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
   } else {
-    //  Continue to send CMD_RESET_CHANNEL
-    //  debug(F(" - wisol.checkChannel: Reset channel"));
+    //  Continue to send CMD_RESET_CHANNEL  //  debug(F(" - wisol.checkChannel: Reset channel"));
   }
   return true;  //  Success
 }
 
-/* Downlink Server Support: https://backend.sigfox.com/apidocs/callback
-When a message needs to be acknowledged, the callback selected for the downlink data must 
-send data in the response. It must contain the 8 bytes data that will be sent to the device 
-asking for acknowledgment. The data is json formatted, and must be structured as the following :
-  {"YOUR_DEVICE_ID" : { "downlinkData" : "deadbeefcafebabe"}}    
-With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecimal format, up to 8 digits. 
-The downlink data must be 8 bytes in hexadecimal format.  For example:
-  {"002C2EA1" : { "downlinkData" : "0102030405060708"}} */
+// Downlink Server Support: https://backend.sigfox.com/apidocs/callback
+// When a message needs to be acknowledged, the callback selected for the downlink data must 
+// send data in the response. It must contain the 8 bytes data that will be sent to the device 
+// asking for acknowledgment. The data is json formatted, and must be structured as the following :
+//   {"YOUR_DEVICE_ID" : { "downlinkData" : "deadbeefcafebabe"}}    
+// With YOUR_DEVICE_ID being replaced by the corresponding device id, in hexadecimal format, up to 8 digits. 
+// The downlink data must be 8 bytes in hexadecimal format.  For example:
+//   {"002C2EA1" : { "downlinkData" : "0102030405060708"}}
 
 bool getDownlink(NetworkContext *context, const char *response0) {
   //  Extract the downlink message and write into the context response.
@@ -386,8 +379,7 @@ bool getDownlink(NetworkContext *context, const char *response0) {
   //  or a timeout error after 1 min e.g. "ERR_SFX_ERR_SEND_FRAME_WAIT_TIMEOUT"
 
   //  Get a writeable response pointer in the uartContext.
-  char *response = context->uartContext->response;
-  // debug(F(" - wisol.getDownlink: "), response); ////
+  char *response = context->uartContext->response;  // debug(F(" - wisol.getDownlink: "), response);
 
   //  Check the original response.
   //  If Successful response: OK\nRX=01 23 45 67 89 AB CD EF
@@ -487,8 +479,7 @@ static void convertCmdToUART(
   }
   //  Terminate the command with "\r".
   strncat(uartData, CMD_END, MAX_UART_SEND_MSG_SIZE - strlen(uartData));
-  uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.
-  //  debug(F("uartData="), uartData);  ////
+  uartData[MAX_UART_SEND_MSG_SIZE] = 0;  //  Terminate the UART data in case of overflow.  //  debug(F("uartData="), uartData);
   //  Check total msg length.
   if (strlen(uartData) >= MAX_UART_SEND_MSG_SIZE - 1) {
     debug_print(F("***** Error: uartData overflow - ")); debug_print(strlen(uartData));
@@ -507,9 +498,8 @@ void setup_wisol(
   Country country0, 
   bool useEmulator0) {
   //  Init the Wisol context.
-
-  const int maxCount = 10;  //  Allow up to 10 tasks to queue for access to the I2C Bus.
-  const int initValue = 1;  //  Allow only 1 concurrent access to the I2C Bus.
+  const int maxCount = 10;  //  Allow up to 10 tasks to queue for aggregating and sending sensor data.
+  const int initValue = 1;  //  Allow only 1 concurrent task for aggregating and sending sensor data.
   sendSemaphore = sem_counting_create( maxCount, initValue );
 
   context->uartContext = uartContext;
@@ -519,7 +509,7 @@ void setup_wisol(
   context->stepBeginFunc = getStepBegin;
   context->stepSendFunc = getStepSend;
   context->device[0] = 0;  //  Clear the device ID.
-  context->pac[0] = 0;  //  Clear the PAC code.
+  context->pac[0] = 0;     //  Clear the PAC code.
   context->zone = context->country & RCZ_MASK;  //  Extract the zone from country node.
   context->lastSend = millis() + SEND_INTERVAL + SEND_INTERVAL;  //  Init the last send time to a high number so that sensor data will wait for Begin Step to complete.
   context->pendingResponse = false;

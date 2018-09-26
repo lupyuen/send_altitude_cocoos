@@ -2,18 +2,18 @@
 #ifndef SIGFOX_H_
 #define SIGFOX_H_
 
-#define MAX_DEVICE_ID_SIZE 8  //  Max number of chars in Sigfox device ID.
+#define MAX_DEVICE_ID_SIZE 8     //  Max number of chars in Sigfox device ID.
 #define MAX_DEVICE_CODE_SIZE 16  //  Max number of chars in Sigfox PAC code.
-#define MAX_MESSAGE_SIZE 12  //  Sigfox supports up to 12 bytes per message.
+#define MAX_MESSAGE_SIZE 12      //  Sigfox supports up to 12 bytes per message.
 #define SEND_DELAY ((unsigned long) 10 * 60 * 1000)  //  According to regulation, messages should be sent only every 10 minutes.
 
 //  Define multiple timeouts for better multitasking.  Uplink to network is slower than normal
 //  commands.  Downlink is slowest, up to 1 minute.
 //  COMMAND_TIMEOUT < UPLINK_TIMEOUT < DOWNLINK_TIMEOUT
-#define COMMAND_TIMEOUT ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
-#define UPLINK_TIMEOUT ((unsigned long) 20 * 1000)  //  Wait up to 20 seconds for uplink command response from Sigfox module.
+#define COMMAND_TIMEOUT  ((unsigned long) 10 * 1000)  //  Wait up to 10 seconds for simple command response from Sigfox module.
+#define UPLINK_TIMEOUT   ((unsigned long) 20 * 1000)  //  Wait up to 20 seconds for uplink command response from Sigfox module.
 #define DOWNLINK_TIMEOUT ((unsigned long) 60 * 1000)  //  Wait up to 60 seconds for downlink command response from Sigfox module.
-#define MAX_TIMEOUT DOWNLINK_TIMEOUT  //  Maximum possible timeout.
+#define MAX_TIMEOUT      DOWNLINK_TIMEOUT             //  Maximum possible timeout.
 
 //  Define the countries (ISO ALPHA-2 country code) and frequencies that are supported.
 //  Based on https://www.sigfox.com/en/coverage, https://www.st.com/content/ccc/resource/technical/document/user_manual/group0/8d/9a/ea/d7/62/06/43/ce/DM00361540/files/DM00361540.pdf/jcr:content/translations/en.DM00361540.pdf
