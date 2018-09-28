@@ -3,7 +3,6 @@
 # To compile the project under PlatformIO in Visual Studio Code, 
 # the source files should be symbolically linked into the folder "src"
 mkdir lib
-ln -s lib libraries
 mkdir src
 cd src
 ln -s ../*.ino ../*.cpp ../*.h .
