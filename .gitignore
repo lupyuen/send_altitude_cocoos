@@ -15,4 +15,4 @@ output.map
 .vscode/*.sql
 cmake-build-debug
 lib/bluepill-micropython/src/py/*
-lib/bluepill-micropython/src/argcheck.c
+lib/bluepill-micropython/src/*.c
