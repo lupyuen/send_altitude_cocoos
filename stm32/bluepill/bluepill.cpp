@@ -61,3 +61,11 @@ uint8_t convert_port_to_pin(uint32_t port_id) {
 	}
 	return 0;  //  Invalid port.
 }
+
+////////////////////////////////////////////////////////////////////
+//  TODO: MicroPython
+
+#include <py/compile.h>
+#include <py/runtime.h>
+#include <py/repl.h>
+#include <py/mperrno.h>

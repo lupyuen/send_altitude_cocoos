@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "../stm32f103c8t6"
+		},
+		{
+			"path": "C:/bluepill-micropython"
 		}
 	],
 	"settings": {
