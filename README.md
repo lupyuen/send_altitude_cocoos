@@ -14,6 +14,9 @@ Read the tutorials:
 - Part 4: _Watch STM32 Blue Pill Juggle Two SPI Sensors With DMA_<br>
     https://medium.com/@ly.lee/watch-stm32-blue-pill-juggle-two-spi-sensors-with-dma-20cd1aa89869
 
+- Part 5: _Connect STM32 Blue Pill To Sigfox_ <br>
+    https://medium.com/@ly.lee/connect-stm32-blue-pill-to-sigfox-28c6f91bddc1
+
 The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio Code with the PlatformIO extension installed. You'll need to install the following libraries:
 
 - `cocoOS_5.0.3`: Download from http://www.cocoos.net/download.html. <br>
