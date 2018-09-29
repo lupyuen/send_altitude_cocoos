@@ -2,7 +2,7 @@ send_altitude_cocoos
 src/*
 lib/cocoOS_*/*
 lib/boost_*/src/boost
-lib/bluepill-micropython/src/*
+lib/bluepill-micropython/*
 output.map
 .DS_Store
 .idea
