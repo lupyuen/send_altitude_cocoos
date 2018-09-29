@@ -7,6 +7,8 @@
 //  Debugging is off by default.  Developer must switch it on with enable_debug().
 static bool debugEnabled = false;
 
+extern "C" int micropython_main(int argc, char **argv);  ////  TODO: MicroPython
+
 void platform_setup(void) {
     //  Initialise the STM32 platform. At startup, the onboard LED will blink on-off-on-off-on and stays on.
 	//  If LED blinks on-off-on-off and stays off, then debug mode is enabled and no debugger is connected.
@@ -21,6 +23,7 @@ void platform_setup(void) {
   		debug_println("----platform_setup");
 		led_on();
 	}
+	micropython_main(0, NULL); for(;;) {} ////  TODO: MicroPython
 }
 
 void enable_debug(void) {
@@ -61,11 +64,3 @@ uint8_t convert_port_to_pin(uint32_t port_id) {
 	}
 	return 0;  //  Invalid port.
 }
-
-////////////////////////////////////////////////////////////////////
-//  TODO: MicroPython
-
-#include <py/compile.h>
-#include <py/runtime.h>
-#include <py/repl.h>
-#include <py/mperrno.h>
