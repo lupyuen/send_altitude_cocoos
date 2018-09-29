@@ -328,6 +328,8 @@ Q(count)
 
 Q(count)
 
+Q(default)
+
 Q(dict)
 
 Q(dict)
@@ -347,6 +349,10 @@ Q(eval)
 Q(exec)
 
 Q(extend)
+
+Q(filter)
+
+Q(filter)
 
 Q(find)
 
@@ -387,10 +393,6 @@ Q(globals)
 Q(hasattr)
 
 Q(hash)
-
-Q(heap_lock)
-
-Q(heap_unlock)
 
 Q(hex)
 
@@ -438,6 +440,8 @@ Q(join)
 
 Q(key)
 
+Q(key)
+
 Q(keys)
 
 Q(keys)
@@ -462,11 +466,15 @@ Q(map)
 
 Q(map)
 
-Q(micropython)
+Q(max)
 
 Q(micropython)
 
 Q(micropython)
+
+Q(micropython)
+
+Q(min)
 
 Q(module)
 

@@ -12,6 +12,7 @@ mkdir -p $src
 cd $src
 
 ##  Link the ports/bluepill files into lib/bluepill-micropython/src.
+src_ports=$src\..\ports\bluepill
 cd $src
 pwd; echo "ln -s ../ports/bluepill/* ."
 ln -s ../ports/bluepill/* .
