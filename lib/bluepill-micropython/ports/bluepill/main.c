@@ -31,7 +31,7 @@ static char *stack_top;
 static char heap[2048];
 #endif
 
-int main(int argc, char **argv) {
+int micropython_main(int argc, char **argv) {
     int stack_dummy;
     stack_top = (char*)&stack_dummy;
 
@@ -39,6 +39,11 @@ int main(int argc, char **argv) {
     gc_init(heap, heap + sizeof(heap));
     #endif
     mp_init();
+
+    do_str("print('hello world!', list(x+1 for x in range(10)), end='eol\\n')", MP_PARSE_SINGLE_INPUT);
+    do_str("for i in range(10):\n  print(i)", MP_PARSE_FILE_INPUT);
+
+#ifdef NOTUSED  //  We don't allow REPL.
     #if MICROPY_ENABLE_COMPILER
     #if MICROPY_REPL_EVENT_DRIVEN
     pyexec_event_repl_init();
@@ -56,6 +61,8 @@ int main(int argc, char **argv) {
     #else
     pyexec_frozen_module("frozentest.py");
     #endif
+#endif  //  NOTUSED
+
     mp_deinit();
     return 0;
 }
@@ -83,6 +90,7 @@ mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 
+#ifdef NOTUSED  //  Moved to bluepill-micropython.cpp
 void nlr_jump_fail(void *val) {
     while (1);
 }
@@ -97,6 +105,7 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     __fatal_error("Assertion failed");
 }
 #endif
+#endif  //  NOTUSED
 
 #if MICROPY_MIN_USE_CORTEX_CPU
 
