@@ -6,6 +6,9 @@
     },
     "description": "Subset of MicroPython for BluePill.  srcFilter is based on PY_CORE_O_BASENAME in py/py.mk",
     "build": {        
+        "flags": [
+            "-I ports/bluepill"
+        ],
         "srcFilter": [
             "+<ports/bluepill/*.c>",
             "+<ports/bluepill/*.cpp>",
