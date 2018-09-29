@@ -9,7 +9,7 @@
 #ifdef STM32                    //  If we are compiling for STM32 Blue Pill...
 #include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.  Mandatory.
 #include <uartint.h>            //  For UARTInterface
-#include <bluepill-micropython.h> //  TODO: MicroPython
+#include <ports/bluepill/micropython.h> //  TODO: MicroPython
 
 ////////////////////////////////////////////////////////////////////
 //  TODO: MicroPython

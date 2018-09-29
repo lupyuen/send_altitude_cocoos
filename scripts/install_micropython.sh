@@ -39,7 +39,7 @@ link_folder() {
 
 ##  Handle each folder.
 link_folder py
-##link_folder extmod
-##link_folder drivers/bus
+link_folder extmod
+link_folder drivers/bus
 
 ##  Done
