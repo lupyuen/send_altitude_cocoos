@@ -2,7 +2,7 @@ send_altitude_cocoos
 src/*
 lib/cocoOS_*/*
 lib/boost_*/src/boost
-libraries
+lib/bluepill-micropython/src/*
 output.map
 .DS_Store
 .idea
@@ -14,7 +14,3 @@ output.map
 .vscode/launch.json
 .vscode/*.sql
 cmake-build-debug
-lib/bluepill-micropython/src/*.c
-lib/bluepill-micropython/src/extmod/*.h
-lib/bluepill-micropython/src/py/*.h
-lib/bluepill-micropython/src/drivers/bus/*.h
