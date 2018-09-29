@@ -1,5 +1,6 @@
 {
     "name": "BluePill-MicroPython",
+    "frameworks": "libopencm3",
     "repository": {
         "type": "git",
         "url": "https://github.com/lupyuen/bluepill-micropython"
