@@ -43,6 +43,7 @@ mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 
+/* Moved to bluepill-micropython.cpp
 void nlr_jump_fail(void *val) {
     while (1);
 }
@@ -57,6 +58,7 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     __fatal_error("Assertion failed");
 }
 #endif
+*/
 
 /*
 int _lseek() {return 0;}
