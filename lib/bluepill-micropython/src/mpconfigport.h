@@ -1,3 +1,5 @@
+#include <bluepill-micropython.h> ////  TODO: MicroPython
+
 #include <stdint.h>
 
 // options to control how MicroPython is built
