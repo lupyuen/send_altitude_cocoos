@@ -9,13 +9,17 @@ cd src
 mpy=../../../../bluepill-micropython
 dir=py
 
-## ln -s $mpy/$dir/*.c .
+##  Link the ports/bluepill files into lib/bluepill-micropython/src.
+ln -s ../ports/bluepill/* .
 
+##  Link the bluepill-micropython/py/*.c files into lib/bluepill-micropython/src.
+ln -s $mpy/$dir/*.c .
+
+##  Link the bluepill-micropython/py/*.h files into lib/bluepill-micropython/src/py.
 mkdir $dir
 cd $dir
-
-ls -l ../$mpy/$dir/*.h
 ln -s ../$mpy/$dir/*.h .
-
 cd ..
+
+##  Done.
 cd ../../..

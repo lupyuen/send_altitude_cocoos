@@ -14,6 +14,12 @@
 		},
 		{
 			"path": "C:/bluepill-micropython"
+		},
+		{
+			"path": "/Users/Luppy/bluepill-micropython"
+		},
+		{
+			"path": "/private/tmp/mp"
 		}
 	],
 	"settings": {

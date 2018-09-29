@@ -1,1 +1,1 @@
-// qstrs specific to this port
+../ports/bluepill/qstrdefsport.h
