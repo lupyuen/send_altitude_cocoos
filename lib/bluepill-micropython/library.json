@@ -14,6 +14,7 @@
             "+<ports/bluepill/*.c>",
             "+<ports/bluepill/*.cpp>",
             "+<ports/bluepill/*.h>",
+            "+<ports/bluepill/genhdr/*.h>",
             "+<py/mpstate.*>",
             "+<py/nlr.*>",
             "+<py/nlrx86.*>",
