@@ -15,6 +15,14 @@ cd %src%
 echo %CD%
 FOR %%f IN (%src_ports%\*.*) DO mklink %%~nf%%~xf %src_ports%\%%~nf%%~xf
 
+::  Link the ports\bluepill\genhdr files into lib\bluepill-micropython\src\genhdr.
+set src_genhdr=%src%\genhdr
+set ports_genhdr=%src%\..\ports\bluepill\genhdr
+mkdir %src_genhdr%
+cd %src_genhdr%
+echo %CD%
+FOR %%f IN (%ports_genhdr%\*.*) DO mklink %%~nf%%~xf %ports_genhdr%\%%~nf%%~xf
+
 ::  Handle each folder.
 call :link_folder py
 call :link_folder extmod
