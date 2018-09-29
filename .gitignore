@@ -14,5 +14,6 @@ output.map
 .vscode/launch.json
 .vscode/*.sql
 cmake-build-debug
-lib/bluepill-micropython/src/py/*
 lib/bluepill-micropython/src/*.c
+lib/bluepill-micropython/src/extmod/*.h
+lib/bluepill-micropython/src/py/*.h
