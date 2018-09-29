@@ -1,5 +1,3 @@
-#include "ports/bluepill/micropython.h"  ////  TODO: Blue Pill
-
 #include <stdint.h>
 
 // options to control how MicroPython is built
