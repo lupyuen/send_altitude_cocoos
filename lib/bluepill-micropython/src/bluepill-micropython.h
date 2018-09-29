@@ -1,2 +1,2 @@
 //  TODO
-#define NO_QSTR
+//  #define NO_QSTR
