@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Set up the symbolic links for source files and for cocoOS config file.
 
 # To compile the project under PlatformIO in Visual Studio Code, 
