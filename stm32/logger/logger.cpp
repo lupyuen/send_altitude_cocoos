@@ -67,7 +67,7 @@ static int semihost_write(uint32_t fh, const unsigned char *buffer, unsigned int
     return __semihost(SYS_WRITE, args);
 }
 
-static void debug_append(const char *buffer, unsigned int length) {
+void debug_append(const char *buffer, unsigned int length) {
     //  Append "length" number of bytes from "buffer" to the debug buffer.
     const int debugBufferLength = strlen(debugBuffer);
     //  If can't fit into buffer, just send to the debugger log now.

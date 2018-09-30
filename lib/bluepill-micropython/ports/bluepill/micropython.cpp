@@ -26,3 +26,17 @@ extern "C" void MP_WEAK __assert_func(const char *file, int line, const char *fu
     debug_println(""); debug_flush();
     __fatal_error("Assertion failed");
 }
+
+////////////////////////////////////////////////////////////////////////
+//  Console I/O Functions
+
+//  Receive single character
+extern "C" int mp_hal_stdin_rx_chr(void) {
+    return -1;  //  Not supported.
+}
+
+//  Send string of given length
+extern "C" void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
+    debug_append(str, len);
+    debug_flush();
+}
