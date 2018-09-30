@@ -38,5 +38,9 @@ extern "C" int mp_hal_stdin_rx_chr(void) {
 //  Send string of given length
 extern "C" void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
     debug_append(str, len);
-    debug_flush();
+    debug_flush();  ////  TODO
+}
+
+extern "C" void mp_hal_stdout_tx_strn_cooked(const char *str, size_t len) {
+    mp_hal_stdout_tx_strn_cooked(str, len);
 }

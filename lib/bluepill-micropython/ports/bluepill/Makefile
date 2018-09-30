@@ -1,6 +1,8 @@
 include ../../py/mkenv.mk
 
-CROSS = 0
+# Must use cross-compilation or build will fail.
+CROSS = 1
+####CROSS = 0
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
