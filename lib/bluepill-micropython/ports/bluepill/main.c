@@ -9,6 +9,10 @@
 #include "py/mperrno.h"
 #include "lib/utils/pyexec.h"
 
+mp_lexer_t *mp_lexer_new_from_file(const char *filename);
+mp_import_stat_t mp_import_stat(const char *path);
+mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs);
+
 #if MICROPY_ENABLE_COMPILER
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
     nlr_buf_t nlr;
