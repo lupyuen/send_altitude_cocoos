@@ -93,7 +93,6 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 ////////////////////////////////////////////////////////////////////////
 //  Skip system functions
 
-/*
 int _lseek() {return 0;}
 int _read() {return 0;}
 int _write() {return 0;}
@@ -104,7 +103,6 @@ int _kill() {return 0;}
 int _getpid() {return 0;}
 int _fstat() {return 0;}
 int _isatty() {return 0;}
-*/
 
 ////  TODO
 void *malloc(size_t n) {return NULL;}
@@ -129,7 +127,7 @@ int vsnprintf(char *str,  size_t  size,  const  char  *format, va_list ap) {retu
 int putchar(int c) {return 0;}
 int puts(const char *s) {return 0;}
 
-void _start(void) {main(0, NULL);}
+//// void _start(void) {main(0, NULL);}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -148,7 +146,6 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     __fatal_error("Assertion failed");
 }
 #endif
-#endif  //  NOTUSED
 
 #if MICROPY_MIN_USE_CORTEX_CPU
 
@@ -217,7 +214,7 @@ void _start(void) {
     }
 }
 
-#endif
+#endif  //  MICROPY_MIN_USE_CORTEX_CPU
 
 #if MICROPY_MIN_USE_STM32_MCU
 
@@ -307,4 +304,6 @@ void stm32_init(void) {
     USART1->CR1 = 0x0000200c; // USART enable, tx enable, rx enable
 }
 
-#endif
+#endif  //  MICROPY_MIN_USE_STM32_MCU
+
+#endif  //  NOTUSED

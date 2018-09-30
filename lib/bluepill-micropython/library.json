@@ -8,7 +8,7 @@
     "description": "Subset of MicroPython for STM32 Blue Pill.  srcFilter is based on PY_CORE_O_BASENAME in py/py.mk",
     "build": {        
         "flags": [
-            "-I ports/bluepill"
+            "-I ports/bluepill -Wall -Werror -std=c99  -Os -DTODO_NDEBUG -fdata-sections -ffunction-sections -c -MD"
         ],
         "srcFilter": [
             "+<ports/bluepill/*.c>",
