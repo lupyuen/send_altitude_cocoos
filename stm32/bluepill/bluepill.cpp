@@ -65,6 +65,7 @@ uint8_t convert_port_to_pin(uint32_t port_id) {
 	return 0;  //  Invalid port.
 }
 
+#ifdef NOTUSED
 //  Force the linker not to link in the RCC clock functions that Blue Pill doesn't use.  Doing this will save 1KB in ROM space.
 extern "C" void rcc_clock_setup_in_hse_12mhz_out_72mhz(void) { rcc_clock_setup_in_hse_8mhz_out_72mhz(); }
 extern "C" void rcc_clock_setup_in_hse_16mhz_out_72mhz(void) { rcc_clock_setup_in_hse_8mhz_out_72mhz(); }
@@ -73,3 +74,4 @@ extern "C" void rcc_clock_setup_in_hse_8mhz_out_24mhz(void) { rcc_clock_setup_in
 extern "C" void rcc_clock_setup_in_hsi_out_24mhz(void) { rcc_clock_setup_in_hse_8mhz_out_72mhz(); }
 extern "C" void rcc_clock_setup_in_hsi_out_48mhz(void) { rcc_clock_setup_in_hse_8mhz_out_72mhz(); }
 extern "C" void rcc_clock_setup_in_hsi_out_64mhz(void) { rcc_clock_setup_in_hse_8mhz_out_72mhz(); }
+#endif  //  NOTUSED

@@ -20,6 +20,9 @@
 		},
 		{
 			"path": "/private/tmp/mp"
+		},
+		{
+			"path": "/Users/Luppy/newlib"
 		}
 	],
 	"settings": {

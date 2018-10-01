@@ -11,8 +11,8 @@
             "-I ports/bluepill -Wall -Werror -std=c99  -Os -DNDEBUG -fdata-sections -ffunction-sections -c -MD"
         ],
         "srcFilter": [
-            "+<lib/utils/printf.*>",
-            "+<lib/utils/stdout_helpers.*>",
+            "+<NOTUSED_lib/utils/printf.*>",
+            "+<NOTUSED_lib/utils/stdout_helpers.*>",
             "+<lib/utils/pyexec.*>",
 
             "+<ports/bluepill/*.c>",
