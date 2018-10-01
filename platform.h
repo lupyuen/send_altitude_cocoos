@@ -11,6 +11,7 @@
 #define CONFIG_ARTICLE5      //  Uncomment to support Article #5: "Connect STM32 Blue Pill to Sigfox"
 
 //  Here are all the features that we may enable.  Warning: The features enabled in this section may be overridden according to the article configuration below.
+//  TODO: Article6
 #define USE_MICROPYTHON           //  Uncomment to include MicroPython.
 //  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
 #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
@@ -25,6 +26,7 @@
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 
 //  Uncomment to disable debug log for the following modules.
+//  TODO: Article6
 #define DISABLE_I2C_LOG
 #define DISABLE_NETWORK_LOG
 #define DISABLE_SENSOR_LOG
