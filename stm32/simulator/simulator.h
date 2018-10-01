@@ -68,6 +68,7 @@ struct Simulator_Control {
 	Simulator_Fails	failCode;  //  Last fail code.
 };
 
+#ifdef USE_SIMULATOR  // If Simulator is enabled...
 Simulator_Fails simulator_setup(void);  //  Set up the simulator system.
 Simulator_Fails simulator_configure(Simulator_Control *sim, uint8_t id, const char *name, SPI_Control *port,
     bool capture_enabled, bool replay_enabled, bool simulate_enabled, bool merge_enabled);  //  Set up the simulator for the sensor.
@@ -98,6 +99,23 @@ Simulator_Fails simulator_merge_packet(Simulator_Control *sim, uint8_t *tx_packe
 bool simulator_should_replay_merged_trail(Simulator_Control *sim);  //  Return true if simulator should replay the merged trail instead of the unmerged trail.
 
 Simulator_Fails simulator_close(Simulator_Control *sim);  //  End capture, replay or simulate.
+#else  //  If Simulator is disabled...
+#define simulator_setup() {}
+#define simulator_configure(sim, id, name, port, capture_enabled, replay_enabled, simulate_enabled, merge_enabled) {}
+#define simulator_open(sim) {}
+#define simulator_capture_size(sim, size) 0
+#define simulator_capture_packet(sim, packet, size) NULL
+#define simulator_replay_size(sim) 0
+#define simulator_replay_packet(sim, size) NULL
+#define simulator_simulate_size(sim) 0
+#define simulator_simulate_packet(sim, size) NULL
+#define simulator_merge_packet(sim, tx_packet, tx_size, rx_packet, rx_size) {}
+#define simulator_replay(sim) NULL
+#define simulator_close(sim) {}
+#define simulator_test(sim) {}
+#define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.
+
+#endif  //  USE_SIMULATOR
 
 #ifdef __cplusplus
 }  //  End of extern C scope.
