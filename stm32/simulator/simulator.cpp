@@ -1,4 +1,8 @@
 //  Simulator Module that captures, replays and simulates SPI commands for SPI sensors.
+#include "../../platform.h"  //  For USE_SIMULATOR, 
+#ifdef DISABLE_SIMULATOR_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the Simulator.
+#endif  //  DISABLE_SIMULATOR_LOG
 #include <string.h>
 #include <logger.h>
 #include <bluepill.h>  //  For millis()

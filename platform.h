@@ -26,6 +26,7 @@
 //  Uncomment to disable debug log for the following modules.
 #define DISABLE_I2C_LOG
 #define DISABLE_SENSOR_LOG
+#define DISABLE_SIMULATOR_LOG
 #define DISABLE_SPI_LOG
 #define DISABLE_UART_LOG
 
