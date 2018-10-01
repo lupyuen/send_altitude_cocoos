@@ -10,13 +10,13 @@
 
 #ifdef SENSOR_DATA  //  If we are using real or simulated sensors instead of hardcoded sensor data...
 
-#ifdef STM32        //  If we are running on STM32 Blue Pill...
+#if defined(STM32) && defined(USE_SIMULATOR)        //  If we are running on STM32 Blue Pill and Simulator is enabled...
 //  We call Simulator Module to capture, replay and simulate SPI commands for SPI sensors.
 //  We do this so that we can capture the SPI send/receive commands of Arduino sensor drivers and replay
 //  them efficiently on STM32, with multitasking.
 #include <simulator.h>
 
-#else  //  If Arduino or other platform...
+#else  //  If Arduino or other platform or Simulator disabled...
 //  No need to simulate on Arduino.
 #define simulator_setup() {}
 #define simulator_configure(sim, id, name, port, capture_enabled, replay_enabled, simulate_enabled, merge_enabled) {}
@@ -25,7 +25,7 @@
 #define simulator_close(sim) {}
 #define simulator_test(sim) {}
 #define simulator_should_poll_sensor(sim) true  //  Always poll the sensor.
-#endif  //  STM32
+#endif  //  STM32 && USE_SIMULATOR
 
 static Sem_t *allocate_port_semaphore(uint32_t port_id);
 static bool is_valid_event_sensor(Sensor *sensor);
