@@ -110,6 +110,7 @@ Simulator_Fails simulator_close(Simulator_Control *sim);  //  End capture, repla
 #define simulator_simulate_size(sim) 0
 #define simulator_simulate_packet(sim, size) NULL
 #define simulator_merge_packet(sim, tx_packet, tx_size, rx_packet, rx_size) {}
+#define simulator_should_replay_merged_trail(sim) false
 #define simulator_replay(sim) NULL
 #define simulator_close(sim) {}
 #define simulator_test(sim) {}
