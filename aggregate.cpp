@@ -1,7 +1,6 @@
 //  Aggregate sensor data and decide whether to send to network now.
 #include "platform.h"
 #include <string.h>
-#include <math.h>  //  For pow()
 #include "display.h"
 #include "sensor.h"
 #include "wisol.h"
@@ -14,10 +13,14 @@ static void addPayloadInt(
     int payloadSize, 
     const char *name, 
     int data,
-    int numDigits);
+    int numDigits,
+    int maxNumber);
 
 //  Remember the last sensor value of each sensor.
 static SensorMsg sensorData[MAX_SENSOR_COUNT];
+
+#define NUM_DIGITS 4          //  Number of digits to be sent for each sensor value.
+#define MAX_NUMBER (1E4 - 1)  //  Max sensor value that can be sent (after scaling).  Depends on NUM_DIGITS.
 
 //  Buffer for constructing the message payload to be sent, in hex digits, plus terminating null.
 #define PAYLOAD_SIZE (1 + MAX_MESSAGE_SIZE * 2)  //  Each byte takes 2 hex digits. Add 1 for terminating null.
@@ -56,7 +59,7 @@ bool aggregate_sensor_data(
     //  Create a new Sigfox message. Add a running sequence number to the message.
     payload[0] = 0;  //  Empty the message payload.
     static int sequenceNumber = 0;
-    addPayloadInt(payload, PAYLOAD_SIZE, "seq", sequenceNumber++, 4);
+    addPayloadInt(payload, PAYLOAD_SIZE, "seq", sequenceNumber++, NUM_DIGITS, MAX_NUMBER);
 
     //  Encode the sensor data into a Sigfox message, 4 digits each.
     static const char *sendSensors[] = { "tmp", "hmd", "alt", NULL };  //  Sensors to be sent.
@@ -67,7 +70,7 @@ bool aggregate_sensor_data(
         savedSensor = recallSensor(sensorName);  //  Find the sensor.
         if (savedSensor != NULL) { data = savedSensor->data[0]; }  //  Fetch the sensor data (first float only).
         int scaledData = data * 10;  //  Scale up by 10 to send 1 decimal place. So 27.1 becomes 271
-        addPayloadInt(payload, PAYLOAD_SIZE, sensorName, scaledData, 4);  //  Add to payload.
+        addPayloadInt(payload, PAYLOAD_SIZE, sensorName, scaledData, NUM_DIGITS, MAX_NUMBER);  //  Add to payload.
     }
     //  If the payload has odd number of digits, pad with '0'.
     int length = strlen(payload);
@@ -87,15 +90,18 @@ static void addPayloadInt(
     int payloadSize, 
     const char *name, 
     int data,
-    int numDigits) {
+    int numDigits,
+    int maxNumber) {
     //  Add the integer data to the message payload as numDigits digits in hexadecimal.
     //  So data=1234 and numDigits=4, it will be added as "1234".  Not efficient, but easy to read.
+    //  maxNumber=pow(10, numDigits) - 1.  This prevents linker from adding the pow() from the standard
+    //  C math library that occupies 2.7 KB! 
     int length = strlen(payloadBuffer);
     if (length + numDigits >= payloadSize) {  //  No space for numDigits hex digits.
         debug(F("***** Error: No payload space for "), name);
         return;
     }
-    if (data < 0 || data >= pow(10, numDigits)) {  //  Show a warning if out of range.
+    if (data < 0 || data > maxNumber) {  //  Show a warning if out of range.
         debug_print(F("***** Warning: Only last ")); debug_print(numDigits); 
         debug_print(F(" digits of ")); debug_print(name); debug_print(F(" value ")); debug_print(data);
         debug_println(" will be sent"); // debug_flush();
