@@ -53,7 +53,7 @@ void sensor_task(void) {
   //  all sensors: temperature, humidity, altitude.  Don't declare any static variables inside here 
   //  because they will conflict with other sensors.
   task_open();  //  Start of the task. Must be matched with task_close().
-  if (ctx()->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore"); return; }  //  Must have semaphore for locking the I/O port.
+  if (ctx()->read_semaphore == NULL) { debug("*** ERROR: Missing port semaphore", ""); return; }  //  Must have semaphore for locking the I/O port.
 
   for (;;) {  //  Run the sensor processing code forever. So the task never ends.    
     debug_print(ctx()->sensor->info.name); debug_print(F(" >> Wait for semaphore #")); debug_println((int) *ctx()->read_semaphore); // debug_flush();
@@ -118,7 +118,7 @@ static Sem_t *allocate_port_semaphore(uint32_t port_id) {
   //  Reuse if already allocated.  This semaphore prevents concurrent access to the same I/O port by 2 or more sensors.
   //  Port ID not found.  Allocate a new semaphore.
   if (port_id == 0) {
-    debug(F("*** ERROR: Invalid port ID"));
+    debug(F("*** ERROR: Invalid port ID"), "");
     return NULL;
   }
   for (int i = 0; i < portSemaphoreIndex; i++) {
@@ -129,7 +129,7 @@ static Sem_t *allocate_port_semaphore(uint32_t port_id) {
   }
   //  Port ID not found.  Allocate a new semaphore.
   if (portSemaphoreIndex >= MAX_PORT_COUNT) {
-    debug(F("*** ERROR: Port semaphore overflow. Increase MAX_PORT_COUNT"));
+    debug(F("*** ERROR: Port semaphore overflow. Increase MAX_PORT_COUNT"), "");
     return NULL;
   }
   //  Each I/O port (e.g. SPI1) is controlled by a Counting Semaphore.  Tasks will queue up to get access to the port.
