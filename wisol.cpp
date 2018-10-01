@@ -81,9 +81,9 @@ void network_task(void) {
     if (!shouldSend) { continue; }  //  If we should not send now: Loop and wait for next message.
 
     //  Use a semaphore to limit sending to only 1 message at a time, because our buffers are shared.
-    debug(F("net >> Wait for net"));
+    debug(F("net >> Wait for net"), "");
     sem_wait(sendSemaphore);  //  Wait until no other message is being sent. Then lock the semaphore.
-    debug(F("net >> Got net"));
+    debug(F("net >> Got net"), "");
 
     //  Init the context.
     ctx()->status = true;            //  Assume no error.
@@ -135,7 +135,7 @@ void network_task(void) {
     ctx()->cmdList = NULL;  //  Erase the command list.
 
     //  Release the semaphore and allow another payload to be sent after SEND_INTERVAL.
-    debug(F("net >> Release net"));
+    debug(F("net >> Release net"), "");
     sem_signal(sendSemaphore);
   }  //  Loop to next incoming sensor data message.
   task_close();  //  End of the task. Should not come here.
@@ -143,9 +143,9 @@ void network_task(void) {
 
 static void processPendingResponse(NetworkContext *context) {
   //  If there is a pending response, e.g. from send payload...
-  debug(F("net >> Pending response"));
+  debug(F("net >> Pending response"), "");
   if (!context->pendingResponse) {
-    debug(F("***** Error: No pending response"));
+    debug(F("***** Error: No pending response"), "");
     return;
   }
   context->pendingResponse = false;
@@ -353,11 +353,11 @@ bool checkChannel(NetworkContext *context, const char *response) {
     int cmdIndex = context->cmdIndex;  //  Current index.
     cmdIndex++;  //  Next index, to be updated.
     if (cmdIndex >= MAX_NETWORK_CMD_LIST_SIZE) {
-      debug(F("***** wisol.checkChannel Error: Cmd overflow"));  //  List is full.
+      debug(F("***** wisol.checkChannel Error: Cmd overflow"), "");  //  List is full.
       return false;  //  Failure
     }    
     if (context->cmdList[cmdIndex].sendData == NULL) {
-      debug(F("***** wisol.checkChannel Error: Empty cmd"));  //  Not supposed to be empty.
+      debug(F("***** wisol.checkChannel Error: Empty cmd"), "");  //  Not supposed to be empty.
       return false;  //  Failure
     }
     context->cmdList[cmdIndex].sendData = F(CMD_NONE);
