@@ -1,5 +1,5 @@
 //  From newlib-nano.  The standard C library version of strstr takes 508 bytes.
-//  This one takes
+//  This one takes only 52 bytes.  https://keithp.com/cgit/newlib.git/
 #define PREFER_SIZE_OVER_SPEED
 /*
 FUNCTION

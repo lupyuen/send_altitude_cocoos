@@ -13,15 +13,6 @@
 #include <boost_lockfree.hpp>   //  Force boost_lockfree library to be included.  Mandatory.
 #include <uartint.h>            //  For UARTInterface
 #include <ports/bluepill/micropython.h> //  TODO: MicroPython
-
-////////////////////////////////////////////////////////////////////
-//  TODO: MicroPython
-
-//#include <py/compile.h>
-//#include <py/runtime.h>
-//#include <py/repl.h>
-//#include <py/mperrno.h>
-
 #endif  //  STM32
 
 #ifdef ARDUINO               //  If we are compiling for Arduino...

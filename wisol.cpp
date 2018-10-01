@@ -2,6 +2,9 @@
 //  Wisol modules WSSFM10R1AT, WSSFM10R2AT, WSSFM10R3AT and WSSFM10R4AT
 //  for Sigfox zones RCZ1, RCZ2, RCZ3 and RCZ4 respectively.
 #include "platform.h"
+#ifdef DISABLE_NETWORK_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the Network Task.
+#endif  //  DISABLE_NETWORK_LOG
 #include <string.h>
 #include <cocoos.h>
 #include "display.h"
