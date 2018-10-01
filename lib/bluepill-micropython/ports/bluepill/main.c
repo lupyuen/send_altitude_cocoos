@@ -44,8 +44,14 @@ int micropython_main(int argc, char **argv) {
     #endif
     mp_init();
 
+    //  Run frozen module.  Generated from
+    //  ../../tools/mpy-tool.py -f -q genhdr/qstrdefs.preprocessed.h -mlongint-impl=none frozentest.mpy > _frozen_mpy.c
+    pyexec_frozen_module("frozentest.py");
+
+#ifdef NOTUSED  //  Compiler disabled.
     do_str("print('hello world!', list(x+1 for x in range(10)), end='eol\\n')", MP_PARSE_SINGLE_INPUT);
     do_str("for i in range(10):\n  print(i)", MP_PARSE_FILE_INPUT);
+#endif  //  NOTUSED
 
 #ifdef NOTUSED  //  We don't allow REPL.
     #if MICROPY_ENABLE_COMPILER
