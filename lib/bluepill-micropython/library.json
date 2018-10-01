@@ -5,12 +5,16 @@
         "type": "git",
         "url": "https://github.com/lupyuen/bluepill-micropython"
     },
-    "description": "Subset of MicroPython for STM32 Blue Pill.  srcFilter is based on PY_CORE_O_BASENAME in py/py.mk",
+    "description": "Subset of MicroPython for STM32 Blue Pill.  srcFilter is based on SRC_C in Makefile and PY_CORE_O_BASENAME in py/py.mk",
     "build": {        
         "flags": [
             "-I ports/bluepill -Wall -Werror -std=c99  -Os -DTODO_NDEBUG -fdata-sections -ffunction-sections -c -MD"
         ],
         "srcFilter": [
+            "+<lib/utils/printf.*>",
+            "+<lib/utils/stdout_helpers.*>",
+            "+<lib/utils/pyexec.*>",
+
             "+<ports/bluepill/*.c>",
             "+<ports/bluepill/*.cpp>",
             "+<ports/bluepill/*.h>",

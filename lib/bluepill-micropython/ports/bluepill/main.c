@@ -103,6 +103,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 ////////////////////////////////////////////////////////////////////////
 //  Skip system functions
 
+#ifdef NOTUSED
 int _lseek() {return 0;}
 int _read() {return 0;}
 int _write() {return 0;}
@@ -114,7 +115,6 @@ int _getpid() {return 0;}
 int _fstat() {return 0;}
 int _isatty() {return 0;}
 
-////  TODO
 void *malloc(size_t n) {return NULL;}
 void *calloc(size_t nmemb, size_t size) {return NULL;}
 void *realloc(void *ptr, size_t size) {return NULL;}
@@ -136,8 +136,8 @@ int vsnprintf(char *str,  size_t  size,  const  char  *format, va_list ap) {retu
 #undef putchar
 int putchar(int c) {return 0;}
 int puts(const char *s) {return 0;}
-
 //// void _start(void) {main(0, NULL);}
+#endif  //  NOTUSED
 
 /////////////////////////////////////////////////////////////////////////
 

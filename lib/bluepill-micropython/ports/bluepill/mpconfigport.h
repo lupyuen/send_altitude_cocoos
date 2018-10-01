@@ -81,8 +81,8 @@ typedef long mp_off_t;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "minimal"
-#define MICROPY_HW_MCU_NAME "unknown-cpu"
+#define MICROPY_HW_BOARD_NAME       "bluepill"
+#define MICROPY_HW_MCU_NAME         "STM32F103C8"
 
 #ifdef __linux__
 #define MICROPY_MIN_USE_STDOUT (1)

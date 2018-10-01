@@ -41,6 +41,8 @@ extern "C" void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
     debug_flush();  ////  TODO
 }
 
+#ifdef NOTUSED
 extern "C" void mp_hal_stdout_tx_strn_cooked(const char *str, size_t len) {
     mp_hal_stdout_tx_strn_cooked(str, len);
 }
+#endif  //  NOTUSED
