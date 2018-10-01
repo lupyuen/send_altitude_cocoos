@@ -22,6 +22,7 @@ void disable_log(void);  //  Disable the debug log.
 #define debug_write(p1) {}
 #define debug_print(p1) {}
 #define debug_println(p1) {}
+#define debug_printhex(p1) {}
 #define debug_append(p1, p2) {}
 #define debug_flush() {}
 
