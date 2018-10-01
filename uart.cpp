@@ -1,5 +1,8 @@
 //  Functions to send and receive data from the UART serial port, e.g. for Wisol module.
 #include "platform.h"
+#ifdef DISABLE_UART_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the UART Task.
+#endif  //  DISABLE_UART_LOG
 #include <string.h>
 #include <cocoos.h>
 #include "display.h"

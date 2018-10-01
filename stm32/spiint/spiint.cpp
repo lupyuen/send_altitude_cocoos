@@ -2,6 +2,10 @@
 //  https://github.com/libopencm3/libopencm3-examples/tree/master/examples/stm32/f1/lisa-m-2/spi_dma_adv
 //  https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC/tree/master/rtos/oled_dma
 //  https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC/blob/master/rtos/winbond
+#include "../../platform.h"  //  For DISABLE_SPI_LOG
+#ifdef DISABLE_SPI_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the SPI Interface.
+#endif  //  DISABLE_SPI_LOG
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>

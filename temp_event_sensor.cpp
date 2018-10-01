@@ -1,6 +1,9 @@
 //  Instance of Sensor that reads the BME280 temperature sensor connected via SPI interface.
 //  This is an example of an Event-based Sensor.
 #include "platform.h"
+#ifdef DISABLE_SENSOR_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the Sensor Task.
+#endif  //  DISABLE_SENSOR_LOG
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>

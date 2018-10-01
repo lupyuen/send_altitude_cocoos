@@ -2,6 +2,9 @@
 //  https://github.com/Apress/Beg-STM32-Devel-FreeRTOS-libopencm3-GCC/tree/master/rtos/i2c-pcf8574
 
 #include "../../platform.h"  //  For SIMULATE_BME280
+#ifdef DISABLE_I2C_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the I2C Interface.
+#endif  //  DISABLE_I2C_LOG
 #include <logger.h>
 #include "i2cint.h"
 

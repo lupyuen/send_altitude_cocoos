@@ -1,6 +1,9 @@
 //  Implements a simulated Gyroscope Sensor with 3 sensor values (x, y, z).
 //  Demonstrates how we may return multiple float values as sensor data.
 #include "platform.h"
+#ifdef DISABLE_SENSOR_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the Sensor Task.
+#endif  //  DISABLE_SENSOR_LOG
 #include <string.h>
 #include <stdlib.h>
 #include <cocoos.h>

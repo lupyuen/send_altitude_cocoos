@@ -2,6 +2,9 @@
 //  Caller must use a semaphore to prevent concurrent access to BME280 
 //  module, which runs on a single I2C Bus.
 #include "platform.h"
+#ifdef DISABLE_SENSOR_LOG
+#define DISABLE_DEBUG_LOG  //  Disable debug logging for the Sensor Task.
+#endif  //  DISABLE_SENSOR_LOG
 #include <stdlib.h>
 #include <string.h>
 #include <cocoos.h>

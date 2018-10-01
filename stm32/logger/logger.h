@@ -10,6 +10,26 @@ extern "C" {  //  Allows functions below to be called by C and C++ code.
 #endif
 void enable_log(void);   //  Enable the debug log.
 void disable_log(void);  //  Disable the debug log.
+#ifdef __cplusplus
+}  //  End of extern C scope.
+#endif
+
+#if defined(DISABLE_DEBUG_LOG)  //  If debug logging is disabled...
+
+//  Don't show debug log.
+#define debug(p1, p2) {}
+#define debug_begin(p1) {}
+#define debug_write(p1) {}
+#define debug_print(p1) {}
+#define debug_println(p1) {}
+#define debug_append(p1, p2) {}
+#define debug_flush() {}
+
+#else  //  If debug logging is enabled...
+
+#ifdef __cplusplus
+extern "C" {  //  Allows functions below to be called by C and C++ code.
+#endif
 void debug_begin(uint16_t bps);     //  Open the debug console at the specified bits per second.
 void debug_write(uint8_t ch);       //  Write a character to the buffered debug log.
 void debug_print(const char *s);    //  Write a string to the buffered debug log.
@@ -33,5 +53,7 @@ void debug_println(int i);
 void debug_println(size_t l);
 void debug_println(char ch);
 void debug_println(float f);  //  Note: Always prints with 2 decimal places.  Will not be displayed until debug_flush() is called.
+
 #endif  //  __cplusplus
+#endif  //  DISABLE_DEBUG_LOG
 #endif  //  LOGGER_H_

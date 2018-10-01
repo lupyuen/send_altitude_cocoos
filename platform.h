@@ -23,6 +23,12 @@
 //  #define SIMULATED_DATA        //  Uncomment to use hardcoded data. (May not work)
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 
+//  Uncomment to disable debug log for the following modules.
+#define DISABLE_I2C_LOG
+#define DISABLE_SENSOR_LOG
+#define DISABLE_SPI_LOG
+#define DISABLE_UART_LOG
+
 #if defined(CONFIG_ARTICLE1) || defined(CONFIG_ARTICLE2) || defined(CONFIG_ARTICLE3)
 //  Configuration for Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
 //  and Article #2: "Juggling Sigfox Downlink And Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-sigfox-downlink-and-arduino-sensors-with-cocoos-4594be59bf1b

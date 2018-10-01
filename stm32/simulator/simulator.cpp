@@ -5,6 +5,8 @@
 #include <spiint.h>    //  For SPI_Control
 #include "simulator.h"
 
+#ifdef USE_SIMULATOR  //  This code is included only when using simulator.
+
 //  TODO: Update this when running under FreeRTOS.
 #define systicks millis
 typedef uint32_t TickType_t;
@@ -263,3 +265,5 @@ Simulator_Fails simulator_test(Simulator_Control *sim) {
     //  For testing only.
     return Simulator_Ok;
 }
+
+#endif  //  USE_SIMULATOR
