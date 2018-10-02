@@ -1,5 +1,5 @@
 //  From newlib-nano.  The standard C library version of strchr takes 232 bytes.
-//  This one takes only ??? bytes.  https://keithp.com/cgit/newlib.git/
+//  This one takes only 26 bytes.  https://keithp.com/cgit/newlib.git/
 #define PREFER_SIZE_OVER_SPEED
 /*
 FUNCTION

@@ -1,5 +1,5 @@
 //  From newlib-nano.  The standard C library version of strncpy takes 100 bytes.
-//  This one takes only ??? bytes.  https://keithp.com/cgit/newlib.git/
+//  This one takes only 42 bytes.  https://keithp.com/cgit/newlib.git/
 #define PREFER_SIZE_OVER_SPEED
 /*
 FUNCTION
