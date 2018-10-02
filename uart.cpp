@@ -19,6 +19,8 @@
 #include <SoftwareSerial.h>  //  Use the software implementation of the serial port.
 #endif  //  ARDUINO
 
+#ifdef TRANSMIT_SENSOR_DATA  //  The code below is only used if we are transmitting data to the network.
+
 static void rememberMarker(UARTContext *context);
 static void logChar(char ch);
 static void logSendReceive(UARTContext *context);
@@ -264,3 +266,5 @@ static String toHex(char c) {
   return bytes;
 }
 #endif  //  NOTUSED
+
+#endif  //  TRANSMIT_SENSOR_DATA

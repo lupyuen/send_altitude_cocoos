@@ -50,9 +50,6 @@ int main(void) {
   platform_setup();  //  Arduino or STM32 platform setup.
   os_init();         //  Init cocoOS before creating any multitasking objects.
   system_setup();    //  Setup the system.
-
-  //  Erase the aggregated sensor data.
-  setup_aggregate();    //  We will aggregate the sensor data in Network Task before transmitting to network.
   uint8_t task_id = 0;  //  Task ID (for Network Task or Display Task) that will receive sensor data messages.
 
 #ifdef SENSOR_DISPLAY         //  If we are displaying the sensor data instead of sending to network...
@@ -60,6 +57,8 @@ int main(void) {
 #endif  //  SENSOR_DISPLAY
 
 #ifdef TRANSMIT_SENSOR_DATA   //  If we are transmitting sensor data to the IoT network...  
+  //  Erase the aggregated sensor data.
+  setup_aggregate();    //  We will aggregate the sensor data in Network Task before transmitting to network.
   task_id = network_setup();  //  Start the Network Task and UART Task to send and receive network messages.
 #endif  //  TRANSMIT_SENSOR_DATA
   

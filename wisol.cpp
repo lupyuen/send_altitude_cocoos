@@ -13,6 +13,7 @@
 #include "aggregate.h"
 #include "downlink.h"
 #include "wisol.h"
+#ifdef TRANSMIT_SENSOR_DATA  //  The code below is only used if we are transmitting data to the network.
 
 #define END_OF_RESPONSE '\r'  //  Character '\r' marks the end of response.
 #define CMD_END "\r"
@@ -550,3 +551,5 @@ static void createSensorMsg(SensorMsg *msg, const char *name) {
   strncpy(msg->name, name, MAX_SENSOR_NAME_SIZE);
   msg->name[MAX_SENSOR_NAME_SIZE] = 0;  //  Terminate the name in case of overflow.
 }
+
+#endif TRANSMIT_SENSOR_DATA

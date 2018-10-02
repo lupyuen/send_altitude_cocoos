@@ -5,6 +5,7 @@
 #include "sensor.h"
 #include "wisol.h"
 #include "aggregate.h"
+#ifdef TRANSMIT_SENSOR_DATA  //  The code below is only used if we are transmitting data to the network.
 
 static SensorMsg *recallSensor(const char *name);
 static void copySensorData(SensorMsg *dest, SensorMsg *src);
@@ -155,3 +156,5 @@ void setup_aggregate(void) {
         sensorData[i].count = 0;  //  Clear the values.
     }
 }
+
+#endif  //  TRANSMIT_SENSOR_DATA
