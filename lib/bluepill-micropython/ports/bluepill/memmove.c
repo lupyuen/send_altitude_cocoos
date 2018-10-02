@@ -1,5 +1,5 @@
 //  From newlib-nano.  The standard C library version of memmove takes 196 bytes.
-//  This one takes only ??? bytes.  https://keithp.com/cgit/newlib.git/
+//  This one takes only 50 bytes.  https://keithp.com/cgit/newlib.git/
 #define PREFER_SIZE_OVER_SPEED
 /*
 FUNCTION
