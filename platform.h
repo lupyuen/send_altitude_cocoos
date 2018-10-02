@@ -15,10 +15,10 @@
 #define USE_MICROPYTHON           //  Uncomment to include MicroPython.
 //  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
 #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
-#define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
-#define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
+////TODO: #define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
+////TODO: #define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
 #define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C. If SIMULATE_BME280 is defined, then USE_BME280_SPI has no effect because the BME280 simulator only works on I2C.
-#define TRANSMIT_SENSOR_DATA      //  Uncomment to transmit sensor data to the IoT network (Sigfox).
+////TODO: #define TRANSMIT_SENSOR_DATA      //  Uncomment to transmit sensor data to the IoT network (Sigfox).
 //  #define USE_SIMULATOR         //  Uncomment to use the new Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.  See Article #4.
 //  #define SIMULATE_BME280       //  Uncomment to simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).  See Articles #3, #5.
 //  #define SIMULATE_WISOL        //  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
