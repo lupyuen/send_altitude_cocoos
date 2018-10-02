@@ -28,6 +28,16 @@ extern "C" void MP_WEAK __assert_func(const char *file, int line, const char *fu
 }
 
 ////////////////////////////////////////////////////////////////////////
+//  Replacement for lib/util/printf.c
+
+extern "C" int printf(const char *fmt, ...) {
+    debug_print("(micropython missing printf) ");
+    debug_println(fmt);
+    debug_flush();
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////
 //  Console I/O Functions
 
 //  Receive single character
