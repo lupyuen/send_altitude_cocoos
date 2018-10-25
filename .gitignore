@@ -1,8 +1,5 @@
 send_altitude_cocoos
 src/*
-lib/cocoOS_*/*
-lib/boost_*/src/boost
-libraries
 output.map
 .DS_Store
 .idea

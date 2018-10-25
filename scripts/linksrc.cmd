@@ -9,7 +9,7 @@ FOR %%f IN (..\*.ino ..\*.cpp ..\*.h) DO mklink %%~nf%%~xf ..\%%~nf%%~xf
 cd ..
 
 :: Remove the default cocoOS config and link to our version.
-cd lib\cocoOS_*\src
-del os_defines.h
-mklink os_defines.h ..\..\..\os_defines.h
-cd ..\..\..
+:: cd lib\cocoOS_*\src
+:: del os_defines.h
+:: mklink os_defines.h ..\..\..\os_defines.h
+:: cd ..\..\..

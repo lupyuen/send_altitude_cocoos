@@ -46,17 +46,17 @@ download_boost() {
     cd ../../..
 }
 
-download_boost assert
-download_boost config
-download_boost core
-download_boost detail
-download_boost iterator
-download_boost lockfree
-download_boost mpl
-download_boost parameter
-download_boost predef
-download_boost preprocessor
-download_boost static_assert
-download_boost type_traits
-download_boost utility
+# download_boost assert
+# download_boost config
+# download_boost core
+# download_boost detail
+# download_boost iterator
+# download_boost lockfree
+# download_boost mpl
+# download_boost parameter
+# download_boost predef
+# download_boost preprocessor
+# download_boost static_assert
+# download_boost type_traits
+# download_boost utility
 

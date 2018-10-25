@@ -9,10 +9,10 @@ ln -s ../*.ino ../*.cpp ../*.h .
 cd ..
 
 # Remove the default cocoOS config and link to our version.
-cd lib/cocoOS_*/src
-rm os_defines.h
-ln -s ../../../os_defines.h .
-cd ../../..
+# cd lib/cocoOS_*/src
+# rm os_defines.h
+# ln -s ../../../os_defines.h .
+# cd ../../..
 
 # Launch our Visual Studio Code workspace.  Sometimes the Code Helper is hung, kill it.
 pkill "Visual Studio Code"

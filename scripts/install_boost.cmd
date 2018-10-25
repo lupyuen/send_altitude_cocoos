@@ -3,19 +3,19 @@
 ::  This is the version of Boost we will download.  Must sync with install_boost.sh.
 set boost_version=boost-1.68.0
 
-call :download_boost assert
-call :download_boost config
-call :download_boost core
-call :download_boost detail
-call :download_boost iterator
-call :download_boost lockfree
-call :download_boost mpl
-call :download_boost parameter
-call :download_boost predef
-call :download_boost preprocessor
-call :download_boost static_assert
-call :download_boost type_traits
-call :download_boost utility
+::  call :download_boost assert
+::  call :download_boost config
+::  call :download_boost core
+::  call :download_boost detail
+::  call :download_boost iterator
+::  call :download_boost lockfree
+::  call :download_boost mpl
+::  call :download_boost parameter
+::  call :download_boost predef
+::  call :download_boost preprocessor
+::  call :download_boost static_assert
+::  call :download_boost type_traits
+::  call :download_boost utility
 goto :EOF
 
 ::  Download the Boost library named by $1.
