@@ -163,10 +163,11 @@ static void concatResult(const char *s) {
     result[MAX_RESULT_LENGTH] = 0;  //  Terminate the response in case of overflow.
 }
 
+#define MAX_INT_LENGTH 5
+static char buffer[MAX_INT_LENGTH + 1];
+
 static void concatInt(uint16_t l) {
     //  Append the 16-bit unsigned integer to the decoded result. We only append up to 5 digits, since 16 bits will give max 65,535.
-    #define MAX_INT_LENGTH 5
-    char buffer[MAX_INT_LENGTH + 1];
     const int size = MAX_INT_LENGTH + 1;
     bool prefixByZero = false;
     int length = 0;
