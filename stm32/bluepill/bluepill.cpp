@@ -46,6 +46,8 @@ static const uint32_t allPins[] = {  //  Map Arduino pin number to STM32 port ID
 	I2C2,
 	USART1,
 	USART2,
+	ADC1,
+	ADC2,
 };  //  TODO: Support STM32 alternate port mapping.
 
 uint32_t convert_pin_to_port(uint8_t pin) {

@@ -11,3 +11,4 @@ output.map
 .vscode/launch.json
 .vscode/*.sql
 cmake-build-debug
+build

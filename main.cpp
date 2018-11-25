@@ -14,6 +14,7 @@
 #include "temp_sensor.h"        //  Temperature sensor (BME280 I2C or SPI)
 #include "humid_sensor.h"       //  Humidity sensor (BME280 I2C or SPI)
 #include "alt_sensor.h"         //  Altitude sensor (BME280 I2C or SPI)
+#include "pressure_sensor.h"    //  Pressure gauge sensor (ADC)
 #include "temp_event_sensor.h"  //  Temperature event-based sensor (BME280 SPI)
 #ifdef USE_GYRO_SENSOR          //  If we are using simulated gyro sensor...
 #include "gyro_sensor.h"        //  Gyroscope sensor (simulated)
@@ -108,9 +109,14 @@ static void sensor_setup(uint8_t task_id) {
   task_create(sensor_task, altContext, 130, 0, 0, 0);   //  Priority 130
 #endif  //  USE_ALTITUDE_SENSOR
 
+#ifdef USE_PRESSURE_SENSOR  //  Use pressure gauge sensor.
+  SensorContext *pressureContext = setup_pressure_sensor(pollInterval, task_id);
+  task_create(sensor_task, pressureContext, 140, 0, 0, 0);   //  Priority 140
+#endif  //  USE_PRESSURE_SENSOR
+
 #ifdef USE_GYRO_SENSOR      //  Use simulated gyro sensor.
   SensorContext *gyroContext = setup_gyro_sensor(pollInterval, task_id);
-  task_create(sensor_task, gyroContext, 140, 0, 0, 0);  //  Priority 140
+  task_create(sensor_task, gyroContext, 150, 0, 0, 0);  //  Priority 150
 #endif  //  USE_GYRO_SENSOR
 
 }
