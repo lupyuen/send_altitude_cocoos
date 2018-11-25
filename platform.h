@@ -20,7 +20,7 @@
 #define TRANSMIT_SENSOR_DATA      //  Uncomment to transmit sensor data to the IoT network (Sigfox).
 //  #define USE_SIMULATOR         //  Uncomment to use the new Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.  See Article #4.
 //  #define SIMULATE_BME280       //  Uncomment to simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).  See Articles #3, #5.
-//  #define SIMULATE_WISOL        //  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
+#define SIMULATE_WISOL        //  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
 //  #define SIMULATED_DATA        //  Uncomment to use hardcoded data. (May not work)
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
 

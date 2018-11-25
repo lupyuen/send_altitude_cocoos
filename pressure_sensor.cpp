@@ -47,7 +47,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
 
   //  Dump the sensor values.
   debug_print(sensor.info.name);
-  debug_print(" adc0 "); debug_print(adc0);
+  debug_print(" >> adc0 "); debug_print(adc0);
   debug_print(", adc1 "); debug_print(adc1);
   debug_print(", temp "); debug_print(temp);
   debug_print(", vref "); debug_print(vref);
