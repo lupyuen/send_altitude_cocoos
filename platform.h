@@ -12,9 +12,9 @@
 
 //  Here are all the features that we may enable.  Warning: The features enabled in this section may be overridden according to the article configuration below.
 //  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
-#define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
-#define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
-#define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
+//  #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
+//  #define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
+//  #define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
 #define USE_PRESSURE_SENSOR       //  Uncomment to use the polling-based pressure gauge sensor via ADC port.
 #define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C. If SIMULATE_BME280 is defined, then USE_BME280_SPI has no effect because the BME280 simulator only works on I2C.
 #define TRANSMIT_SENSOR_DATA      //  Uncomment to transmit sensor data to the IoT network (Sigfox).
