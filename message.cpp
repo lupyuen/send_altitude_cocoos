@@ -39,6 +39,31 @@ static char decodeLetter(uint8_t code) {
   return 0;
 }
 
+#define MAX_HEX_BYTES 2  //  Convert 16-bit unsigned integers.
+#define MAX_HEX_BUFFER_LENGTH (MAX_HEX_BYTES * 2)  //  Convert 16-bit unsigned integers into 4 hex digits.
+static char hexBuffer[MAX_HEX_BUFFER_LENGTH + 1];  //  Warning: Will be reused by toHex() for returning result.
+
+static const char *toHex(uint16_t v) {
+  //  Convert the 16-bit unsigned integer to a string of 4 hex digits.
+  //  Warning: Returned buffer will be reused by toHex().  Caller should copy the returned buffer immediately.
+  const bool prefixByZero = true;
+  int length = 0;
+  //  Loop for each hex digit.
+  for (uint16_t divisor = 4096; divisor >= 1; divisor = divisor / 16) {
+      char digit = '0' + (char)(v / divisor);
+      if (digit > '9') { digit = digit - 10 - '0' + 'a'; }
+      if (digit > '0' || length > 0 || prefixByZero) {
+          if (length < MAX_HEX_BUFFER_LENGTH + 1) {
+              hexBuffer[length++] = digit;
+          }
+      }
+      v = v % divisor;
+  }
+  if (length == 0) { hexBuffer[length++] = '0'; };
+  if (length < MAX_HEX_BUFFER_LENGTH + 1) { hexBuffer[length] = 0; }
+  hexBuffer[MAX_HEX_BUFFER_LENGTH] = 0;  //  Terminate in case of overflow.
+}
+
 //  TODO: Move these messages to Flash memory.
 static const char *addFieldHeader = "Message.addField: ";
 static const char *tooLong = "****ERROR: Message too long, already ";
@@ -76,7 +101,7 @@ bool Message::addIntField(const char *name, int value) {
     return false;
   }
   addName(name);
-  encodedMessage.concat(wisol->toHex(value));
+  addEncodedString(toHex(value));
   return true;
 }
 
@@ -100,19 +125,19 @@ bool Message::addName(const char *name) {
   //  TODO: Assert name has 3 letters.
   //  TODO: Assert encodedMessage is less than 12 bytes.
   //  Convert 3 letters to 3 bytes.
-  uint8_t buffer[] = {0, 0, 0};
+  uint8_t hexBuffer[] = {0, 0, 0};
   for (int i = 0; i <= 2 && i <= strlen(name); i++) {
     //  5 bits for each letter.
     char ch = name[i];
-    buffer[i] = encodeLetter(ch);
+    hexBuffer[i] = encodeLetter(ch);
   }
   //  [x000] [0011] [1112] [2222]
   //  [x012] [3401] [2340] [1234]
   unsigned int result =
-      (buffer[0] << 10) +
-      (buffer[1] << 5) +
-      (buffer[2]);
-  encodedMessage.concat(wisol->toHex(result));
+      (hexBuffer[0] << 10) +
+      (hexBuffer[1] << 5) +
+      (hexBuffer[2]);
+  addEncodedString(toHex(result));
   return true;
 }
 
@@ -129,13 +154,50 @@ static uint8_t hexDigitToDecimal(char ch) {
   return 0;
 }
 
+#define MAX_RESULT_LENGTH 45  //  Allocate space for {"abc":6553.5,"def":6553.5,"ghi":6553.5}
+static char result[MAX_RESULT_LENGTH + 1];
+
+static void concatResult(const char *s) {
+    //  Append the string to the decoded result.
+    strncat(result, s, MAX_RESULT_LENGTH - strlen(result));
+    result[MAX_RESULT_LENGTH] = 0;  //  Terminate the response in case of overflow.
+}
+
+static void concatInt(uint16_t l) {
+    //  Append the 16-bit unsigned integer to the decoded result. We only append up to 5 digits, since 16 bits will give max 65,535.
+    #define MAX_INT_LENGTH 5
+    char buffer[MAX_INT_LENGTH + 1];
+    const int size = MAX_INT_LENGTH + 1;
+    bool prefixByZero = false;
+    int length = 0;
+    for (uint16_t divisor = 10000; divisor >= 1; divisor = divisor / 10) {
+        char digit = '0' + (char)(l / divisor);
+        if (digit > '9') {
+            debug_print("(Overflow)");
+            return;
+        }
+        if (digit > '0' || length > 0 || prefixByZero) {
+            if (length < size) {
+                buffer[length++] = digit;
+            }
+        }
+        l = l % divisor;
+    }
+    if (length == 0) { buffer[length++] = '0'; };
+    if (length < size) buffer[length] = 0;
+    buffer[size - 1] = 0;  //  Terminate in case of overflow.
+    concatResult(buffer);
+}
+
 const char *Message::decodeMessage(const char *msg) {
-  //  Decode the encoded message.
-  //  2 bytes name, 2 bytes float * 10, 2 bytes name, 2 bytes float * 10, ...
-  const char *result = "{";
+  //  Decode the encoded message into JSON. Result looks like:
+  //  {"abc":6553.5,"def":6553.5,"ghi":6553.5}
+  //  Warning: Returned buffer will be reused by decodeMessage().  Caller should copy the returned buffer immediately.
+  //  Decode 2 bytes name, 2 bytes float * 10, 2 bytes name, 2 bytes float * 10, 2 bytes name, 2 bytes float * 10
+  strcpy(result, "{");
   for (int i = 0; i < strlen(msg); i = i + 8) {
-    const char *name = msg.substring(i, i + 4);
-    const char *val = msg.substring(i + 4, i + 8);
+    const char *name = &msg[i];     //  2 bytes = 4 chars
+    const char *val = &msg[i + 4];  //  2 bytes = 4 chars
     unsigned long name2 =
       (hexDigitToDecimal(name[2]) << 12) +
       (hexDigitToDecimal(name[3]) << 8) +
@@ -146,27 +208,28 @@ const char *Message::decodeMessage(const char *msg) {
       (hexDigitToDecimal(val[3]) << 8) +
       (hexDigitToDecimal(val[0]) << 4) +
       hexDigitToDecimal(val[1]);
-    if (i > 0) { result.concat(','); }
-    result.concat('"');
+    if (i > 0) { concatResult(","); }
+    concatResult("\"");
     //  Decode name.
     char name3[] = {0, 0, 0, 0};
     for (int j = 0; j < 3; j++) {
       uint8_t code = name2 & 31;
       char ch = decodeLetter(code);
-      if (ch > 0) name3[2 - j] = ch;
+      if (ch > 0) { name3[2 - j] = ch; }
       name2 = name2 >> 5;
     }
     name3[3] = 0;
-    result.concat(name3);
+    concatResult(name3);
     //  Decode value.
-    result.concat("\":"); result.concat((int)(val2 / 10));
-    result.concat('.'); result.concat((int)(val2 % 10));
+    concatResult("\":"); concatInt((uint16_t) (val2 / 10));
+    concatResult("."); concatInt((uint16_t) (val2 % 10));
   }
-  result.concat('}');
+  concatResult("}");
   return result;
 }
 
 void Message::addEncodedString(const char *s) {
+    //  Append the encoded string to the encoded message.
     strncat(encodedMessage, s, MAX_MESSAGE_SIZE - strlen(encodedMessage));
     encodedMessage[MAX_MESSAGE_SIZE] = 0;  //  Terminate the response in case of overflow.
 }

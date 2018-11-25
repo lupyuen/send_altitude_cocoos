@@ -11,8 +11,8 @@ class Message
 public:
   Message();     //  Construct an empty message.
   void clear();  //  Clear the message and set to empty.
-  bool addField(const char *name, int value);  //  Add an integer field scaled by 10.
-  bool addField(const char *name, float value);  //  Add a float field with 1 decimal place.
+  bool addField(const char *name, int value);          //  Add an integer field scaled by 10.
+  bool addField(const char *name, float value);        //  Add a float field with 1 decimal place.
   bool addField(const char *name, const char *value);  //  Add a string field with max 3 chars.
   const char *getEncodedMessage();  //  Return the encoded message to be transmitted.
   const char *decodeMessage(const char *msg);  //  Decode the encoded message.
