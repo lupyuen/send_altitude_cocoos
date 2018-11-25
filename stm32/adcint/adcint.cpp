@@ -43,7 +43,11 @@ int adc_read_scaled_temperature(void) {
 
 int adc_read_scaled_vref(void) {
 	//  Return Blue Pill internal reference voltage in Volts scaled by 100 times, e.g. 1.23 V is returned as 123.
-	int vref = adc_read(ADC_CHANNEL_VREFINT) * 330 / 4095;  //  Was ADC_CHANNEL_VREF
+#ifdef PLATFORMIO  //  If building on PlatformIO...
+	int vref = adc_read(ADC_CHANNEL_VREFINT) * 330 / 4095;
+#else
+	int vref = adc_read(ADC_CHANNEL_VREF) * 330 / 4095;
+#endif  //  PLATFORMIO
 	return vref;
 }
 
@@ -59,7 +63,11 @@ void adc_setup(void) {
 		GPIO0|GPIO1);				// PA0 & PA1
 	// Initialize ADC.
 	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC1EN);
-	adc_off(ADC1);  //  Was adc_power_off(ADC1)
+#ifdef PLATFORMIO  //  If building on PlatformIO...
+	adc_off(ADC1);
+#else
+	adc_power_off(ADC1);
+#endif  //  PLATFORMIO
 
 	rcc_peripheral_reset(&RCC_APB2RSTR, RCC_APB2RSTR_ADC1RST);
 	rcc_peripheral_clear_reset(&RCC_APB2RSTR, RCC_APB2RSTR_ADC1RST);
@@ -69,11 +77,20 @@ void adc_setup(void) {
 	adc_set_right_aligned(ADC1);
 	adc_set_single_conversion_mode(ADC1);
 	adc_set_sample_time(ADC1, ADC_CHANNEL_TEMP, ADC_SMPR_SMP_239DOT5CYC);
+#ifdef PLATFORMIO  //  If building on PlatformIO...
 	adc_set_sample_time(ADC1, ADC_CHANNEL_VREFINT, ADC_SMPR_SMP_239DOT5CYC);
-	adc_enable_temperature_sensor(ADC1);  //  TODO: Check para.
+	adc_enable_temperature_sensor(ADC1);
+#else
+	adc_set_sample_time(ADC1, ADC_CHANNEL_VREF, ADC_SMPR_SMP_239DOT5CYC);
+	adc_enable_temperature_sensor();
+#endif  //  PLATFORMIO
 
 	adc_power_on(ADC1);
 	adc_reset_calibration(ADC1);
-	adc_calibration(ADC1);  //  Was adc_calibrate_async(ADC1)
-	//  Was while (adc_is_calibrating(ADC1)) {}
+#ifdef PLATFORMIO  //  If building on PlatformIO...
+	adc_calibration(ADC1);
+#else
+	adc_calibrate_async(ADC1);
+	while (adc_is_calibrating(ADC1)) {}
+#endif  //  PLATFORMIO
 }
