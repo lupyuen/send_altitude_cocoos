@@ -59,7 +59,7 @@ bool aggregate_sensor_data(
     addPayloadInt(payload, PAYLOAD_SIZE, "seq", sequenceNumber++, 4);
 
     //  Encode the sensor data into a Sigfox message, 4 digits each.
-    static const char *sendSensors[] = { "tmp", "hmd", "alt", NULL };  //  Sensors to be sent.
+    static const char *sendSensors[] = TRANSMIT_SENSOR_DATA;  //  Sensors to be sent.
     for (int i = 0; sendSensors[i] != NULL; i++) {
         //  Get each sensor data and add to the message payload.
         float data = 0;

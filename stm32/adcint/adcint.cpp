@@ -17,15 +17,15 @@ static void taskYIELD(void) {}
 
 static void demo_task(void *arg __attribute((unused))) {
 	//  How to use ADC.
-	int vref = adc_read_scaled_vref();
-	int adc0 = adc_read(0) * 330 / 4095;
-	int adc1 = adc_read(1) * 330 / 4095;
-	int temp = adc_read_scaled_temperature();
+	float vref = adc_read_scaled_vref() / 100.0;
+	float adc0 = adc_read(0) * 3.30 / 4095.0;
+	float adc1 = adc_read(1) * 3.30 / 4095.0;
+	float temp = adc_read_scaled_temperature() / 100.0;
 }
 
 uint16_t adc_read(uint8_t channel) {
 	//  Read ADC1. Channel=0 for PA0, 1 for PA1, ADC_CHANNEL_TEMP for builtin temperature sensor, ADC_CHANNEL_VREFINT for voltage sensor.
-	//  For PA0 and PA1, returned value should be multipled by 330 and divided by 4095, e.g. int adc0 = adc_read(0) * 330 / 4095;
+	//  For PA0 and PA1, returned value should be multipled by 3.30 and divided by 4095.0, e.g. float adc0 = adc_read(0) * 3.30 / 4095.0;
 	adc_set_sample_time(ADC1, channel, ADC_SMPR_SMP_239DOT5CYC);
 	adc_set_regular_sequence(ADC1, 1, &channel);
 	adc_start_conversion_direct(ADC1);

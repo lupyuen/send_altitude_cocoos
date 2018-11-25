@@ -39,10 +39,10 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   debug(sensor.info.name, F(" >> poll_sensor"));
   
   //  Read sensor data from ADC.
-  int vref = adc_read_scaled_vref();
-	int adc0 = adc_read(0) * 330 / 4095;
-	int adc1 = adc_read(1) * 330 / 4095;
-	int temp = adc_read_scaled_temperature();
+  float vref = adc_read_scaled_vref() / 100.0;
+	float adc0 = adc_read(0) * 3.30 / 4095.0;
+	float adc1 = adc_read(1) * 3.30 / 4095.0;
+	float temp = adc_read_scaled_temperature() / 100.0;
   sensorData[0] = adc0;
 
   //  Dump the sensor values.
