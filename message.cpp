@@ -78,7 +78,7 @@ static const char *toHex(uint16_t v) {
 }
 
 //  TODO: Move these messages to Flash memory.
-static const char *addFieldHeader = "Message.addField: ";
+static const char *addFieldHeader = "msg >> ";
 static const char *tooLong = "****ERROR: Message too long, already ";
 
 Message::Message() {
@@ -93,14 +93,14 @@ void Message::clear() {
 
 bool Message::addField(const char *name, int value) {
   //  Add an integer field scaled by 10.  2 bytes.
-  debug_print(addFieldHeader); debug_print(name); debug_print("="); debug_println(value);
+  debug_print(addFieldHeader); debug_print(name); debug_print(" "); debug_println(value);
   int val = value * 10;
   return addIntField(name, val);
 }
 
 bool Message::addField(const char *name, float value) {
   //  Add a float field with 1 decimal place.  2 bytes.
-  debug_print(addFieldHeader); debug_print(name); debug_print("="); debug_println(value);
+  debug_print(addFieldHeader); debug_print(name); debug_print(" "); debug_println(value);
   int val = (int) (value * 10.0);
   return addIntField(name, val);
 }
@@ -120,7 +120,7 @@ bool Message::addIntField(const char *name, int value) {
 
 bool Message::addField(const char *name, const char *value) {
   //  Add a string field with max 3 chars.  2 bytes for name, 2 bytes for value.
-  debug_print(addFieldHeader); debug_print(name); debug_print("="); debug_println(value);
+  debug_print(addFieldHeader); debug_print(name); debug_print(" "); debug_println(value);
   if (strlen(encodedMessage) + (4 * 2) > MAX_ENCODED_MESSAGE_SIZE) {
     debug_print("*** ERROR: "); debug_print(tooLong); debug_print(" "); 
     debug_print((int) (strlen(encodedMessage) / 2)); debug_println(" bytes"); 
