@@ -24,4 +24,4 @@ private:
   char encodedMessage[MAX_ENCODED_MESSAGE_SIZE + 1];  //  Encoded message.
 };
 #endif  //  __cplusplus
-#endif // MESSAGE_H_
+#endif  // MESSAGE_H_
