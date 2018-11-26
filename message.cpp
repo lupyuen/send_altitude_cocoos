@@ -233,8 +233,8 @@ const char *Message::decodeMessage(const char *msg) {
 
 void Message::addEncodedString(const char *s) {
     //  Append the encoded string to the encoded message.
-    strncat(encodedMessage, s, MAX_MESSAGE_SIZE - strlen(encodedMessage));
-    encodedMessage[MAX_MESSAGE_SIZE] = 0;  //  Terminate the response in case of overflow.
+    strncat(encodedMessage, s, MAX_ENCODED_MESSAGE_SIZE - strlen(encodedMessage));
+    encodedMessage[MAX_ENCODED_MESSAGE_SIZE] = 0;  //  Terminate the response in case of overflow.
 }
 
 #ifdef NOTUSED
