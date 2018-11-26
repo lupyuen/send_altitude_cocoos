@@ -42,6 +42,7 @@ static char decodeLetter(uint8_t code) {
 #define MAX_HEX_BYTES 2  //  Convert 16-bit unsigned integers.
 #define MAX_HEX_BUFFER_LENGTH (MAX_HEX_BYTES * 2)  //  Convert 16-bit unsigned integers into 4 hex digits.
 static char hexBuffer[MAX_HEX_BUFFER_LENGTH + 1];  //  Warning: Will be reused by toHex() for returning result.
+static const uint8_t swapHexDigits[MAX_HEX_BUFFER_LENGTH] = { 2, 3, 0, 1 };  //  Hex digit 0 will be swapped to Hex digit 2, 1->3, 2->0, 3->1.
 
 static const char *toHex(uint16_t v) {
   //  Convert the 16-bit unsigned integer to a string of 4 hex digits.
@@ -53,14 +54,21 @@ static const char *toHex(uint16_t v) {
       char digit = '0' + (char)(v / divisor);
       if (digit > '9') { digit = digit - 10 - '0' + 'a'; }
       if (digit > '0' || length > 0 || prefixByZero) {
-          if (length < MAX_HEX_BUFFER_LENGTH + 1) {
-              hexBuffer[length++] = digit;
+          if (length <= MAX_HEX_BUFFER_LENGTH ) {
+              uint8_t pos = swapHexDigits[length];  //  Swap the hex digits due to endianness.
+              hexBuffer[pos] = digit;
+              length++;
           }
       }
       v = v % divisor;
   }
-  if (length == 0) { hexBuffer[length++] = '0'; };
-  if (length < MAX_HEX_BUFFER_LENGTH + 1) { hexBuffer[length] = 0; }
+  //  TODO: Is this needed?
+  if (length == 0) { 
+    hexBuffer[length] = '0'; 
+    length++;
+  }
+  //  TODO: Is this needed?
+  if (length <= MAX_HEX_BUFFER_LENGTH) { hexBuffer[length] = 0; }
   hexBuffer[MAX_HEX_BUFFER_LENGTH] = 0;  //  Terminate in case of overflow.
   return hexBuffer;
 }

@@ -235,7 +235,7 @@ void setup_aggregate(void) {
 }
 
 static void testStructuredMessage(void) {
-    ////  Testing structured message
+    //  Testing structured message
 #ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
     initPayload(payload);
     structuredMessage.addField("tmp", (float) 31.2);
@@ -245,7 +245,6 @@ static void testStructuredMessage(void) {
     debug_print(F("testStructuredMessage ")); debug_println(payload); debug_flush();
     //  Should encode as b0513801a421f0019405a500
     //                   b0 51 38 01 a4 21 f0 01 94 05 a5 00
-    //  Test returned:   51 b0 01 38 21 a4
-
+    //  Test returned:   b0 51 38 01 a4 21 ef 01 94 05 a5 00
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 }
