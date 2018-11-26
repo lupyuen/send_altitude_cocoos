@@ -143,6 +143,7 @@ bool Message::addName(const char *name) {
 
 const char *Message::getEncodedMessage() {
   //  Return the encoded message to be transmitted.
+  //  Warning: Returned buffer will be reused.  Caller should copy the returned buffer immediately.
   return encodedMessage;
 }
 

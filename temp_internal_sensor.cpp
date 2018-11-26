@@ -1,4 +1,4 @@
-//  Instance of Sensor that reads the pressure gauge sensor via port ADC1.
+//  Instance of Sensor that reads the STM32 Blue Pill internal temperature sensor via port ADC1.
 #include "platform.h"
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 
 #ifdef SENSOR_DATA
 #include <adcint.h>
-#include "pressure_sensor.h"
+#include "temp_internal_sensor.h"
 
 //  These are the sensor functions that we will implement in this file.
 static void init_sensor(void);
@@ -18,8 +18,9 @@ static uint8_t poll_sensor(float *data, uint8_t size);
 #define sensorDataSize 1
 
 //  Construct a sensor object with the sensor functions.
+//  Warning: Must not be used with any other temperature sensor, because "tmp" sensor name will clash.
 static Sensor sensor(
-  "prs",                //  Name of sensor. The Structured Message field will use this name.
+  "tmp",                //  Name of sensor. The Structured Message field will use this name.
   &init_sensor,         //  Function for initialising the sensor.
   &poll_sensor          //  Function for polling sensor data.
 );
@@ -39,18 +40,12 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   debug(sensor.info.name, F(" >> poll_sensor"));
   
   //  Read sensor data from ADC.
-  float vref = adc_read_scaled_vref() / 100.0;
-	float adc0 = adc_read(0) * 3.30 / 4095.0;
-	float adc1 = adc_read(1) * 3.30 / 4095.0;
 	float temp = adc_read_scaled_temperature() / 100.0;
-  sensorData[0] = adc0;
+  sensorData[0] = temp;
 
   //  Dump the sensor values.
   debug_print(sensor.info.name);
-  debug_print(" >> adc0 "); debug_print(adc0);
-  debug_print(", adc1 "); debug_print(adc1);
-  debug_print(", temp "); debug_print(temp);
-  debug_print(", vref "); debug_print(vref);
+  debug_print(" >> temp "); debug_print(temp);
   debug_println("");
 
   //  Simulated sensor.
@@ -60,7 +55,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   return receive_sensor_data(sensorData, sensorDataSize, data, size);
 }
 
-SensorContext *setup_pressure_sensor(
+SensorContext *setup_temperature_internal_sensor(
   uint16_t pollInterval,
   uint8_t displayTaskID
   ) {

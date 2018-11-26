@@ -11,19 +11,27 @@
 #define CONFIG_ARTICLE5      //  Uncomment to support Article #5: "Connect STM32 Blue Pill to Sigfox"
 
 //  Here are all the features that we may enable.  Warning: The features enabled in this section may be overridden according to the article configuration below.
-//  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
-//  #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
-//  #define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
-//  #define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
-#define USE_PRESSURE_SENSOR       //  Uncomment to use the polling-based pressure gauge sensor via ADC port.
-#define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C. If SIMULATE_BME280 is defined, then USE_BME280_SPI has no effect because the BME280 simulator only works on I2C.
-#define TRANSMIT_SENSOR_DATA { "prs", NULL }  //  If uncommented, sensor values to be transmitted to the IoT network (Sigfox).
-//  #define TRANSMIT_SENSOR_DATA { "tmp", "hmd", "alt", NULL }  //  If uncommented, sensor values to be transmitted to the IoT network (Sigfox).
-//  #define USE_SIMULATOR         //  Uncomment to use the new Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.  See Article #4.
-//  #define SIMULATE_BME280       //  Uncomment to simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).  See Articles #3, #5.
-#define SIMULATE_WISOL        //  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
-//  #define SIMULATED_DATA        //  Uncomment to use hardcoded data. (May not work)
+
+//  Transmission Features:
+#define TRANSMIT_STRUCTURED_MESSAGE  ////  Uncomment to transmit sensor valus to IoT network (Sigfox) using 12-byte compressed Structured Message format instead of human-readable uncompressed format.
+#define TRANSMIT_SENSOR_DATA { "tmp", "prs", NULL }  ////  If uncommented, specifies sensor values to be transmitted to the IoT network (Sigfox).
+////  #define TRANSMIT_SENSOR_DATA { "tmp", "hmd", "alt", NULL }  //  If uncommented, sensor values to be transmitted to the IoT network (Sigfox).
+#define SIMULATE_WISOL        ////  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
+
+//  General Sensor Features:
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.
+//  #define SIMULATED_DATA        //  Uncomment to use hardcoded data. (May not work)
+//  #define USE_SIMULATOR         //  Uncomment to use the new Simulator for capturing, replaying and simulating SPI data for legacy Arduino code.  See Article #4.
+
+//  Specific Sensor Features:
+//  #define USE_TEMP_EVENT_SENSOR //  Uncomment to use the new event-based temperature sensor.
+////  #define USE_TEMP_POLLING_SENSOR   //  Uncomment to use the old polling-based temperature sensor.
+#define USE_TEMP_INTERNAL_SENSOR   ////  Uncomment to use STM32 Blue Pill internal temperature sensor.  Must not be used with USE_TEMP_EVENT_SENSOR or USE_TEMP_POLLING_SENSOR.
+////  #define USE_HUMIDITY_SENSOR       //  Uncomment to use the polling-based humidity sensor.
+////  #define USE_ALTITUDE_SENSOR       //  Uncomment to use the polling-based altitude sensor.
+#define USE_PRESSURE_SENSOR       ////  Uncomment to use the polling-based pressure gauge sensor via ADC port.
+#define USE_BME280_SPI            //  Uncomment to use SPI port to connect to BME280 instead of I2C. If SIMULATE_BME280 is defined, then USE_BME280_SPI has no effect because the BME280 simulator only works on I2C.
+//  #define SIMULATE_BME280       //  Uncomment to simulate a BME280 sensor (connected via I2C) instead of connecting to a real BME280 (I2C or SPI).  See Articles #3, #5.
 
 #if defined(CONFIG_ARTICLE1) || defined(CONFIG_ARTICLE2) || defined(CONFIG_ARTICLE3)
 //  Configuration for Article #1: "Juggling Arduino Sensors With cocoOS" https://medium.com/coinmonks/juggling-arduino-sensors-with-cocoos-403e14ec28be
