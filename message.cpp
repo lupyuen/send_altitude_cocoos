@@ -62,6 +62,7 @@ static const char *toHex(uint16_t v) {
   if (length == 0) { hexBuffer[length++] = '0'; };
   if (length < MAX_HEX_BUFFER_LENGTH + 1) { hexBuffer[length] = 0; }
   hexBuffer[MAX_HEX_BUFFER_LENGTH] = 0;  //  Terminate in case of overflow.
+  return hexBuffer;
 }
 
 //  TODO: Move these messages to Flash memory.
