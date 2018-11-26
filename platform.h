@@ -13,9 +13,10 @@
 //  Here are all the features that we may enable.  Warning: The features enabled in this section may be overridden according to the article configuration below.
 
 //  Transmission Features:
-#define TRANSMIT_STRUCTURED_MESSAGE  ////  Uncomment to transmit sensor valus to IoT network (Sigfox) using 12-byte compressed Structured Message format (e.g. AWS IoT) instead of human-readable uncompressed format.
+//  #define TRANSMIT_STRUCTURED_MESSAGE  ////  Uncomment to transmit sensor valus to IoT network (Sigfox) using 12-byte compressed Structured Message format (e.g. AWS IoT) instead of human-readable uncompressed format.
 #define TRANSMIT_MESSAGE_ID  //  Uncomment to transmit message ID ("mid") to IoT network (Sigfox).
-#define TRANSMIT_SENSOR_DATA { "tmp", "prs", NULL }  ////  If uncommented, specifies sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
+#define TRANSMIT_SENSOR_DATA { "tmp", "prs", "tmp", "prs", "tmp", NULL }  ////  If uncommented, specifies sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
+////  #define TRANSMIT_SENSOR_DATA { "tmp", "prs", NULL }  ////  If uncommented, specifies sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
 ////  #define TRANSMIT_SENSOR_DATA { "tmp", "hmd", "alt", NULL }  //  If uncommented, sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
 #define SIMULATE_WISOL        ////  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
 

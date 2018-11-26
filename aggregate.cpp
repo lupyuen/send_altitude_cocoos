@@ -231,7 +231,7 @@ void setup_aggregate(void) {
         sensorData[i].name[0] = 0;  //  Clear the name.
         sensorData[i].count = 0;  //  Clear the values.
     }
-    testStructuredMessage(); ////
+    //  testStructuredMessage();
 }
 
 static void testStructuredMessage(void) {
@@ -244,7 +244,5 @@ static void testStructuredMessage(void) {
     closePayload(payload, MAX_PAYLOAD_SIZE);
     debug_print(F("testStructuredMessage ")); debug_println(payload); debug_flush();
     //  Should encode as b0513801a421f0019405a500
-    //                   b0 51 38 01 a4 21 f0 01 94 05 a5 00
-    //  Test returned:   b0 51 38 01 a4 21 ef 01 94 05 a5 00
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 }

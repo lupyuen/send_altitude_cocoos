@@ -42,7 +42,10 @@ static char decodeLetter(uint8_t code) {
 #define MAX_HEX_BYTES 2  //  Convert 16-bit unsigned integers.
 #define MAX_HEX_BUFFER_LENGTH (MAX_HEX_BYTES * 2)  //  Convert 16-bit unsigned integers into 4 hex digits.
 static char hexBuffer[MAX_HEX_BUFFER_LENGTH + 1];  //  Warning: Will be reused by toHex() for returning result.
-static const uint8_t swapHexDigits[MAX_HEX_BUFFER_LENGTH] = { 2, 3, 0, 1 };  //  Hex digit 0 will be swapped to Hex digit 2, 1->3, 2->0, 3->1.
+
+//  Swap the 16-bit hex digits due to endianness.  Hex digit 0 will be swapped to Hex digit 2, 1->3, 2->0, 3->1.
+//  So "12 34" will be swapped into "34 12".
+static const uint8_t swapHexDigits[MAX_HEX_BUFFER_LENGTH] = { 2, 3, 0, 1 };  
 
 static const char *toHex(uint16_t v) {
   //  Convert the 16-bit unsigned integer to a string of 4 hex digits.
