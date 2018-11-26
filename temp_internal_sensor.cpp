@@ -42,11 +42,7 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   //  Read sensor data from ADC.
 	float temp = adc_read_scaled_temperature() / 100.0;
   sensorData[0] = temp;
-
-  //  Dump the sensor values.
-  debug_print(sensor.info.name);
-  debug_print(" >> temp "); debug_print(temp);
-  debug_println("");
+  //  debug_print(sensor.info.name); debug_print(" >> temp "); debug_print(temp); debug_println("");
 
   //  Simulated sensor.
   //// sensorData[0] = 12.3 + rand() % 10;

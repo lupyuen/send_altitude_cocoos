@@ -77,6 +77,14 @@ static void addPayload(
 static void closePayload(PAYLOAD_TYPE payloadBuffer, int payloadSize) {
     //  Terminate the message payload before transmitting.
 #ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
+
+    ////  Testing
+    structuredMessage.clear();
+    structuredMessage.addField("tmp", (float) 31.2);
+    structuredMessage.addField("hmd", (float) 49.6);
+    structuredMessage.addField("alt", (float) 16.5);
+    //  Should encode as b0513801a421f0019405a500
+
     //  Copy the encoded Structured Message payload into the actual message payload.
     strncpy(payloadBuffer, structuredMessage.getEncodedMessage(), PAYLOAD_SIZE);
     payload[PAYLOAD_SIZE] = 0;  //  Terminate the payload in case of overflow.
