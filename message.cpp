@@ -1,5 +1,6 @@
 //  Library for composing structured Sigfox messages
 //  Based on https://github.com/lupyuen/unabiz-arduino/blob/master/Message.cpp
+//  To verify the encoding, make a copy of this Google Sheet: https://docs.google.com/spreadsheets/d/1X3pEPz8zX7lajEPFnzJc0cLkCrFya8ila_eYjGBPb8Q/edit#gid=480889255
 #include <stdint.h>  //  For uint8_t
 #include <string.h>
 #include "display.h"

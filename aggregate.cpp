@@ -10,6 +10,8 @@
 #include "message.h"  //  For Message class
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 
+//  #define TRANSMIT_SENSOR_DATA { "tmp", "prs", "tmp", "prs", "tmp", NULL }  ////  Testing unstructured message: 5 fields + message ID.
+
 #define MESSAGE_ID_FIELD "mid"  //  Name of the message ID field.
 #define MAX_PAYLOAD_SIZE (MAX_MESSAGE_SIZE * 2)  //  Each byte takes 2 hex digits.
 #define PAYLOAD_TYPE char *     //  Payload can be directly changed because it's a local buffer.
@@ -80,13 +82,13 @@ bool aggregate_sensor_data(
     if ((context->lastSend + SEND_INTERVAL) > now) { return false; }  //  Not ready to send.
     context->lastSend = now + MAX_TIMEOUT;  //  Prevent other requests from trying to send.
 
-    //  Create a new Sigfox message. Add a running sequence number to the message.
-    static int sequenceNumber = 0;
+    //  Create a new Sigfox message. Add a running message number to the message.
+    static int messageID = 0;
     initPayload(payload);
 #ifdef TRANSMIT_MESSAGE_ID  //  If we are transmitting message ID...
-    addPayload(payload, MAX_PAYLOAD_SIZE, MESSAGE_ID_FIELD, sequenceNumber, 4);  //  Send message ID as "mid" field.
+    addPayload(payload, MAX_PAYLOAD_SIZE, MESSAGE_ID_FIELD, messageID, 4);  //  Send message ID as "mid" field.
 #endif  //  TRANSMIT_MESSAGE_ID
-    sequenceNumber++;
+    messageID++;
 
     //  Encode the sensor data into a Sigfox message, 4 digits each (for unstructured format).
     static const char *sendSensors[] = TRANSMIT_SENSOR_DATA;  //  Sensors to be sent. Defined in platform.h
@@ -173,7 +175,7 @@ static void addPayloadInt(
     //  Add the scaled integer data to the message payload as numDigits digits in hexadecimal.
     //  So data=1234 and numDigits=4, it will be added as "1234".  Not efficient, but easy to read.
     int length = strlen(payloadBuffer);
-    if (length + numDigits >= payloadSize) {  //  No space for numDigits hex digits.
+    if (length + numDigits > payloadSize) {  //  No space for numDigits hex digits.
         debug(F("***** Error: No payload space for "), name);
         return;
     }
