@@ -24,16 +24,14 @@ static SensorMsg sensorData[MAX_SENSOR_COUNT];
 
 #define MESSAGE_ID_FIELD "mid"  //  Name of the message ID field.
 #define PAYLOAD_SIZE (1 + MAX_MESSAGE_SIZE * 2)  //  Each byte takes 2 hex digits. Add 1 for terminating null.
-
-#ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
-#define PAYLOAD_TYPE const char *   //  Payload should not be directly changed because it's part of Structured Message.
-static Message structuredMessage;   //  Static buffer for constructing Structured Message.
-PAYLOAD_TYPE payload = NULL;        //  This will point to structuredMessage.encodedMessage
-
-#else  //  If we are transmitting sensor values in human-readable uncompressed format...
 #define PAYLOAD_TYPE char *         //  Payload can be directly changed because it's a local buffer.
 //  Static buffer for constructing the unstructured message payload to be sent, in hex digits, plus terminating null.
-static char payload[PAYLOAD_SIZE];  //  e.g. "0102030405060708090a0b0c"
+static char payload[PAYLOAD_SIZE + 1];  //  e.g. "0102030405060708090a0b0c"
+
+#ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
+static Message structuredMessage;   //  Static buffer for constructing Structured Message.
+
+#else  //  If we are transmitting sensor values in human-readable uncompressed format...
 //  static const char testPayload[] = "0102030405060708090a0b0c";  //  For testing
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 
@@ -42,9 +40,7 @@ static void initPayload(void) {
 
 #ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
     structuredMessage.clear();      //  Erase the message.
-    payload = structuredMessage.getEncodedMessage();  //  Get the payload pointer.
-
-#else   //  If we are transmitting sensor values in human-readable uncompressed format...
+#else  //  If we are transmitting sensor values in human-readable uncompressed format...
     payload[0] = 0;  //  Empty the message payload.
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 }
@@ -64,9 +60,28 @@ static void addPayload(
 #endif  //  TRANSMIT_STRUCTURED_MESSAGE
 }
 
+static void addPayload(
+    PAYLOAD_TYPE payloadBuffer, 
+    int payloadSize, 
+    const char *name, 
+    int data,
+    int numDigits) {
+    //  Add the integer data to the message payload.
+#ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
+    structuredMessage.addField(name, data);  //  Will be scaled before adding.
+#else   //  If we are transmitting sensor values in human-readable uncompressed format...
+    addPayloadInt(payloadBuffer, payloadSize, name, data, numDigits);
+#endif  //  TRANSMIT_STRUCTURED_MESSAGE
+}
+
 static void closePayload(PAYLOAD_TYPE payloadBuffer, int payloadSize) {
     //  Terminate the message payload before transmitting.
-#ifndef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values in human-readable uncompressed format...
+#ifdef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values to IoT network (Sigfox) using 12-byte compressed Structured Message format...
+    //  Copy the encoded Structured Message payload into the actual message payload.
+    strncpy(payloadBuffer, structuredMessage.getEncodedMessage(), PAYLOAD_SIZE);
+    payload[PAYLOAD_SIZE] = 0;  //  Terminate the payload in case of overflow.
+
+#else  //  If we are transmitting sensor values in human-readable uncompressed format...
     //  If the payload has odd number of digits, pad with '0'.
     int length = strlen(payloadBuffer);
     if (length % 2 != 0 && length < payloadSize - 1) {
@@ -108,11 +123,12 @@ bool aggregate_sensor_data(
     //  Create a new Sigfox message. Add a running sequence number to the message.
     static int sequenceNumber = 0;
     initPayload();
-#ifndef TRANSMIT_STRUCTURED_MESSAGE  //  If we are transmitting sensor values in human-readable uncompressed format...
-    addPayloadInt(payload, PAYLOAD_SIZE, MESSAGE_ID_FIELD, sequenceNumber++, 4);  //  Send message ID only for unstructured format.
-#endif  //  TRANSMIT_STRUCTURED_MESSAGE
+#ifdef TRANSMIT_MESSAGE_ID  //  If we are transmitting message ID...
+    addPayload(payload, PAYLOAD_SIZE, MESSAGE_ID_FIELD, sequenceNumber, 4);  //  Send message ID as "mid" field.
+#endif  //  TRANSMIT_MESSAGE_ID
+    sequenceNumber++;
 
-    //  Encode the sensor data into a Sigfox message, 4 digits each.
+    //  Encode the sensor data into a Sigfox message, 4 digits each (for unstructured format).
     static const char *sendSensors[] = TRANSMIT_SENSOR_DATA;  //  Sensors to be sent. Defined in platform.h
     for (int i = 0; sendSensors[i] != NULL; i++) {
         //  Get each sensor data and add to the message payload.
@@ -120,8 +136,9 @@ bool aggregate_sensor_data(
         const char *sensorName = sendSensors[i];
         savedSensor = recallSensor(sensorName);  //  Find the sensor.
         if (savedSensor != NULL) { data = savedSensor->data[0]; }  //  Fetch the sensor data (first float only).
-        addPayload(payload, PAYLOAD_SIZE, sensorName, data, 4);  //  Add to payload.
+        addPayload(payload, PAYLOAD_SIZE, sensorName, data, 4);    //  Add to payload.
     }
+    //  Finalise the payload to be sent.
     closePayload(payload, PAYLOAD_SIZE);
     debug_print(F("agg >> Send ")); debug_println(payload);
 
