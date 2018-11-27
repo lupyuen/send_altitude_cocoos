@@ -30,6 +30,8 @@ The code compiles under the Arduino IDE, Arduino Web Editor, and Visual Studio C
 
 Tested with Arduino Uno and STM32 Blue Pill.
 
+You may use the code here for any purpose, including private and commercial use.  The code is licensed under the MIT Licence.
+
 -----
 ## Select Features By Article
 
