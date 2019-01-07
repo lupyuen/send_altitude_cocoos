@@ -49,8 +49,8 @@ int main(void) {
   //  The application starts here. We create the tasks to read and send sensor data 
   //  and start the task scheduler. Note: Arduino's setup() and loop() will not be called since main() is defined.
 
-  enable_debug();       //  Uncomment to allow display of debug messages in development devices. NOTE: This will hang if no debugger is attached.
-  //  disable_debug();  //  Uncomment to disable display of debug messages.  For use in production devices.
+  //  enable_debug();       //  Uncomment to allow display of debug messages in development devices. NOTE: This will hang if no debugger is attached.
+  disable_debug();  //  Uncomment to disable display of debug messages.  For use in production devices.
 
   //  Init the platform, cocoOS and create any system objects.
   platform_setup();  //  Arduino or STM32 platform setup.
