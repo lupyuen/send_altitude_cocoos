@@ -39,17 +39,19 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   debug(sensor.info.name, F(" >> poll_sensor"));
   
   //  Read sensor data from ADC.
-  float vref = adc_read_scaled_vref() / 100.0;
-	float adc0 = adc_read(0) * 3.30 / 4095.0;
-	float adc1 = adc_read(1) * 3.30 / 4095.0;
-  sensorData[0] = adc0 * 100.0;  //  TODO
+  double vref = adc_read_scaled_vref() / 100.0;
+	double adc0 = adc_read(0) * 3.30 / 4095.0;
+	double adc1 = adc_read(1) * 3.30 / 4095.0;
+  double adc_diff = adc0 - adc1;
+  sensorData[0] = adc_diff * 1000.0;  //  Send the diff voltage in P0 and P1.
+  //  sensorData[0] = (adc0 - 2.90) * 1000.0;  //  TODO
   //  sensorData[0] = adc1 * 100.0;  //  TODO
 
   //  Dump the sensor values.
   debug_print(sensor.info.name);
-  debug_print(" >> adc0 "); debug_print(adc0);
-  debug_print(", adc1 "); debug_print(adc1);
-  debug_print(", vref "); debug_print(vref);
+  debug_print(" >> adc0 "); debug_print((float) adc0);
+  debug_print(", adc1 "); debug_print((float) adc1);
+  debug_print(", vref "); debug_print((float) vref);
   debug_println("");
 
   //  Simulated sensor.
