@@ -17,7 +17,7 @@
 #define TRANSMIT_MESSAGE_ID  //  Uncomment to transmit message ID ("mid") to IoT network (Sigfox).
 #define TRANSMIT_SENSOR_DATA { "tmp", "prs", NULL }  ////  If uncommented, specifies sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
 ////  #define TRANSMIT_SENSOR_DATA { "tmp", "hmd", "alt", NULL }  //  If uncommented, sensor values to be transmitted to the IoT network (Sigfox).  Do not include "mid".
-#define SIMULATE_WISOL        ////  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
+//  #define SIMULATE_WISOL        ////  Uncomment to simulate a Wisol Sigfox module connected to UART.  See Articles #3, #5.
 
 //  General Sensor Features:
 #define SENSOR_DATA               //  Uncomment to use data from real or simulated sensors instead of hardcoded data.

@@ -326,9 +326,11 @@ semihosting is enabled
 NOTE: Trash this window before uploading a program to the Blue Pill
 Restarting the Blue Pill...
 ----platform_setup
+----motor on
 net >> Wait for net
 net >> Got net
 >> ATS410=0[0x0d]
+[[ uart begin
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
@@ -338,183 +340,115 @@ tmp >> Wait interval
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.01, adc1 2.78, diff 0.23, vref 1.19
+prs >> adc0 2.93, adc1 2.93, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.01
+prs >> Send msg -6.44
 prs >> Wait interval
+]] uart end
 << OK[0x0d]
 >> AT$I=10[0x0d]
-<< 002C2EA1[0x0d]
- - wisol.getID: 002C2EA1
+[[ uart begin
+]] uart end
+<< 00414D50[0x0d]
+ - wisol.getID: 00414D50
 >> AT$I=11[0x0d]
-<< 5BEB8CF64E869BD1[0x0d]
- - wisol.getPAC: 5BEB8CF64E869BD1
+[[ uart begin
+]] uart end
+<< E5A505A75957AE2F[0x0d]
+ - wisol.getPAC: E5A505A75957AE2F
 net >> Release net
 tmp << Recv data 24.74
-prs << Recv data 3.01
+prs << Recv data -6.44
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
 tmp >> Release semaphore #2
-tmp >> Send msg 24.74
+tmp >> Send msg 24.75
 tmp >> Wait interval
-tmp << Recv data 24.74
+tmp << Recv data 24.75
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.23, diff 0.79, vref 1.19
+prs >> adc0 2.92, adc1 2.93, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.02
+prs >> Send msg -8.86
 prs >> Wait interval
-prs << Recv data 3.02
+prs << Recv data -8.86
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
 tmp >> Release semaphore #2
-tmp >> Send msg 24.74
+tmp >> Send msg 24.75
 tmp >> Wait interval
-tmp << Recv data 24.74
+tmp << Recv data 24.75
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.68, diff 0.34, vref 1.19
+prs >> adc0 2.94, adc1 2.91, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.02
+prs >> Send msg 26.59
 prs >> Wait interval
-prs << Recv data 3.02
+prs << Recv data 26.59
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
 tmp >> Release semaphore #2
-tmp >> Send msg 24.74
+tmp >> Send msg 24.75
 tmp >> Wait interval
-tmp << Recv data 24.74
+tmp << Recv data 24.75
 msg >> mid 0
-msg >> tmp 24.74
-msg >> prs 3.02
-agg >> Send 24350000b051f70053421e00
+msg >> tmp 24.75
+msg >> prs 26.59
+agg >> Send 24350000b051f70053420901
 net >> Wait for net
 net >> Got net
 >> AT$GI?[0x0d]
+[[ uart begin
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.31, diff 0.70, vref 1.19
+prs >> adc0 2.93, adc1 2.93, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.02
+prs >> Send msg 0.00
 prs >> Wait interval
-<< 0,3[0x0d]
+]] uart end
+<< 0,6[0x0d]
 >> AT$RC[0x0d]
+[[ uart begin
+]] uart end
 << OK[0x0d]
 net >> Release net
-prs << Recv data 3.02
->> AT$SF=24350000b051f70053421e00,1[0x0d]
+prs << Recv data 0.00
+>> AT$SF=24350000b051f70053420901,1[0x0d]
+[[ uart begin
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
 tmp >> Release semaphore #2
-tmp >> Send msg 24.74
+tmp >> Send msg 24.75
 tmp >> Wait interval
-tmp << Recv data 24.74
+tmp << Recv data 24.75
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.28, diff 0.73, vref 1.19
+prs >> adc0 2.91, adc1 2.93, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.02
+prs >> Send msg -24.17
 prs >> Wait interval
-prs << Recv data 3.02
+prs << Recv data -24.17
 tmp >> Wait for semaphore #2
 tmp >> Got semaphore #2
 tmp >> poll_sensor
 tmp >> Release semaphore #2
-tmp >> Send msg 24.74
+tmp >> Send msg 24.75
 tmp >> Wait interval
-tmp << Recv data 24.74
+tmp << Recv data 24.75
 prs >> Wait for semaphore #2
 prs >> Got semaphore #2
 prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.34, diff 0.68, vref 1.19
+prs >> adc0 2.93, adc1 2.94, vref 1.15
 prs >> Release semaphore #2
-prs >> Send msg 3.02
-prs >> Wait interval
-prs << Recv data 3.02
-tmp >> Wait for semaphore #2
-tmp >> Got semaphore #2
-tmp >> poll_sensor
-tmp >> Release semaphore #2
-tmp >> Send msg 24.74
-tmp >> Wait interval
-tmp << Recv data 24.74
-prs >> Wait for semaphore #2
-prs >> Got semaphore #2
-prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.26, diff 0.76, vref 1.19
-prs >> Release semaphore #2
-prs >> Send msg 3.02
-prs >> Wait interval
-prs << Recv data 3.02
-tmp >> Wait for semaphore #2
-tmp >> Got semaphore #2
-tmp >> poll_sensor
-tmp >> Release semaphore #2
-tmp >> Send msg 24.74
-tmp >> Wait interval
-tmp << Recv data 24.74
-prs >> Wait for semaphore #2
-prs >> Got semaphore #2
-prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.36, diff 0.65, vref 1.19
-prs >> Release semaphore #2
-prs >> Send msg 3.02
-prs >> Wait interval
-prs << Recv data 3.02
-tmp >> Wait for semaphore #2
-tmp >> Got semaphore #2
-tmp >> poll_sensor
-tmp >> Release semaphore #2
-tmp >> Send msg 24.74
-tmp >> Wait interval
-tmp << Recv data 24.74
-prs >> Wait for semaphore #2
-prs >> Got semaphore #2
-prs >> poll_sensor
-prs >> adc0 3.01, adc1 2.30, diff 0.71, vref 1.19
-prs >> Release semaphore #2
-prs >> Send msg 3.01
-prs >> Wait interval
-prs << Recv data 3.01
-tmp >> Wait for semaphore #2
-tmp >> Got semaphore #2
-tmp >> poll_sensor
-tmp >> Release semaphore #2
-tmp >> Send msg 24.74
-tmp >> Wait interval
-tmp << Recv data 24.74
-prs >> Wait for semaphore #2
-prs >> Got semaphore #2
-prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.32, diff 0.69, vref 1.19
-prs >> Release semaphore #2
-prs >> Send msg 3.02
-prs >> Wait interval
-prs << Recv data 3.02
-<< OK[0x0d][0x0a]RX=01 23 45 67 89 AB CD EF[0x0d]
-net >> Pending response
- - process_downlink_msg: 0123456789ABCDEF
-tmp >> Wait for semaphore #2
-tmp >> Got semaphore #2
-tmp >> poll_sensor
-tmp >> Release semaphore #2
-tmp >> Send msg 24.74
-tmp >> Wait interval
-tmp << Recv data 24.74
-prs >> Wait for semaphore #2
-prs >> Got semaphore #2
-prs >> poll_sensor
-prs >> adc0 3.02, adc1 2.73, diff 0.29, vref 1.19
-prs >> Release semaphore #2
-prs
+prs >> Send msg
 ```
 
 -----------------------------------------------------------------------------------
