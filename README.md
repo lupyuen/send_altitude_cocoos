@@ -309,6 +309,214 @@ requests but they are not guaranteed.
 -----
 ## Sample Log
 
+```text
+> Executing task in folder send_altitude_cocoos: openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -f scripts/connect.ocd <
+
+Open On-Chip Debugger 0.10.0
+Licensed under GNU GPL v2
+For bug reports, read
+        http://openocd.org/doc/doxygen/bugs.html
+Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+adapter speed: 1000 kHz
+adapter_nsrst_delay: 100
+none separate
+debug_level: 0
+semihosting is enabled
+NOTE: Trash this window before uploading a program to the Blue Pill
+Restarting the Blue Pill...
+----platform_setup
+net >> Wait for net
+net >> Got net
+>> ATS410=0[0x0d]
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.01, adc1 2.78, diff 0.23, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.01
+prs >> Wait interval
+<< OK[0x0d]
+>> AT$I=10[0x0d]
+<< 002C2EA1[0x0d]
+ - wisol.getID: 002C2EA1
+>> AT$I=11[0x0d]
+<< 5BEB8CF64E869BD1[0x0d]
+ - wisol.getPAC: 5BEB8CF64E869BD1
+net >> Release net
+tmp << Recv data 24.74
+prs << Recv data 3.01
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.23, diff 0.79, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.68, diff 0.34, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+msg >> mid 0
+msg >> tmp 24.74
+msg >> prs 3.02
+agg >> Send 24350000b051f70053421e00
+net >> Wait for net
+net >> Got net
+>> AT$GI?[0x0d]
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.31, diff 0.70, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+<< 0,3[0x0d]
+>> AT$RC[0x0d]
+<< OK[0x0d]
+net >> Release net
+prs << Recv data 3.02
+>> AT$SF=24350000b051f70053421e00,1[0x0d]
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.28, diff 0.73, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.34, diff 0.68, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.26, diff 0.76, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.36, diff 0.65, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.01, adc1 2.30, diff 0.71, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.01
+prs >> Wait interval
+prs << Recv data 3.01
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.32, diff 0.69, vref 1.19
+prs >> Release semaphore #2
+prs >> Send msg 3.02
+prs >> Wait interval
+prs << Recv data 3.02
+<< OK[0x0d][0x0a]RX=01 23 45 67 89 AB CD EF[0x0d]
+net >> Pending response
+ - process_downlink_msg: 0123456789ABCDEF
+tmp >> Wait for semaphore #2
+tmp >> Got semaphore #2
+tmp >> poll_sensor
+tmp >> Release semaphore #2
+tmp >> Send msg 24.74
+tmp >> Wait interval
+tmp << Recv data 24.74
+prs >> Wait for semaphore #2
+prs >> Got semaphore #2
+prs >> poll_sensor
+prs >> adc0 3.02, adc1 2.73, diff 0.29, vref 1.19
+prs >> Release semaphore #2
+prs
+```
+
 -----------------------------------------------------------------------------------
 ### Uplink Only
 

@@ -4,6 +4,31 @@
 #include <logger.h>
 #include "bluepill.h"
 
+///////////////
+//  Pressure Gauge: A0 analogue input
+//  Motor: A8 digital output
+#include <libopencm3/stm32/gpio.h>
+
+void motor_setup(void) {
+	//  Set up motor GPIO.
+	//  Enable GPIOA clock.
+	rcc_periph_clock_enable(RCC_GPIOA);
+	//  Set GPIO8 (in GPIO port A) to 'output push-pull'.
+	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO8);
+}
+
+void motor_off(void) {
+	//  Switch motor off.
+	gpio_clear(GPIOA, GPIO8);
+}
+
+void motor_on(void) {
+	//  Switch motor on.
+	gpio_set(GPIOA, GPIO8);
+}
+
+///////////////
+
 //  Debugging is off by default.  Developer must switch it on with enable_debug().
 static bool debugEnabled = false;
 
@@ -20,6 +45,10 @@ void platform_setup(void) {
 		//  This line will call ARM Semihosting and may hang until debugger is connected.
   		debug_println("----platform_setup");
 		led_on();
+
+  		debug_println("----motor on");
+		motor_setup();
+		motor_on();
 	}
 }
 

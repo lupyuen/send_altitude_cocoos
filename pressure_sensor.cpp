@@ -42,7 +42,8 @@ static uint8_t poll_sensor(float *data, uint8_t size) {
   float vref = adc_read_scaled_vref() / 100.0;
 	float adc0 = adc_read(0) * 3.30 / 4095.0;
 	float adc1 = adc_read(1) * 3.30 / 4095.0;
-  sensorData[0] = adc0;
+  sensorData[0] = adc0 * 100.0;  //  TODO
+  //  sensorData[0] = adc1 * 100.0;  //  TODO
 
   //  Dump the sensor values.
   debug_print(sensor.info.name);
